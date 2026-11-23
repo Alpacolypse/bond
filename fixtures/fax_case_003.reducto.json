@@ -1,0 +1,235 @@
+{
+  "job_id": "synthetic-0003",
+  "duration": 2.64,
+  "result": {
+    "type": "full",
+    "chunks": [
+      {
+        "content": "FAX COVER SHEET\n\nTo: Intake Unit, Northwind Legal Aid\n\nFrom: Cedar Valley Community Center, Hannah Cho\n\nDate: 10/06/2026    Pages: 2\n\nRE: Request for representation, repair and deduct for a\nbedroom window (HC 12.6)\n\nClient: Samuel Okafor    Unit: 2A    Matter ID: NWL-3308154\n\nCONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
+        "embed": "FAX COVER SHEET\n\nTo: Intake Unit, Northwind Legal Aid\n\nFrom: Cedar Valley Community Center, Hannah Cho\n\nDate: 10/06/2026    Pages: 2\n\nRE: Request for representation, repair and deduct for a\nbedroom window (HC 12.6)\n\nClient: Samuel Okafor    Unit: 2A    Matter ID: NWL-3308154\n\nCONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
+        "enriched": null,
+        "blocks": [
+          {
+            "type": "Title",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.0909,
+              "width": 0.2844,
+              "height": 0.0364,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "FAX COVER SHEET",
+            "confidence": "high"
+          },
+          {
+            "type": "Key Value",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.1409,
+              "width": 0.2942,
+              "height": 0.0222,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "To: Intake Unit, Northwind Legal Aid",
+            "confidence": "high"
+          },
+          {
+            "type": "Key Value",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.1715,
+              "width": 0.4271,
+              "height": 0.0222,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "From: Cedar Valley Community Center, Hannah Cho",
+            "confidence": "high"
+          },
+          {
+            "type": "Key Value",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.202,
+              "width": 0.2354,
+              "height": 0.0222,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "Date: 10/06/2026    Pages: 2",
+            "confidence": "high"
+          },
+          {
+            "type": "Key Value",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.2326,
+              "width": 0.4451,
+              "height": 0.0403,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "RE: Request for representation, repair and deduct for a\nbedroom window (HC 12.6)",
+            "confidence": "high"
+          },
+          {
+            "type": "Key Value",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.2812,
+              "width": 0.486,
+              "height": 0.0222,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "Client: Samuel Okafor    Unit: 2A    Matter ID: NWL-3308154",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.3117,
+              "width": 0.4372,
+              "height": 0.033,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "CONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
+            "confidence": "high"
+          }
+        ]
+      },
+      {
+        "content": "Intake Visit - 10/05/2026\n\nProblem: Bedroom window frame cracked and will not close for 4 weeks.\n\nHistory: Damage after a storm on 09/07/2026. Wind and rain come in around\nthe frame at night; the tenant calls the room “freezing.”\n\nNotice given: 2 weeks of written notice and a portal message to the\nproperty manager. City inspection request filed;\ninspection scheduled for 10/14/2026.\n\nInspection: Window frame cracked at the latch, leaving a 1-inch gap.\nSill damp on the right side. No mold present.\n\nEmergencies: None reported. No break-in, no broken glass, no water\nreaching the unit below.\n\nAssessment: Habitability defect, window (HC 12.6), early in its\nnotice period.\n\nPlan: Repair and deduct for the window after the city inspec-\ntion, before housing court.\n\nElectronically signed: Hannah Cho, Housing Advocate",
+        "embed": "Intake Visit - 10/05/2026\n\nProblem: Bedroom window frame cracked and will not close for 4 weeks.\n\nHistory: Damage after a storm on 09/07/2026. Wind and rain come in around\nthe frame at night; the tenant calls the room “freezing.”\n\nNotice given: 2 weeks of written notice and a portal message to the\nproperty manager. City inspection request filed;\ninspection scheduled for 10/14/2026.\n\nInspection: Window frame cracked at the latch, leaving a 1-inch gap.\nSill damp on the right side. No mold present.\n\nEmergencies: None reported. No break-in, no broken glass, no water\nreaching the unit below.\n\nAssessment: Habitability defect, window (HC 12.6), early in its\nnotice period.\n\nPlan: Repair and deduct for the window after the city inspec-\ntion, before housing court.\n\nElectronically signed: Hannah Cho, Housing Advocate",
+        "enriched": null,
+        "blocks": [
+          {
+            "type": "Title",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.0909,
+              "width": 0.2621,
+              "height": 0.0283,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Intake Visit - 10/05/2026",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.1298,
+              "width": 0.5839,
+              "height": 0.0222,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Problem: Bedroom window frame cracked and will not close for 4 weeks.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.1604,
+              "width": 0.6159,
+              "height": 0.0403,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "History: Damage after a storm on 09/07/2026. Wind and rain come in around\nthe frame at night; the tenant calls the room “freezing.”",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.209,
+              "width": 0.54,
+              "height": 0.0583,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Notice given: 2 weeks of written notice and a portal message to the\nproperty manager. City inspection request filed;\ninspection scheduled for 10/14/2026.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.2756,
+              "width": 0.55,
+              "height": 0.0403,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Inspection: Window frame cracked at the latch, leaving a 1-inch gap.\nSill damp on the right side. No mold present.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.3242,
+              "width": 0.555,
+              "height": 0.0403,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Emergencies: None reported. No break-in, no broken glass, no water\nreaching the unit below.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.3729,
+              "width": 0.5,
+              "height": 0.0403,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Assessment: Habitability defect, window (HC 12.6), early in its\nnotice period.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.4215,
+              "width": 0.4861,
+              "height": 0.0403,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Plan: Repair and deduct for the window after the city inspec-\ntion, before housing court.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.4701,
+              "width": 0.398,
+              "height": 0.0202,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Electronically signed: Hannah Cho, Housing Advocate",
+            "confidence": "high"
+          }
+        ]
+      }
+    ]
+  },
+  "usage": {
+    "num_pages": 2,
+    "credits": 2
+  }
+}

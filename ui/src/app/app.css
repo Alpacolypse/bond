@@ -1,0 +1,207 @@
+/* The MCP app's compact views (cards and the workspace picker), in the host's theme: its style
+   variables when it sends them, else a light or dark palette by data-theme. The full viewer keeps
+   the browser viewer's own (light) styles. */
+
+:root {
+  --app-bg: var(--color-background-primary, #ffffff);
+  --app-bg-soft: var(--color-background-secondary, #f6f6f3);
+  --app-ink: var(--color-text-primary, #2b303b);
+  --app-muted: var(--color-text-secondary, #6b7280);
+  --app-line: var(--color-border-primary, #e3e3de);
+  --app-danger: var(--color-text-danger, #c0504d);
+  --app-radius: var(--border-radius-md, 8px);
+}
+:root[data-theme="dark"] {
+  --app-bg: var(--color-background-primary, #262624);
+  --app-bg-soft: var(--color-background-secondary, #30302e);
+  --app-ink: var(--color-text-primary, #ecebe6);
+  --app-muted: var(--color-text-secondary, #a3a29c);
+  --app-line: var(--color-border-primary, #45443f);
+  --app-danger: var(--color-text-danger, #e5807c);
+}
+
+/* Compact: the page is as tall as its card, on the host's background. */
+html.compact {
+  --ink: var(--app-ink);
+  --ink-soft: var(--app-muted);
+  --muted: var(--app-muted);
+  --line: var(--app-line);
+  --surface: var(--app-bg);
+  --uncited: var(--app-danger);
+  font-family: var(--font-sans, Inter, system-ui, -apple-system, "Segoe UI", sans-serif);
+}
+html.compact body {
+  overflow: visible;
+  background: transparent;
+}
+html:not(.compact) {
+  color-scheme: light;
+}
+
+.card {
+  margin: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius);
+  background: var(--app-bg);
+  color: var(--app-ink);
+}
+.card p {
+  margin: 6px 0 0;
+}
+.card .error {
+  padding: 0;
+}
+.card-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.card-brand {
+  flex: none;
+  font-weight: 650;
+  font-size: 13px;
+  color: var(--app-muted);
+}
+.card-head h1 {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.card-meta {
+  font-size: 12px;
+}
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 10px;
+}
+.card button,
+.card input[type="text"] {
+  padding: 3px 10px;
+  border: 1px solid var(--app-line);
+  border-radius: 6px;
+  background: var(--app-bg-soft);
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 12px;
+}
+.card button {
+  cursor: pointer;
+}
+.card button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.card button.primary {
+  border-color: var(--app-ink);
+  background: var(--app-ink);
+  color: var(--app-bg);
+}
+.card .badge {
+  background: var(--app-bg-soft);
+  color: var(--app-muted);
+}
+
+.support {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  border: 1px solid currentColor;
+}
+.support-supported {
+  color: var(--color-text-success, #4d7c5b);
+}
+.support-partially_supported {
+  color: var(--color-text-warning, #b07a2a);
+}
+.support-unsupported {
+  color: var(--app-danger);
+}
+.support-unknown,
+.support-not_applicable {
+  color: var(--app-muted);
+}
+:root[data-theme="dark"] .support-supported {
+  color: var(--color-text-success, #7fb08d);
+}
+:root[data-theme="dark"] .support-partially_supported {
+  color: var(--color-text-warning, #d9a75c);
+}
+
+.issues {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.issues li + li {
+  margin-top: 3px;
+}
+
+.workspaces {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.workspaces > li {
+  padding: 7px 0;
+  border-top: 1px solid var(--app-line);
+}
+.workspaces > li > .add-sources {
+  margin-top: 6px;
+}
+.ws-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.ws-name {
+  font-weight: 550;
+}
+.ws-links {
+  overflow: hidden;
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ws-actions {
+  margin-left: auto;
+  flex: none;
+}
+.ws-new {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.ws-new input {
+  flex: 1;
+  min-width: 0;
+}
+
+.card .add-sources {
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+/* The full viewer fills the frame: the window in full screen, a fixed height if the host kept it inline. */
+.full-viewer {
+  height: 100vh;
+  min-height: 560px;
+}
+.viewer-close {
+  padding: 2px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 12px;
+  cursor: pointer;
+}

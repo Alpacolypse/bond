@@ -1,0 +1,58 @@
+{
+  "manifest_version": "0.4",
+  "name": "bond",
+  "display_name": "Bond",
+  "version": "0.1.0",
+  "description": "Cited documents your agent writes, with every claim traced to its source.",
+  "long_description": "Bond keeps your cases as workspaces on this computer. You add the sources; Claude reads them, writes documents in which every word is quoted, paraphrased from what it found, or marked unsourced, and shows them in the chat, where a click on any claim shows the exact span, table cell or page region it rests on. Claude works only in the workspaces you grant it, from the picker in the chat.",
+  "author": {
+    "name": "Anuj Iravane"
+  },
+  "keywords": [
+    "provenance",
+    "citations",
+    "documents",
+    "cases"
+  ],
+  "server": {
+    "type": "uv",
+    "entry_point": "server/main.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "server/main.py"
+      ],
+      "env": {
+        "BOND_HOME": "${user_config.bond_home}",
+        "BOND_WORKSPACES": "${user_config.workspaces}"
+      }
+    }
+  },
+  "user_config": {
+    "bond_home": {
+      "type": "directory",
+      "title": "Bond home",
+      "description": "Where your workspaces live. Leave empty for Bond's place in your application data. Keep it out of synced folders such as iCloud Drive or OneDrive.",
+      "required": false
+    },
+    "workspaces": {
+      "type": "string",
+      "title": "Workspaces",
+      "description": "Workspaces Claude may always work in, comma-separated. Leave empty to grant them from the picker in the chat instead.",
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "python": ">=3.12"
+    }
+  }
+}

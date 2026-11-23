@@ -1,0 +1,6 @@
+﻿expense_id,matter_id,client_name,date,code,description,units,amount,status,notes
+EXP-2026-0805-01,NWL-4471902,"Avery, Jordan",2026-08-05,R100,Dehumidifier rental,12,960.00,paid,
+EXP-2026-0805-02,NWL-4471902,"Avery, Jordan",2026-08-05,R200,"Plumber visit, leak diagnosis",1,145.00,paid,"Leak traced to the unit above; ""no response"" from landlord"
+EXP-2026-0930-01,NWL-4471902,"Avery, Jordan",2026-09-30,R300,"Ceiling repair, bathroom",1,1250.00,pending,"Repair and deduct requested.
+Awaiting landlord response."
+EXP-2026-0930-02,NWL-4471902,"Avery, Jordan",2026-09-30,,Mold cleanup supplies,1,310.00,denied

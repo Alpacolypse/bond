@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: bond
+          POSTGRES_PASSWORD: bond
+          POSTGRES_DB: bond
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U bond" --health-interval 2s --health-timeout 5s --health-retries 15
+    env:
+      # The whole suite runs against Postgres as well as SQLite (tests/conftest.py).
+      BOND_TEST_POSTGRES: postgresql://bond:bond@localhost:5432/bond
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # First, because the Python tests serve the built UI and the wheel ships it.
+      - name: UI
+        working-directory: ui
+        run: |
+          npm ci
+          npm test
+          npm run build  # type-checks, then builds into src/bond/static/viewer
+
+      - name: Python
+        run: |
+          uv sync --locked
+          uv run ruff check
+          uv run ty check
+          uv run pytest
+          uv run python examples/case_001.py
+          uv run python examples/workspaces.py --root /tmp/workspaces
+          uv run python packaging/mcpb/build.py --out /tmp/mcpb   # the Claude Desktop extension, with the views
+          npx -y @anthropic-ai/mcpb validate packaging/mcpb/manifest.json   # as Claude Desktop checks it
+
+      # The wheel as a user gets it: installed on its own, serving a workspace with the UI it ships.
+      - name: Wheel
+        run: |
+          uv build --wheel --out-dir dist
+          uv venv /tmp/wheel
+          uv pip install --python /tmp/wheel/bin/python "$(ls dist/*.whl)[view]"
+          uv run python examples/seed.py --home /tmp/home
+          /tmp/wheel/bin/bond view --home /tmp/home --port 8123 --no-browser &
+          curl -fsS --retry 30 --retry-connrefused --retry-delay 1 http://localhost:8123/api/overview
+          curl -fsS http://localhost:8123/ | grep -q '<div id="root">'
+          kill %1
+
+  # The suite on Windows, where Claude Desktop runs Bond's extension: local stores, the Bond home, the CLI and the
+  # MCP server (SQLite only; the UI isn't built here, so tests that need it skip).
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Python
+        run: |
+          uv sync --locked
+          uv run pytest

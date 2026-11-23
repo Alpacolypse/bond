@@ -1,0 +1,792 @@
+"""The core API of one workspace, in two layers.
+
+Evidence: ingest, write_document (and check_write), search, declarations, check_support, citations, trace, cited_by
+and verify, plus blob and text to read what a version holds.
+Filing: document, documents and history. Writes go through both: each stores a version and files it in a document.
+Between workspaces: import_document brings a document in from another workspace, import_version a version an
+import left outside, and frontier lists what was left outside.
+
+Lower-level reads (version records, where a span is, JSON pointers) are in bond.details, and whole-workspace
+reads for the viewer in bond.http.viewer, both on top of these."""
+
+from __future__ import annotations
+
+import os
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, replace
+from functools import lru_cache
+from pathlib import Path
+
+from . import kinds
+from .formats import from_suffix, parse, sniff, spec
+from .ids import citation_id, hash_bytes, version_id
+from .locators import Locator, VersionLocator, contains, overlaps
+from .models import (
+    BondError,
+    Citation,
+    CitationKind,
+    CorruptVersion,
+    Declarations,
+    DocumentRef,
+    Format,
+    HistoryEntry,
+    Hit,
+    Imported,
+    Issue,
+    IssueCode,
+    Ref,
+    SelfRef,
+    StoredCitation,
+    Support,
+    SupportReport,
+    Trace,
+    TraceEdge,
+    UnknownDocument,
+    UnknownVersion,
+    Version,
+    VersionId,
+    Workspace,
+    WriteError,
+    WriteResult,
+)
+from .parsers import Malformed, ParsedDoc
+from .policies import STRICT, Policy
+from .storage import Blobs, Catalog, Conflict, NewVersion, filing_problem
+from .support import check_support, partition
+
+# Parsed documents kept in memory by default. Versions are immutable, so any eviction is safe.
+DEFAULT_PARSED_CACHE_SIZE = 256
+
+
+class Bond:
+    """One provenance-enforcing workspace: its rows in a catalog, its bytes in blobs.
+
+    A workspace is a closed world, like a case: writes cite versions in it.
+    Imports preserve references to dependencies that have not yet been copied.
+    Safe to share across threads, with any backends: Bond holds no connection
+    or transaction of its own. See bond.storage for the backends.
+    """
+
+    def __init__(self, catalog: Catalog, blobs: Blobs, parsed_cache_size: int = DEFAULT_PARSED_CACHE_SIZE):
+        """A workspace over catalog and blobs, keeping up to parsed_cache_size parsed versions in memory."""
+        self.catalog = catalog
+        self.blobs = blobs
+        # Per instance, so the cache doesn't keep this Bond alive after it is closed.
+        self._load = lru_cache(maxsize=parsed_cache_size)(self._load_version)
+
+    @classmethod
+    def local(
+        cls, root: str | os.PathLike[str], parsed_cache_size: int = DEFAULT_PARSED_CACHE_SIZE,
+        create: bool = True,
+    ) -> Bond:
+        """Open a workspace in a local directory: a SQLite catalog and a directory of blobs.
+
+        It is created if it doesn't exist, named after the directory, unless create is False.
+        """
+        from .storage.local import LocalBlobs
+        from .storage.sqlite import SQLiteCatalog
+
+        root = Path(root)
+        # A new directory's workspace is named after it; an existing one opens the workspace it holds.
+        name = None if (root / "bond.db").exists() else root.resolve().name
+        catalog = SQLiteCatalog(root / "bond.db", workspace=name, create=create)
+        return cls(catalog, LocalBlobs(root / "blobs"), parsed_cache_size)
+
+    @property
+    def workspace(self) -> Workspace:
+        """The workspace this Bond reads and writes."""
+        return self.catalog.workspace
+
+    def close(self) -> None:
+        """Close the catalog; a pool or client its host passed in stays open."""
+        self.catalog.close()
+
+    def __enter__(self) -> Bond:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()
+
+    # --- ingest --------------------------------------------------------------
+
+    def ingest(
+        self, document: str, source: bytes | str | os.PathLike[str], *,
+        format: Format | None = None, base: VersionId | None = None, title: str | None = None,
+        origin: str | None = None,
+    ) -> WriteResult:
+        """Store a file that is a source throughout, and file it in document.
+
+        source is the file's bytes, or a path to read them from. A shortcut for write_document with one
+        SOURCE citation over the whole version, so the same bytes in the same format are always the same
+        version, and ingesting them again where they already are is a no-op. The format comes from a path's
+        suffix, or is sniffed from the bytes, if not given; base and title work as in write_document. Raises
+        WriteError (INVALID_CONTENT) for malformed content.
+
+        origin, if given, says where the file came from (a path or URL, as the caller knows it), and is
+        recorded on the history entry that files the version, for people to trace it back. It is filing, not
+        identity: it changes no version id, and verify never reads it. Ingesting bytes again where they already
+        are adds no entry, so it doesn't record a new origin either.
+        """
+        if isinstance(source, bytes):
+            data, fmt = source, format or sniff(source)
+        else:
+            path = Path(source)
+            data = path.read_bytes()
+            fmt = format or from_suffix(path.suffix) or sniff(data)
+        whole = [Citation(CitationKind.SOURCE, VersionLocator(), [])]
+        version = version_id(hash_bytes(data), fmt, whole)
+        if self.catalog.get_version(version):  # skip parsing it again
+            return self._file(version, document, base, None, title, origin)
+        return self._write(data, fmt, document, whole, base, STRICT, title, None, origin)
+
+    # --- reading versions -----------------------------------------------------
+
+    def blob(self, version: VersionId) -> bytes:
+        """A version's raw bytes, in any format; raises CorruptVersion if they are missing."""
+        stored = self._version(version)
+        data = self.blobs.get(stored.content_hash)
+        if data is None:
+            raise CorruptVersion(version, "its blob is missing")
+        return data
+
+    def text(self, ref: Ref) -> str | None:
+        """The text a reference addresses (a VersionLocator for the whole), or None if it addresses none, like
+        a PDF region. Raises ValueError if the locator isn't valid in its version.
+        """
+        self._check_ref(ref)
+        return self._doc(ref.version).text(ref.locator)
+
+    def _version(self, version: VersionId) -> Version:
+        """A stored version's record; raises UnknownVersion if there is none."""
+        stored = self.catalog.get_version(version)
+        if stored is None:
+            raise UnknownVersion(version)
+        return stored
+
+    # --- search --------------------------------------------------------------
+
+    def search(
+        self, phrase: str, *, documents: list[str] | None = None, within: Ref | None = None, limit: int = 50,
+    ) -> list[Hit]:
+        """Find a phrase in the current versions of documents and pin each match to a locator.
+
+        Searches the heads of all documents, or of the given documents, or only inside one reference (within).
+        Matching is case-insensitive and forgives whitespace, quote characters, ligatures and hyphenated line
+        breaks. Matches are not collapsed. Each hit carries its direct declarations; check_support() says
+        whether a match's support reaches declared sources.
+        """
+        if limit < 1:
+            raise ValueError("limit must be at least 1")
+        if documents is not None and within is not None:
+            raise ValueError("search takes documents or within, not both: within is inside one version already")
+        hits: list[Hit] = []
+        for version in self._search_scope(documents, within):
+            if not spec(version.format).has_text:
+                continue
+            for hit in self._search_version(version, phrase):
+                if within is not None and not contains(within.locator, hit.ref.locator):
+                    continue
+                hits.append(hit)
+                if len(hits) >= limit:
+                    return hits
+        return hits
+
+    def _search_scope(self, documents: list[str] | None, within: Ref | None) -> list[Version]:
+        if within is not None:
+            return [self._version(within.version)]
+        if documents is not None:
+            return [self._version(v) for v in dict.fromkeys(self.document(d).head for d in documents)]
+        return self.catalog.head_versions()
+
+    def _search_version(self, version: Version, phrase: str) -> list[Hit]:
+        owned = self.catalog.citations_of(version.id)
+        names = [d.name for d in self.catalog.documents_holding(version.id)]
+        return [
+            Hit(Ref(version.id, m.locator), list(names), version.format, m.snippet, m.context,
+                self._declarations(Ref(version.id, m.locator), owned))
+            for m in self._doc(version.id).search(phrase)
+        ]
+
+    def declarations(self, ref: Ref) -> Declarations:
+        """Declarations overlapping a valid selection, with exact undeclared gaps.
+
+        Citations retain their original subject spans. No recursive judgment is made. Text follows
+        format coverage rules; PDF selections use geometric coverage rather than text extraction.
+        """
+        self._check_ref(ref)
+        return self._declarations(ref, self.catalog.citations_of(ref.version))
+
+    def _declarations(self, ref: Ref, citations: list[StoredCitation]) -> Declarations:
+        selected = tuple(c for c in citations if overlaps(c.claim, ref.locator))
+        doc = self._doc(ref.version)
+        gaps = [part for part in partition(doc, ref.locator, [c.claim for c in selected])
+                if not any(contains(c.claim, part) for c in selected)]
+        return Declarations(ref, selected, tuple(Ref(ref.version, gap) for gap in gaps))
+
+    def check_support(self, ref: Ref, *, max_depth: int | None = None, limit: int = 1000) -> SupportReport:
+        """Check every selected declaration's ancestry to declared sources, with region-level outcomes.
+
+        All dependencies must pass. Missing versions and budgets yield UNKNOWN, never support. The limit
+        counts distinct references, including the root. No semantic or source-authority judgment or
+        integrity recheck is performed; verify() is the separate integrity operation. Outcomes are
+        recomputed on every call, with shared ancestry memoized only within that call.
+        """
+        self._check_ref(ref)
+        return check_support(_Graph(self), ref, max_depth, limit)
+
+    # --- write_document ------------------------------------------------------
+
+    def write_document(
+        self,
+        document: str,
+        content: bytes | str,
+        citations: Sequence[Citation],
+        *,
+        format: Format | None = None,
+        base: VersionId | None = None,
+        policy: Policy = STRICT,
+        title: str | None = None,
+    ) -> WriteResult:
+        """Store a version with its citations and file it in document, or raise WriteError with every problem.
+
+        Text is stored as UTF-8. The format is sniffed if not given (Markdown or JSON: name CSV and TSV).
+
+        Integrity is always checked: the content is well-formed, every locator is valid in its version, every
+        supporting version exists, each citation passes its kind's validator, and supports within the version
+        form no loop. Then the policy decides the rest. By default (STRICT) every word must be accounted for:
+        inside the claim of a citation that rests on evidence, a SOURCE declaration of origin, or an UNSOURCED
+        declaration of no supporting evidence. Only syntax and punctuation are exempt. Under ALLOW_GAPS,
+        uncovered spans are stored as gaps instead; declarations() lists them as undeclared.
+
+        A support SelfRef(locator) points into the version being written.
+        Supports within the version must not form a loop.
+
+        Filing: leave base out to create document; to write its next version,
+        pass its head as base, which fails with STALE_BASE if another write moved
+        it first. Writing the version document already points at is a no-op.
+        title, if given, labels the document for people to read it by.
+
+        A caller that expects refusals, like an agent's tools, asks check_write first.
+        """
+        data, fmt = _encoded(content, format)
+        return self._write(data, fmt, document, citations, base, policy, title, None, None)
+
+    def check_write(
+        self,
+        document: str,
+        content: bytes | str,
+        citations: Sequence[Citation],
+        *,
+        format: Format | None = None,
+        base: VersionId | None = None,
+        policy: Policy = STRICT,
+        title: str | None = None,
+    ) -> list[Issue]:
+        """Every issue write_document would refuse the same write for, filing included; nothing is stored.
+
+        Empty if the write would succeed now, though another write may yet move the document first.
+        """
+        data, fmt = _encoded(content, format)
+        return self._issues(data, fmt, document, citations, base, policy, title)
+
+    def _issues(
+        self, content: bytes, format: Format, document: str, citations: Sequence[Citation], base: VersionId | None,
+        policy: Policy, title: str | None,
+    ) -> list[Issue]:
+        issues = _label_issues(document, title) + self._check(content, format, citations, policy, frozenset())
+        version = version_id(hash_bytes(content), format, list(citations))
+        if conflict := filing_problem(self.catalog.get_document(document), document, base, version):
+            issues.append(_conflict_issue(conflict))
+        return issues
+
+    def _write(
+        self, content: bytes, format: Format, document: str, citations: Sequence[Citation], base: VersionId | None,
+        policy: Policy, title: str | None, imported: Imported | None, origin: str | None,
+    ) -> WriteResult:
+        if issues := self._issues(content, format, document, citations, base, policy, title):
+            raise WriteError(issues)
+        version = version_id(hash_bytes(content), format, list(citations))
+        content_hash = hash_bytes(content)
+        self.blobs.put(content_hash, content)  # before any row refers to it
+        filed = self.catalog.file(
+            version, document, base, NewVersion(version, content_hash, format, content, list(citations)),
+            imported, origin,
+        )
+        if isinstance(filed, Conflict):  # another write moved the document since it was checked
+            raise WriteError([_conflict_issue(filed)])
+        self._title(document, title)
+        return WriteResult(version, filed.advanced)
+
+    def _title(self, document: str, title: str | None) -> None:
+        """Label a document just filed; title was checked before anything was stored."""
+        if title is not None:
+            self.catalog.retitle(document, title)
+
+    def _check(
+        self, content: bytes, format: Format, citations: Sequence[Citation], policy: Policy,
+        unchecked: frozenset[VersionId],
+    ) -> list[Issue]:
+        """The issues a write of this content and these citations would have, except that supports into the
+        versions unchecked (ones verify can't read: outside the workspace, or with bytes it reports itself) are
+        taken as written: their citations still cover their claims, but nothing that needs what they rest on,
+        like a quote's text, can be checked here."""
+        issues: list[Issue] = []
+        parsed = parse(format, content)
+        doc: ParsedDoc | None = None
+        if isinstance(parsed, Malformed):
+            issues.append(Issue(IssueCode.INVALID_CONTENT, parsed.reason))
+        else:
+            doc = parsed
+
+        # A citation whose locators are invalid is left out of the loop check and covers nothing.
+        located: list[tuple[int, Citation]] = []
+        for i, c in enumerate(citations):
+            locator_issues = self._check_locators(i, c, doc, unchecked)
+            issues += locator_issues
+            if locator_issues:
+                continue
+            if doc is not None and not any(isinstance(s, Ref) and s.version in unchecked for s in c.supports):
+                issues += self._check_kind(i, c, doc)
+            located.append((i, c))
+        issues += _circular_support_errors(located)
+
+        if doc is not None:
+            issues += policy.issues(doc, located)
+        return issues
+
+    def _check_locators(
+        self, i: int, c: Citation, doc: ParsedDoc | None, unchecked: frozenset[VersionId],
+    ) -> list[Issue]:
+        """Problems with where citation i's claim and supports point; supports into unchecked are not looked at."""
+        errors = []
+        if doc is not None and (problem := doc.check(c.claim)):
+            errors.append(Issue(IssueCode.BAD_LOCATOR, f"claim: {problem}", citation_index=i, locator=c.claim))
+        for j, support in enumerate(c.supports):
+            match support:
+                case SelfRef():
+                    problem = doc.check(support.locator) if doc is not None else None
+                case Ref() if support.version in unchecked:
+                    continue
+                case Ref() if self.catalog.get_version(support.version) is None:
+                    errors.append(Issue(
+                        IssueCode.UNKNOWN_VERSION, f"version {support.version!r} does not exist", citation_index=i,
+                        support_index=j, locator=support.locator,
+                        hint="find versions with search() or document(name).head; use SelfRef for this version",
+                    ))
+                    continue
+                case Ref():
+                    problem = self._locator_problem(support)
+            if problem:
+                errors.append(Issue(IssueCode.BAD_LOCATOR, problem, citation_index=i, support_index=j,
+                                    locator=support.locator))
+        return errors
+
+    def _check_kind(self, i: int, c: Citation, doc: ParsedDoc) -> list[Issue]:
+        """Problems citation i's kind finds with it."""
+        def text_at(support: Support) -> str | None:
+            return (doc if isinstance(support, SelfRef) else self._doc(support.version)).text(support.locator)
+
+        return kinds.validate_citation(c, i, text_at)
+
+    # --- filing --------------------------------------------------------------
+
+    def _file(
+        self, version: VersionId, document: str, base: VersionId | None, imported: Imported | None,
+        title: str | None, origin: str | None,
+    ) -> WriteResult:
+        """File a version that is stored already."""
+        if issues := _label_issues(document, title):
+            raise WriteError(issues)
+        filed = self.catalog.file(version, document, base, None, imported, origin)
+        if isinstance(filed, Conflict):
+            raise WriteError([_conflict_issue(filed)])
+        self._title(document, title)
+        return WriteResult(version, filed.advanced)
+
+    def document(self, name: str) -> DocumentRef:
+        """The document with this name, with its head; raises UnknownDocument if there is none.
+
+        To ask whether there is one, catalog.get_document(name) returns None instead.
+        """
+        doc = self.catalog.get_document(name)
+        if doc is None:
+            raise UnknownDocument(name)
+        return doc
+
+    def documents(self) -> list[DocumentRef]:
+        """Every document, oldest first."""
+        return self.catalog.all_documents()
+
+    def history(self, name: str) -> list[HistoryEntry]:
+        """A document's history, oldest first: the versions it pointed at, and the base each was written from."""
+        return self.catalog.history(self.document(name).id)
+
+    # --- between workspaces ----------------------------------------------------
+
+    def import_document(
+        self, source: Bond, document: str, *, name: str | None = None, base: VersionId | None = None,
+        depth: int | None = 0, limit: int | None = None,
+    ) -> WriteResult:
+        """Copy a document's head from source, preserving its bytes, citations and identity, and file it here
+        under name (by default, the same name), from base as in write_document.
+
+        depth counts dependency hops copied with it (None for all). limit bounds distinct versions visited,
+        including versions already here. Dependencies left out remain an explicit outside-workspace frontier
+        (frontier()); importing one of them later changes nothing here, since its id is already committed to.
+        Import never promotes derived or unsourced text to a source declaration.
+        """
+        _check_other(self, source)
+        head = source.document(document).head
+        imported = Imported(source.workspace.id, source.workspace.name, head)
+        self._bring(source, [head], depth, limit)
+        return self._file(head, document if name is None else name, base, imported, None, None)
+
+    def import_version(
+        self, source: Bond, version: VersionId, *, depth: int | None = 0, limit: int | None = None,
+    ) -> WriteResult:
+        """Copy a version an earlier import left outside (see frontier()) from source, without filing it, and what
+        it rests on as import_document does. advanced says whether anything was copied."""
+        _check_other(self, source)
+        if self.catalog.get_version(version) is None and not self.catalog.citations_supported_by(version):
+            raise ValueError(f"nothing in this workspace rests on version {version[:12]}…; import a document "
+                             "by name instead")
+        return WriteResult(version, bool(self._bring(source, [version], depth, limit)))
+
+    def frontier(self) -> list[VersionId]:
+        """Versions that something in this workspace rests on but that aren't in it: the frontier imports left."""
+        return self.catalog.outside_versions()
+
+    def _bring(self, source: Bond, versions: list[VersionId], depth: int | None, limit: int | None) -> list[VersionId]:
+        """Copy versions from source, then what they rest on, depth hops down; those already here are kept, but
+        what they rest on is still followed. Returns the versions copied."""
+        if depth is not None and depth < 0:
+            raise ValueError("depth must be non-negative or None")
+        if limit is not None and limit < 1:
+            raise ValueError("limit must be at least 1")
+        brought: list[VersionId] = []
+        seen: set[VersionId] = set()
+        level, hops = versions, 0
+        while level:
+            following: list[VersionId] = []
+            for v in level:
+                if v in seen:
+                    continue
+                if limit is not None and len(seen) >= limit:
+                    return brought
+                seen.add(v)
+                cited = self._copy(source, v, brought)
+                following += [s.version for c in cited for s in c.supports if s.version != v]
+            if depth is not None and hops >= depth:
+                break
+            level, hops = following, hops + 1
+        return brought
+
+    def _copy(self, source: Bond, v: VersionId, brought: list[VersionId]) -> list[StoredCitation]:
+        """Copy one version from source unless it is here; its citations, none if source doesn't have it either
+        (it stays on the frontier)."""
+        if self.catalog.get_version(v) is not None:
+            return self.catalog.citations_of(v)
+        if source.catalog.get_version(v) is None:
+            return []
+        new = _checked_import(source, v)
+        self.blobs.put(new.content_hash, new.data)  # before any row refers to it
+        self.catalog.put_version(new)
+        brought.append(v)
+        return self.catalog.citations_of(v)
+
+    # --- citations / trace ---------------------------------------------------
+
+    def citations(self, version: VersionId) -> list[StoredCitation]:
+        """The citations a version was written with, in reading order of their claims (ties by id).
+
+        A version's citations are a set; this order is only for showing them.
+        """
+        self._version(version)
+        doc = self._doc(version)
+        return sorted(self.catalog.citations_of(version), key=lambda c: (doc.position(c.claim), c.id))
+
+    def trace(self, ref: Ref, max_depth: int | None = None, limit: int | None = None) -> Trace:
+        """Follow provenance from ref down to its sources, as a DAG.
+
+        A node (V, L) has an edge for every citation owned by V whose claim
+        overlaps L; the citation's supports are the next nodes. A chain ends at a
+        SOURCE or UNSOURCED edge (no supports), or at a node with no edges
+        (uncited), or at a version outside this workspace, which an import left
+        behind: those are listed in the trace's frontier. Each distinct ref is one
+        node, at its shortest distance from ref; max_depth bounds that distance,
+        and limit the number of nodes (the nearest are kept). Raises ValueError if
+        ref's locator isn't valid in its version.
+        """
+        self._check_ref(ref)
+        owned: dict[VersionId, list[StoredCitation]] = {}
+        outside: set[VersionId] = set()
+
+        def down(node: Ref) -> list[tuple[StoredCitation, list[Ref]]]:
+            if node.version not in owned:
+                here = self.catalog.get_version(node.version) is not None
+                owned[node.version] = self.catalog.citations_of(node.version) if here else []
+                if not here:
+                    outside.add(node.version)
+            return [(c, c.supports) for c in _edges_at(owned[node.version], node.locator)]
+
+        nodes, edges, complete = _walk(ref, down, max_depth, limit)
+        # A node past max_depth was never stepped into; find out whether it is here all the same.
+        outside |= {n.version for n in nodes if n.version not in owned and self.catalog.get_version(n.version) is None}
+        return Trace(ref, nodes, edges, complete, frozenset(outside))
+
+    def cited_by(self, ref: Ref) -> list[StoredCitation]:
+        """Citations, from any version, with a support in ref.version that overlaps ref.locator.
+
+        The reverse of one hop of trace. A VersionLocator matches every support
+        in the version. Raises ValueError if ref's locator isn't valid in its version.
+        """
+        self._check_ref(ref)
+        return [
+            c for c in self.catalog.citations_supported_by(ref.version)
+            if any(s.version == ref.version and overlaps(s.locator, ref.locator) for s in c.supports)
+        ]
+
+    # --- verify --------------------------------------------------------------
+
+    def verify(self, version: VersionId, policy: Policy = STRICT) -> list[Issue]:
+        """Check a version and every version its provenance rests on; returns the issues found, each with its version.
+
+        For each version: its blob is there and hashes to its content hash, and
+        its content hash, format and citations hash to its id. A version's id
+        commits to the ids of the versions it cites, so an expected id anchors
+        integrity checks of the available chain. Then each version is checked again as it was
+        written, with check() under policy: hashes show nothing changed since it
+        was stored, and check shows it met the rules, whatever wrote it.
+
+        Rules are today's and policy is the one supplied now; the historical policy is not stored.
+        Neither source authority nor semantic support is evaluated. Document names, histories and timestamps are not covered.
+
+        A version outside this workspace, which an import left behind, can't be
+        checked here: it is reported once, as OUTSIDE_WORKSPACE, and the
+        citations resting on it are checked as far as they can be without it,
+        as are those resting on a version whose own bytes are missing or damaged,
+        which that version reports. So an empty list still means everything
+        beneath version was checked. Raises UnknownVersion if version itself
+        isn't in this workspace.
+        """
+        self._version(version)
+        issues: list[Issue] = []
+        seen: set[VersionId] = set()
+        outside: dict[VersionId, None] = {}
+        stack = [version]
+        while stack:
+            v = stack.pop()
+            if v in seen:
+                continue
+            seen.add(v)
+            stored = self.catalog.get_version(v)
+            if stored is None:
+                outside[v] = None
+                continue
+            cited = self.catalog.citations_of(v)
+            beneath = [s.version for c in cited for s in c.supports if s.version != v]
+            unchecked = frozenset(s for s in set(beneath) if not self._intact(s))
+            issues += [replace(i, version=v) for i in self._verify_one(stored, cited, policy, unchecked)]
+            stack += beneath
+        return issues + [
+            Issue(IssueCode.OUTSIDE_WORKSPACE, "this version isn't in the workspace, so what rests on it can't be "
+                  "checked here", hint="bring it in with import_version(source, version) from the workspace it "
+                  "was imported from", version=v)
+            for v in outside
+        ]
+
+    def _verify_one(
+        self, version: Version, cited: list[StoredCitation], policy: Policy, unchecked: frozenset[VersionId],
+    ) -> list[Issue]:
+        """Issues with one version, not with the versions it cites."""
+        v = version.id
+        issues = []
+        written = [c.as_written() for c in cited]
+        for c, w in zip(cited, written, strict=True):
+            if citation_id(w) != c.id:
+                issues.append(Issue(IssueCode.ID_MISMATCH, f"citation {c.id[:12]}… does not hash to its id"))
+        if version_id(version.content_hash, version.format, written) != v:
+            issues.append(Issue(IssueCode.ID_MISMATCH, "its content hash, format and citations do not hash to its id"))
+        content = self.blobs.get(version.content_hash)
+        if content is None:
+            return issues + [Issue(IssueCode.BLOB_MISSING, "its blob is missing")]
+        if hash_bytes(content) != version.content_hash:
+            issues.append(Issue(IssueCode.BLOB_MISMATCH, "its blob does not match its content hash"))
+        return issues + self._check(content, version.format, written, policy, unchecked)
+
+    def _intact(self, version: VersionId) -> bool:
+        """Whether what rests on a version can be checked against it: it is here, and its bytes are there, hash to
+        its content hash and are well-formed."""
+        stored = self.catalog.get_version(version)
+        if stored is None:
+            return False
+        data = self.blobs.get(stored.content_hash)
+        return (data is not None and hash_bytes(data) == stored.content_hash
+                and not isinstance(self._load(version), Malformed))
+
+    # --- helpers -------------------------------------------------------------
+
+    def _load_version(self, version: VersionId) -> ParsedDoc | Malformed:
+        """A stored version, parsed, or what is wrong with its bytes. Read through the self._load cache, which can't
+        go stale: versions are immutable."""
+        stored = self._version(version)
+        data = self.blobs.get(stored.content_hash)
+        return Malformed("its blob is missing") if data is None else parse(stored.format, data)
+
+    def _doc(self, version: VersionId) -> ParsedDoc:
+        """A stored version, parsed; raises CorruptVersion if its bytes are missing or malformed."""
+        loaded = self._load(version)
+        if isinstance(loaded, Malformed):
+            raise CorruptVersion(version, loaded.reason)
+        return loaded
+
+    def _check_ref(self, ref: Ref) -> None:
+        """Raise UnknownVersion if ref's version doesn't exist, or ValueError if its locator isn't valid in it."""
+        self._version(ref.version)
+        if problem := self._locator_problem(ref):
+            raise ValueError(problem)
+
+    def _locator_problem(self, ref: Ref) -> str | None:
+        """Why ref's locator isn't valid in its version, which must exist; None if it is."""
+        return self._doc(ref.version).check(ref.locator)
+
+
+@dataclass(frozen=True)
+class _Graph:
+    """A workspace as a support check reads it (support.Graph)."""
+
+    bond: Bond
+
+    def parsed(self, version: VersionId) -> ParsedDoc | None:
+        return None if self.bond.catalog.get_version(version) is None else self.bond._doc(version)
+
+    def citations(self, version: VersionId) -> list[StoredCitation]:
+        return self.bond.citations(version)
+
+
+def _encoded(content: bytes | str, format: Format | None) -> tuple[bytes, Format]:
+    """Content as stored, UTF-8 for text, and its format, sniffed if not given."""
+    data = content.encode("utf-8") if isinstance(content, str) else content
+    return data, format or sniff(data)
+
+
+def _check_other(here: Bond, source: Bond) -> None:
+    if source.workspace.id == here.workspace.id:
+        raise ValueError("an import brings material in from another workspace; this is the same one")
+
+
+def _checked_import(source: Bond, v: VersionId) -> NewVersion:
+    """Validate the pinned artifact's identity without relying on a parsed-content cache."""
+    stored = source._version(v)
+    cited = source.catalog.citations_of(v)
+    data = source.blob(v)
+    written = [c.as_written() for c in cited]
+    if (hash_bytes(data) != stored.content_hash
+            or any(citation_id(w) != c.id for c, w in zip(cited, written, strict=True))
+            or version_id(stored.content_hash, stored.format, written) != v):
+        raise BondError(f"version {v[:12]}… in workspace {source.workspace.name!r} doesn't hash to its id; "
+                        "this version was not imported (bond.verify there says what changed)")
+    return NewVersion(v, stored.content_hash, stored.format, data, written)
+
+
+def _walk(
+    root: Ref,
+    step: Callable[[Ref], list[tuple[StoredCitation, list[Ref]]]],
+    max_depth: int | None,
+    limit: int | None,
+) -> tuple[list[Ref], list[TraceEdge], bool]:
+    """Nodes, edges and whether nothing was left out, walking breadth first from root, where step gives a node's
+    citations and the next nodes each leads to; so each node is reached at its shortest distance."""
+    if max_depth is not None and max_depth < 0:
+        raise ValueError("max_depth must be non-negative")
+    if limit is not None and limit < 1:
+        raise ValueError("limit must be at least 1")
+    complete = True
+    seen: set[Ref] = set()
+    nodes: list[Ref] = []
+    edges: list[TraceEdge] = []
+    level, depth = [root], 0
+    while level:
+        next_level: list[Ref] = []
+        for node in level:
+            if node in seen:
+                continue
+            if limit is not None and len(nodes) >= limit:
+                return nodes, edges, False
+            seen.add(node)
+            nodes.append(node)
+            if max_depth is not None and depth >= max_depth:
+                if step(node):
+                    complete = False
+                continue
+            for c, following in step(node):
+                edges.append(TraceEdge(node, c))
+                next_level += following
+        level = [r for r in next_level if r not in seen]
+        depth += 1
+    return nodes, edges, complete
+
+
+def _edges_at(citations: list[StoredCitation], locator: Locator) -> list[StoredCitation]:
+    """The citations, all owned by one version, that a trace node at locator has edges for."""
+    return [c for c in citations if overlaps(c.claim, locator)]
+
+
+def _conflict_issue(conflict: Conflict) -> Issue:
+    return Issue(conflict.code, conflict.message, hint=conflict.hint)
+
+
+def _label_issues(document: str, title: str | None) -> list[Issue]:
+    """Problems with the name a write files under, and the title it gives the document."""
+    issues = []
+    if not document.strip():
+        issues.append(Issue(IssueCode.INVALID_NAME, "a document's name must be a non-empty string"))
+    if title is not None and not title.strip():
+        issues.append(Issue(IssueCode.INVALID_NAME, "a document's title must be a non-empty string, or None"))
+    return issues
+
+
+def _circular_support_errors(citations: list[tuple[int, Citation]]) -> list[Issue]:
+    errors = []
+    for cycle in _support_cycles(citations):
+        path = " -> ".join(str(i) for i in cycle + [cycle[0]])
+        errors.append(Issue(
+            IssueCode.CIRCULAR_SUPPORT, f"citations {path} support each other in a loop", citation_index=cycle[0],
+            cycle=tuple(cycle), hint="a claim cannot rest, directly or through other claims in this document, on itself",
+        ))
+    return errors
+
+
+def _support_cycles(citations: list[tuple[int, Citation]]) -> list[list[int]]:
+    """Loops among citations, by index, through supports into the version being written.
+
+    Citation i rests on citation j if one of i's self-supports overlaps j's
+    claim; this is exactly the edge trace() will follow.
+    """
+    rests_on = _self_support_graph(citations)
+    cycles: list[list[int]] = []
+    done: set[int] = set()
+    # Depth first, without recursion: a chain of self-supports may be longer than Python's stack.
+    for start in rests_on:
+        if start in done:
+            continue
+        on_path, next_of = [start], [iter(rests_on[start])]
+        while next_of:
+            j = next(next_of[-1], None)
+            if j is None:
+                done.add(on_path.pop())
+                next_of.pop()
+            elif j in on_path:
+                cycles.append(on_path[on_path.index(j):])
+            elif j not in done:
+                on_path.append(j)
+                next_of.append(iter(rests_on[j]))
+    return cycles
+
+
+def _self_support_graph(citations: list[tuple[int, Citation]]) -> dict[int, list[int]]:
+    """For each citation, the citations of the same version it rests on."""
+    return {
+        i: [j for s in c.supports if isinstance(s, SelfRef) for j, o in citations if overlaps(o.claim, s.locator)]
+        for i, c in citations
+    }

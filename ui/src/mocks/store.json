@@ -1,0 +1,5644 @@
+{
+ "versions": [
+  {
+   "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+   "content_hash": "5551bad5fed7a1e9c6edf34e28200390d1d082aa697cc0343f30bb0c9977aaea",
+   "name": "fax_case_001",
+   "title": "Referral fax: Jordan Avery",
+   "documents": [
+    "fax_case_001"
+   ],
+   "format": "pdf",
+   "created_at": "2026-11-23T19:10:20.887779+00:00",
+   "content": null,
+   "units": [],
+   "gaps": []
+  },
+  {
+   "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "content_hash": "96c6be925c26bf06697077b9c6a259a8d4913f3d70c219524883538b545a070a",
+   "name": "fax_case_001.reducto",
+   "title": "Fax OCR: Jordan Avery",
+   "documents": [
+    "fax_case_001.reducto"
+   ],
+   "format": "json",
+   "created_at": "2026-11-23T19:10:20.892389+00:00",
+   "content": "{\n  \"job_id\": \"synthetic-0001\",\n  \"duration\": 2.81,\n  \"result\": {\n    \"type\": \"full\",\n    \"chunks\": [\n      {\n        \"content\": \"FAX COVER SHEET\\n\\nTo: Intake Unit, Northwind Legal Aid\\n\\nFrom: Riverside Tenants Union, Elena Marsh\\n\\nDate: 09/28/2026    Pages: 2\\n\\nRE: Request for representation, repair and deduct for a\\nbathroom ceiling leak (HC 12.4)\\n\\nClient: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902\\n\\nCONFIDENTIAL: This fax contains privileged information intended\\nonly for the recipient named above.\",\n        \"embed\": \"FAX COVER SHEET\\n\\nTo: Intake Unit, Northwind Legal Aid\\n\\nFrom: Riverside Tenants Union, Elena Marsh\\n\\nDate: 09/28/2026    Pages: 2\\n\\nRE: Request for representation, repair and deduct for a\\nbathroom ceiling leak (HC 12.4)\\n\\nClient: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902\\n\\nCONFIDENTIAL: This fax contains privileged information intended\\nonly for the recipient named above.\",\n        \"enriched\": null,\n        \"blocks\": [\n          {\n            \"type\": \"Title\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.0909,\n              \"width\": 0.2844,\n              \"height\": 0.0364,\n              \"page\": 1,\n              \"original_page\": 1\n            },\n            \"content\": \"FAX COVER SHEET\",\n            \"confidence\": \"high\"\n          },\n          {\n            \"type\": \"Key Value\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.1409,\n              \"width\": 0.2942,\n              \"height\": 0.0222,\n              \"page\": 1,\n              \"original_page\": 1\n            },\n            \"content\": \"To: Intake Unit, Northwind Legal Aid\",\n            \"confidence\": \"high\"\n          },\n          {\n            \"type\": \"Key Value\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.1715,\n              \"width\": 0.3661,\n              \"height\": 0.0222,\n              \"page\": 1,\n              \"original_page\": 1\n            },\n            \"content\": \"From: Riverside Tenants Union, Elena Marsh\",\n            \"confidence\": \"high\"\n          },\n          {\n            \"type\": \"Key Value\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.202,\n              \"width\": 0.2354,\n              \"height\": 0.0222,\n              \"page\": 1,\n              \"original_page\": 1\n            },\n            \"content\": \"Date: 09/28/2026    Pages: 2\",\n            \"confidence\": \"high\"\n          },\n          {\n            \"type\": \"Key Value\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.2326,\n              \"width\": 0.4451,\n              \"height\": 0.0403,\n              \"page\": 1,\n              \"original_page\": 1\n            },\n            \"content\": \"RE: Request for representation, repair and deduct for a\\nbathroom ceiling leak (HC 12.4)\",\n            \"confidence\": \"high\"\n          },\n          {\n            \"type\": \"Key Value\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.2812,\n              \"width\": 0.472,\n              \"height\": 0.0222,\n              \"page\": 1,\n              \"original_page\": 1\n            },\n            \"content\": \"Client: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902\",\n            \"confidence\": \"high\"\n          },\n          {\n            \"type\": \"Text\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.3117,\n              \"width\": 0.4372,\n              \"height\": 0.033,\n              \"page\": 1,\n              \"original_page\": 1\n            },\n            \"content\": \"CONFIDENTIAL: This fax contains privileged information intended\\nonly for the recipient named above.\",\n            \"confidence\": \"high\"\n          }\n        ]\n      },\n      {\n        \"content\": \"Intake Note - 09/26/2026\\n\\nProblem: Water leaking through the bathroom ceiling for 8 weeks.\\n\\nHistory: Tenant reports a progressive ceil-\\ning leak in the bathroom with mold spreading over the wall\\nbehind the toilet. The leak began after a storm on 08/01/2026.\\n\\nNotice given: Sent 6 weeks of written notice to the landlord\\n(3 letters) and called the management office twice a week, with\\n“no response.”\\n\\nInspection: Active drip from the bathroom ceiling light fixture.\\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\\ndry. No signiﬁcant damage to other rooms.\\n\\nEmergencies: None. No gas leak, no sewage backup, no exposed\\nwiring, no loss of heat.\\n\\nAssessment: Habitability defect, water intrusion (HC 12.4), not\\nrepaired after written notice.\\n\\nPlan: Repair and deduct for the ceiling leak, or a demand letter\\nto the landlord before filing in housing court.\\n\\nElectronically signed: Elena Marsh, Tenant Organizer\",\n        \"embed\": \"Intake Note - 09/26/2026\\n\\nProblem: Water leaking through the bathroom ceiling for 8 weeks.\\n\\nHistory: Tenant reports a progressive ceil-\\ning leak in the bathroom with mold spreading over the wall\\nbehind the toilet. The leak began after a storm on 08/01/2026.\\n\\nNotice given: Sent 6 weeks of written notice to the landlord\\n(3 letters) and called the management office twice a week, with\\n“no response.”\\n\\nInspection: Active drip from the bathroom ceiling light fixture.\\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\\ndry. No signiﬁcant damage to other rooms.\\n\\nEmergencies: None. No gas leak, no sewage backup, no exposed\\nwiring, no loss of heat.\\n\\nAssessment: Habitability defect, water intrusion (HC 12.4), not\\nrepaired after written notice.\\n\\nPlan: Repair and deduct for the ceiling leak, or a demand letter\\nto the landlord before filing in housing court.\\n\\nElectronically signed: Elena Marsh, Tenant Organizer\",\n        \"enriched\": null,\n        \"blocks\": [\n          {\n            \"type\": \"Title\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.0909,\n              \"width\": 0.2646,\n              \"height\": 0.0283,\n              \"page\": 2,\n              \"original_page\": 2\n            },\n            \"content\": \"Intake Note - 09/26/2026\",\n            \"confidence\": \"high\"\n          },\n          {\n            \"type\": \"Text\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.1298,\n              \"width\": 0.528,\n              \"height\": 0.0222,\n              \"page\": 2,\n              \"original_page\": 2\n            },\n            \"content\": \"Problem: Water leaking through the bathroom ceiling for 8 weeks.\",\n            \"confidence\": \"high\"\n          },\n          {\n            \"type\": \"Text\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.1604,\n              \"width\": 0.4981,\n              \"height\": 0.0583,\n              \"page\": 2,\n              \"original_page\": 2\n            },\n            \"content\": \"History: Tenant reports a progressive ceil-\\ning leak in the bathroom with mold spreading over the wall\\nbehind the toilet. The leak began after a storm on 08/01/2026.\",\n            \"confidence\": \"high\"\n          },\n          {\n            \"type\": \"Text\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.227,\n              \"width\": 0.507,\n              \"height\": 0.0583,\n              \"page\": 2,\n              \"original_page\": 2\n            },\n            \"content\": \"Notice given: Sent 6 weeks of written notice to the landlord\\n(3 letters) and called the management office twice a week, with\\n“no response.”\",\n            \"confidence\": \"high\"\n          },\n          {\n            \"type\": \"Text\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.2937,\n              \"width\": 0.487,\n              \"height\": 0.0583,\n              \"page\": 2,\n              \"original_page\": 2\n            },\n            \"content\": \"Inspection: Active drip from the bathroom ceiling light fixture.\\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\\ndry. No signiﬁcant damage to other rooms.\",\n            \"confidence\": \"high\"\n          },\n          {\n            \"type\": \"Text\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.3604,\n              \"width\": 0.532,\n              \"height\": 0.0403,\n              \"page\": 2,\n              \"original_page\": 2\n            },\n            \"content\": \"Emergencies: None. No gas leak, no sewage backup, no exposed\\nwiring, no loss of heat.\",\n            \"confidence\": \"high\"\n          },\n          {\n            \"type\": \"Text\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.409,\n              \"width\": 0.501,\n              \"height\": 0.0403,\n              \"page\": 2,\n              \"original_page\": 2\n            },\n            \"content\": \"Assessment: Habitability defect, water intrusion (HC 12.4), not\\nrepaired after written notice.\",\n            \"confidence\": \"high\"\n          },\n          {\n            \"type\": \"Text\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.4576,\n              \"width\": 0.5051,\n              \"height\": 0.0403,\n              \"page\": 2,\n              \"original_page\": 2\n            },\n            \"content\": \"Plan: Repair and deduct for the ceiling leak, or a demand letter\\nto the landlord before filing in housing court.\",\n            \"confidence\": \"high\"\n          },\n          {\n            \"type\": \"Text\",\n            \"bbox\": {\n              \"left\": 0.1144,\n              \"top\": 0.5062,\n              \"width\": 0.3925,\n              \"height\": 0.0202,\n              \"page\": 2,\n              \"original_page\": 2\n            },\n            \"content\": \"Electronically signed: Elena Marsh, Tenant Organizer\",\n            \"confidence\": \"high\"\n          }\n        ]\n      }\n    ]\n  },\n  \"usage\": {\n    \"num_pages\": 2,\n    \"credits\": 2\n  }\n}\n",
+   "units": [
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/job_id"
+     },
+     "text": "synthetic-0001"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/duration"
+     },
+     "text": "2.81"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/type"
+     },
+     "text": "full"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/content"
+     },
+     "text": "FAX COVER SHEET\n\nTo: Intake Unit, Northwind Legal Aid\n\nFrom: Riverside Tenants Union, Elena Marsh\n\nDate: 09/28/2026    Pages: 2\n\nRE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)\n\nClient: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902\n\nCONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above."
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/embed"
+     },
+     "text": "FAX COVER SHEET\n\nTo: Intake Unit, Northwind Legal Aid\n\nFrom: Riverside Tenants Union, Elena Marsh\n\nDate: 09/28/2026    Pages: 2\n\nRE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)\n\nClient: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902\n\nCONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above."
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/0/type"
+     },
+     "text": "Title"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/0/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/0/bbox/top"
+     },
+     "text": "0.0909"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/0/bbox/width"
+     },
+     "text": "0.2844"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/0/bbox/height"
+     },
+     "text": "0.0364"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/0/bbox/page"
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/0/bbox/original_page"
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/0/content"
+     },
+     "text": "FAX COVER SHEET"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/0/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/1/type"
+     },
+     "text": "Key Value"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/1/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/1/bbox/top"
+     },
+     "text": "0.1409"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/1/bbox/width"
+     },
+     "text": "0.2942"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/1/bbox/height"
+     },
+     "text": "0.0222"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/1/bbox/page"
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/1/bbox/original_page"
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/1/content"
+     },
+     "text": "To: Intake Unit, Northwind Legal Aid"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/1/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/2/type"
+     },
+     "text": "Key Value"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/2/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/2/bbox/top"
+     },
+     "text": "0.1715"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/2/bbox/width"
+     },
+     "text": "0.3661"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/2/bbox/height"
+     },
+     "text": "0.0222"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/2/bbox/page"
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/2/bbox/original_page"
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/2/content"
+     },
+     "text": "From: Riverside Tenants Union, Elena Marsh"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/2/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/3/type"
+     },
+     "text": "Key Value"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/3/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/3/bbox/top"
+     },
+     "text": "0.202"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/3/bbox/width"
+     },
+     "text": "0.2354"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/3/bbox/height"
+     },
+     "text": "0.0222"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/3/bbox/page"
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/3/bbox/original_page"
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/3/content"
+     },
+     "text": "Date: 09/28/2026    Pages: 2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/3/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/4/type"
+     },
+     "text": "Key Value"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/4/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/4/bbox/top"
+     },
+     "text": "0.2326"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/4/bbox/width"
+     },
+     "text": "0.4451"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/4/bbox/height"
+     },
+     "text": "0.0403"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/4/bbox/page"
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/4/bbox/original_page"
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/4/content"
+     },
+     "text": "RE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/4/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/5/type"
+     },
+     "text": "Key Value"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/5/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/5/bbox/top"
+     },
+     "text": "0.2812"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/5/bbox/width"
+     },
+     "text": "0.472"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/5/bbox/height"
+     },
+     "text": "0.0222"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/5/bbox/page"
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/5/bbox/original_page"
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/5/content"
+     },
+     "text": "Client: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/5/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/6/type"
+     },
+     "text": "Text"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/6/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/6/bbox/top"
+     },
+     "text": "0.3117"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/6/bbox/width"
+     },
+     "text": "0.4372"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/6/bbox/height"
+     },
+     "text": "0.033"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/6/bbox/page"
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/6/bbox/original_page"
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/6/content"
+     },
+     "text": "CONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above."
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/6/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/content"
+     },
+     "text": "Intake Note - 09/26/2026\n\nProblem: Water leaking through the bathroom ceiling for 8 weeks.\n\nHistory: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.\n\nNotice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”\n\nInspection: Active drip from the bathroom ceiling light fixture.\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\ndry. No signiﬁcant damage to other rooms.\n\nEmergencies: None. No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.\n\nAssessment: Habitability defect, water intrusion (HC 12.4), not\nrepaired after written notice.\n\nPlan: Repair and deduct for the ceiling leak, or a demand letter\nto the landlord before filing in housing court.\n\nElectronically signed: Elena Marsh, Tenant Organizer"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/embed"
+     },
+     "text": "Intake Note - 09/26/2026\n\nProblem: Water leaking through the bathroom ceiling for 8 weeks.\n\nHistory: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.\n\nNotice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”\n\nInspection: Active drip from the bathroom ceiling light fixture.\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\ndry. No signiﬁcant damage to other rooms.\n\nEmergencies: None. No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.\n\nAssessment: Habitability defect, water intrusion (HC 12.4), not\nrepaired after written notice.\n\nPlan: Repair and deduct for the ceiling leak, or a demand letter\nto the landlord before filing in housing court.\n\nElectronically signed: Elena Marsh, Tenant Organizer"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/0/type"
+     },
+     "text": "Title"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/0/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/0/bbox/top"
+     },
+     "text": "0.0909"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/0/bbox/width"
+     },
+     "text": "0.2646"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/0/bbox/height"
+     },
+     "text": "0.0283"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/0/bbox/page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/0/bbox/original_page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/0/content"
+     },
+     "text": "Intake Note - 09/26/2026"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/0/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/1/type"
+     },
+     "text": "Text"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/1/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/1/bbox/top"
+     },
+     "text": "0.1298"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/1/bbox/width"
+     },
+     "text": "0.528"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/1/bbox/height"
+     },
+     "text": "0.0222"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/1/bbox/page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/1/bbox/original_page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/1/content"
+     },
+     "text": "Problem: Water leaking through the bathroom ceiling for 8 weeks."
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/1/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/2/type"
+     },
+     "text": "Text"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/2/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/2/bbox/top"
+     },
+     "text": "0.1604"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/2/bbox/width"
+     },
+     "text": "0.4981"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/2/bbox/height"
+     },
+     "text": "0.0583"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/2/bbox/page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/2/bbox/original_page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/2/content"
+     },
+     "text": "History: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026."
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/2/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/3/type"
+     },
+     "text": "Text"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/3/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/3/bbox/top"
+     },
+     "text": "0.227"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/3/bbox/width"
+     },
+     "text": "0.507"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/3/bbox/height"
+     },
+     "text": "0.0583"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/3/bbox/page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/3/bbox/original_page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/3/content"
+     },
+     "text": "Notice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/3/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/4/type"
+     },
+     "text": "Text"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/4/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/4/bbox/top"
+     },
+     "text": "0.2937"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/4/bbox/width"
+     },
+     "text": "0.487"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/4/bbox/height"
+     },
+     "text": "0.0583"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/4/bbox/page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/4/bbox/original_page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/4/content"
+     },
+     "text": "Inspection: Active drip from the bathroom ceiling light fixture.\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\ndry. No signiﬁcant damage to other rooms."
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/4/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/5/type"
+     },
+     "text": "Text"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/5/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/5/bbox/top"
+     },
+     "text": "0.3604"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/5/bbox/width"
+     },
+     "text": "0.532"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/5/bbox/height"
+     },
+     "text": "0.0403"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/5/bbox/page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/5/bbox/original_page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/5/content"
+     },
+     "text": "Emergencies: None. No gas leak, no sewage backup, no exposed\nwiring, no loss of heat."
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/5/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/6/type"
+     },
+     "text": "Text"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/6/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/6/bbox/top"
+     },
+     "text": "0.409"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/6/bbox/width"
+     },
+     "text": "0.501"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/6/bbox/height"
+     },
+     "text": "0.0403"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/6/bbox/page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/6/bbox/original_page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/6/content"
+     },
+     "text": "Assessment: Habitability defect, water intrusion (HC 12.4), not\nrepaired after written notice."
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/6/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/7/type"
+     },
+     "text": "Text"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/7/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/7/bbox/top"
+     },
+     "text": "0.4576"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/7/bbox/width"
+     },
+     "text": "0.5051"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/7/bbox/height"
+     },
+     "text": "0.0403"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/7/bbox/page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/7/bbox/original_page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/7/content"
+     },
+     "text": "Plan: Repair and deduct for the ceiling leak, or a demand letter\nto the landlord before filing in housing court."
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/7/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/8/type"
+     },
+     "text": "Text"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/8/bbox/left"
+     },
+     "text": "0.1144"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/8/bbox/top"
+     },
+     "text": "0.5062"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/8/bbox/width"
+     },
+     "text": "0.3925"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/8/bbox/height"
+     },
+     "text": "0.0202"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/8/bbox/page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/8/bbox/original_page"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/8/content"
+     },
+     "text": "Electronically signed: Elena Marsh, Tenant Organizer"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/8/confidence"
+     },
+     "text": "high"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/usage/num_pages"
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "json",
+      "pointer": "/usage/credits"
+     },
+     "text": "2"
+    }
+   ],
+   "gaps": []
+  },
+  {
+   "version": "5d8dd4b844eb64104bf7c89d08c60f39163825449831b280416ea4b4b686563f",
+   "content_hash": "4a5a1bb5900aa29766ce2a91c5ed6837a512325ff5597f6e1180f3dad48f57a3",
+   "name": "policy_ip112",
+   "title": "Policy IP-112: Repair and deduct",
+   "documents": [
+    "policy_ip112"
+   ],
+   "format": "markdown",
+   "created_at": "2026-11-23T19:10:20.895524+00:00",
+   "content": "# Northwind Legal Aid: Intake Policy IP-112\n\n## Repair and Deduct Cases\n\n### Criteria\n\nWe accept a tenant's repair and deduct case for full representation when any of the following criteria are met:\n\n1. Emergency conditions, such as a gas leak, sewage backup, exposed wiring, or no heat in freezing weather.\n2. A needed repair still not made after at least 6 weeks of written notice to the landlord.\n3. Worsening conditions or a serious threat to health or safety.\n\n### Definitions\n\nWritten notice includes a letter, an email, or a message through a tenant portal, sent to the landlord or the landlord's agent.\n\nEmergency conditions include a gas leak, sewage backup, and no heat when the outside temperature is below freezing.\n",
+   "units": [
+    {
+     "locator": {
+      "type": "text",
+      "start": 2,
+      "end": 43
+     },
+     "text": "Northwind Legal Aid: Intake Policy IP-112"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 48,
+      "end": 71
+     },
+     "text": "Repair and Deduct Cases"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 77,
+      "end": 85
+     },
+     "text": "Criteria"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 87,
+      "end": 198
+     },
+     "text": "We accept a tenant's repair and deduct case for full representation when any of the following criteria are met:"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 203,
+      "end": 307
+     },
+     "text": "Emergency conditions, such as a gas leak, sewage backup, exposed wiring, or no heat in freezing weather."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 311,
+      "end": 399
+     },
+     "text": "A needed repair still not made after at least 6 weeks of written notice to the landlord."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 403,
+      "end": 464
+     },
+     "text": "Worsening conditions or a serious threat to health or safety."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 470,
+      "end": 481
+     },
+     "text": "Definitions"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 483,
+      "end": 610
+     },
+     "text": "Written notice includes a letter, an email, or a message through a tenant portal, sent to the landlord or the landlord's agent."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 612,
+      "end": 727
+     },
+     "text": "Emergency conditions include a gas leak, sewage backup, and no heat when the outside temperature is below freezing."
+    }
+   ],
+   "gaps": []
+  },
+  {
+   "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+   "content_hash": "32128e08eb7143f7201bdf909545581e068823e96123b654e2cdf7c720c777b1",
+   "name": "expenses_case_001",
+   "title": "Expense log: Jordan Avery",
+   "documents": [
+    "expenses_case_001"
+   ],
+   "format": "csv",
+   "created_at": "2026-11-23T19:10:20.896244+00:00",
+   "content": "﻿expense_id,matter_id,client_name,date,code,description,units,amount,status,notes\r\nEXP-2026-0805-01,NWL-4471902,\"Avery, Jordan\",2026-08-05,R100,Dehumidifier rental,12,960.00,paid,\r\nEXP-2026-0805-02,NWL-4471902,\"Avery, Jordan\",2026-08-05,R200,\"Plumber visit, leak diagnosis\",1,145.00,paid,\"Leak traced to the unit above; \"\"no response\"\" from landlord\"\r\nEXP-2026-0930-01,NWL-4471902,\"Avery, Jordan\",2026-09-30,R300,\"Ceiling repair, bathroom\",1,1250.00,pending,\"Repair and deduct requested.\nAwaiting landlord response.\"\r\nEXP-2026-0930-02,NWL-4471902,\"Avery, Jordan\",2026-09-30,,Mold cleanup supplies,1,310.00,denied\r\n",
+   "units": [
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 0
+     },
+     "text": "expense_id"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 1
+     },
+     "text": "matter_id"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 2
+     },
+     "text": "client_name"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 3
+     },
+     "text": "date"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 4
+     },
+     "text": "code"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 5
+     },
+     "text": "description"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 6
+     },
+     "text": "units"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 7
+     },
+     "text": "amount"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 8
+     },
+     "text": "status"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 9
+     },
+     "text": "notes"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 0
+     },
+     "text": "EXP-2026-0805-01"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 1
+     },
+     "text": "NWL-4471902"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 2
+     },
+     "text": "Avery, Jordan"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 3
+     },
+     "text": "2026-08-05"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 4
+     },
+     "text": "R100"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 5
+     },
+     "text": "Dehumidifier rental"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 6
+     },
+     "text": "12"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 7
+     },
+     "text": "960.00"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 8
+     },
+     "text": "paid"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 0
+     },
+     "text": "EXP-2026-0805-02"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 1
+     },
+     "text": "NWL-4471902"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 2
+     },
+     "text": "Avery, Jordan"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 3
+     },
+     "text": "2026-08-05"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 4
+     },
+     "text": "R200"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 5
+     },
+     "text": "Plumber visit, leak diagnosis"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 6
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 7
+     },
+     "text": "145.00"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 8
+     },
+     "text": "paid"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 9
+     },
+     "text": "Leak traced to the unit above; \"no response\" from landlord"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 0
+     },
+     "text": "EXP-2026-0930-01"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 1
+     },
+     "text": "NWL-4471902"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 2
+     },
+     "text": "Avery, Jordan"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 3
+     },
+     "text": "2026-09-30"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 4
+     },
+     "text": "R300"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 5
+     },
+     "text": "Ceiling repair, bathroom"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 6
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 7
+     },
+     "text": "1250.00"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 8
+     },
+     "text": "pending"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 9
+     },
+     "text": "Repair and deduct requested.\nAwaiting landlord response."
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 4,
+      "column": 0
+     },
+     "text": "EXP-2026-0930-02"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 4,
+      "column": 1
+     },
+     "text": "NWL-4471902"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 4,
+      "column": 2
+     },
+     "text": "Avery, Jordan"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 4,
+      "column": 3
+     },
+     "text": "2026-09-30"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 4,
+      "column": 5
+     },
+     "text": "Mold cleanup supplies"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 4,
+      "column": 6
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 4,
+      "column": 7
+     },
+     "text": "310.00"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 4,
+      "column": 8
+     },
+     "text": "denied"
+    }
+   ],
+   "gaps": []
+  },
+  {
+   "version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "content_hash": "857ea523397506b3bb0445b73d2183dc1313fd23f804672f1f04647408b656f8",
+   "name": "summary_case_001",
+   "title": "Intake summary: Jordan Avery",
+   "documents": [
+    "summary_case_001"
+   ],
+   "format": "markdown",
+   "created_at": "2026-11-23T19:10:20.990901+00:00",
+   "content": "# Intake summary: Jordan Avery\n\nRequest: repair and deduct for a bathroom ceiling leak (HC 12.4), referred by Riverside Tenants Union.\n\n## Findings\n\n- Water leaking through the bathroom ceiling for 8 weeks.\n- The tenant reports a \"progressive ceiling leak in the bathroom\" with mold spreading over the wall behind the toilet.\n- Active drip from the bathroom ceiling light fixture.\n- No significant damage to other rooms.\n\n## Criteria check\n\n| Criterion | Evidence |\n|---|---|\n| Repair not made | Habitability defect, water intrusion (HC 12.4) |\n| At least 6 weeks of written notice | Six weeks of letters and calls, with no response |\n| No emergency | No gas leak, no sewage backup, no exposed wiring, no loss of heat. |\n\nPolicy IP-112 accepts a case when a needed repair is still not made after at least 6 weeks of written notice, and letters and emails both count as written notice.\n",
+   "units": [
+    {
+     "locator": {
+      "type": "text",
+      "start": 2,
+      "end": 30
+     },
+     "text": "Intake summary: Jordan Avery"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 32,
+      "end": 134
+     },
+     "text": "Request: repair and deduct for a bathroom ceiling leak (HC 12.4), referred by Riverside Tenants Union."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 139,
+      "end": 147
+     },
+     "text": "Findings"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 151,
+      "end": 206
+     },
+     "text": "Water leaking through the bathroom ceiling for 8 weeks."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 209,
+      "end": 325
+     },
+     "text": "The tenant reports a \"progressive ceiling leak in the bathroom\" with mold spreading over the wall behind the toilet."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 328,
+      "end": 380
+     },
+     "text": "Active drip from the bathroom ceiling light fixture."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 383,
+      "end": 420
+     },
+     "text": "No significant damage to other rooms."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 425,
+      "end": 439
+     },
+     "text": "Criteria check"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 441,
+      "end": 465
+     },
+     "text": "| Criterion | Evidence |"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 476,
+      "end": 544
+     },
+     "text": "| Repair not made | Habitability defect, water intrusion (HC 12.4) |"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 545,
+      "end": 634
+     },
+     "text": "| At least 6 weeks of written notice | Six weeks of letters and calls, with no response |"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 635,
+      "end": 720
+     },
+     "text": "| No emergency | No gas leak, no sewage backup, no exposed wiring, no loss of heat. |"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 722,
+      "end": 884
+     },
+     "text": "Policy IP-112 accepts a case when a needed repair is still not made after at least 6 weeks of written notice, and letters and emails both count as written notice."
+    }
+   ],
+   "gaps": []
+  },
+  {
+   "version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "content_hash": "394820dcaf7c548b09cd583214a35da84534856e9931f069eb5576f2c4628b45",
+   "name": "summary_case_001_reviewed",
+   "title": "Intake summary, reviewed: Jordan Avery",
+   "documents": [
+    "summary_case_001_reviewed"
+   ],
+   "format": "markdown",
+   "created_at": "2026-11-23T19:10:21.084790+00:00",
+   "content": "# 📄 Intake summary: Jordan Avery\n\nRequest: repair and deduct for a bathroom ceiling leak (HC 12.4), referred by Riverside Tenants Union.\n\n## Findings\n\n- Water leaking through the bathroom ceiling for 8 weeks.\n- The tenant reports a \"progressive ceiling leak in the bathroom\" with mold spreading over the wall behind the toilet.\n- Active drip from the bathroom ceiling light fixture.\n- No significant damage to other rooms.\n\n## Criteria check\n\n| Criterion | Evidence |\n|---|---|\n| Repair not made | Habitability defect, water intrusion (HC 12.4) |\n| At least 6 weeks of written notice | Six weeks of letters and calls, with no response |\n| No emergency | No gas leak, no sewage backup, no exposed wiring, no loss of heat. |\n\nPolicy IP-112 accepts a case when a needed repair is still not made after at least 6 weeks of written notice, and letters and emails both count as written notice.\n\n## Decision\n\nAll three criteria are met. Reviewer note: repair and deduct is reasonable given the ongoing leak.\n\nFollow-up call with the landlord is pending.\n",
+   "units": [
+    {
+     "locator": {
+      "type": "text",
+      "start": 2,
+      "end": 32
+     },
+     "text": "📄 Intake summary: Jordan Avery"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 34,
+      "end": 136
+     },
+     "text": "Request: repair and deduct for a bathroom ceiling leak (HC 12.4), referred by Riverside Tenants Union."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 141,
+      "end": 149
+     },
+     "text": "Findings"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 153,
+      "end": 208
+     },
+     "text": "Water leaking through the bathroom ceiling for 8 weeks."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 211,
+      "end": 327
+     },
+     "text": "The tenant reports a \"progressive ceiling leak in the bathroom\" with mold spreading over the wall behind the toilet."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 330,
+      "end": 382
+     },
+     "text": "Active drip from the bathroom ceiling light fixture."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 385,
+      "end": 422
+     },
+     "text": "No significant damage to other rooms."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 427,
+      "end": 441
+     },
+     "text": "Criteria check"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 443,
+      "end": 467
+     },
+     "text": "| Criterion | Evidence |"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 478,
+      "end": 546
+     },
+     "text": "| Repair not made | Habitability defect, water intrusion (HC 12.4) |"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 547,
+      "end": 636
+     },
+     "text": "| At least 6 weeks of written notice | Six weeks of letters and calls, with no response |"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 637,
+      "end": 722
+     },
+     "text": "| No emergency | No gas leak, no sewage backup, no exposed wiring, no loss of heat. |"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 724,
+      "end": 886
+     },
+     "text": "Policy IP-112 accepts a case when a needed repair is still not made after at least 6 weeks of written notice, and letters and emails both count as written notice."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 891,
+      "end": 899
+     },
+     "text": "Decision"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 901,
+      "end": 999
+     },
+     "text": "All three criteria are met. Reviewer note: repair and deduct is reasonable given the ongoing leak."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 1001,
+      "end": 1045
+     },
+     "text": "Follow-up call with the landlord is pending."
+    }
+   ],
+   "gaps": [
+    {
+     "type": "text",
+     "start": 1001,
+     "end": 1045
+    }
+   ]
+  },
+  {
+   "version": "698d7373cf3af55f70a87c56550a0bab1f6fbea50ce27db93c80979e82ac2a7f",
+   "content_hash": "cf353903aacdadfc5da558bc26e83c7a6017739cc5bdd5615fdce527688fc1a5",
+   "name": "expense_history_case_001",
+   "title": "Expense history: Jordan Avery",
+   "documents": [
+    "expense_history_case_001"
+   ],
+   "format": "markdown",
+   "created_at": "2026-11-23T19:10:21.088925+00:00",
+   "content": "# Expense history: Jordan Avery\n\n- Four expenses were logged between 2026-08-05 and 2026-09-30, for $2,665.00 in all.\n- A dehumidifier and a plumber visit in August were paid; the plumber notes \"no response\" from the landlord.\n- The ceiling repair is awaiting the landlord: Ceiling repair, bathroom.\n- Mold cleanup supplies bought for the repair were refused.\n",
+   "units": [
+    {
+     "locator": {
+      "type": "text",
+      "start": 2,
+      "end": 31
+     },
+     "text": "Expense history: Jordan Avery"
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 35,
+      "end": 117
+     },
+     "text": "Four expenses were logged between 2026-08-05 and 2026-09-30, for $2,665.00 in all."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 120,
+      "end": 226
+     },
+     "text": "A dehumidifier and a plumber visit in August were paid; the plumber notes \"no response\" from the landlord."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 229,
+      "end": 299
+     },
+     "text": "The ceiling repair is awaiting the landlord: Ceiling repair, bathroom."
+    },
+    {
+     "locator": {
+      "type": "text",
+      "start": 302,
+      "end": 359
+     },
+     "text": "Mold cleanup supplies bought for the repair were refused."
+    }
+   ],
+   "gaps": []
+  },
+  {
+   "version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "content_hash": "07ab593989b3ab67e608290dc439bb320b38bf0ab49341f1baa288945b49c4a7",
+   "name": "expense_rollup_case_001",
+   "title": "Expense rollup: Jordan Avery",
+   "documents": [
+    "expense_rollup_case_001"
+   ],
+   "format": "csv",
+   "created_at": "2026-11-23T19:10:21.090747+00:00",
+   "content": "line,code,description,amount,status,note\n1,R100,Dehumidifier rental,960.00,paid,Rented for the leak\n2,R200,\"Plumber visit, leak diagnosis\",145.00,paid,\"Plumber notes \"\"no response\"\" from the landlord\"\n3,R300,\"Ceiling repair, bathroom\",1250.00,pending,Awaiting landlord response\n,TOTAL,,2355.00,,Sum of the amounts above\n",
+   "units": [
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 0
+     },
+     "text": "line"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 1
+     },
+     "text": "code"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 2
+     },
+     "text": "description"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 3
+     },
+     "text": "amount"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 4
+     },
+     "text": "status"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 0,
+      "column": 5
+     },
+     "text": "note"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 0
+     },
+     "text": "1"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 1
+     },
+     "text": "R100"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 2
+     },
+     "text": "Dehumidifier rental"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 3
+     },
+     "text": "960.00"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 4
+     },
+     "text": "paid"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 5
+     },
+     "text": "Rented for the leak"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 0
+     },
+     "text": "2"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 1
+     },
+     "text": "R200"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 2
+     },
+     "text": "Plumber visit, leak diagnosis"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 3
+     },
+     "text": "145.00"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 4
+     },
+     "text": "paid"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 5
+     },
+     "text": "Plumber notes \"no response\" from the landlord"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 0
+     },
+     "text": "3"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 1
+     },
+     "text": "R300"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 2
+     },
+     "text": "Ceiling repair, bathroom"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 3
+     },
+     "text": "1250.00"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 4
+     },
+     "text": "pending"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 5
+     },
+     "text": "Awaiting landlord response"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 4,
+      "column": 1
+     },
+     "text": "TOTAL"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 4,
+      "column": 3
+     },
+     "text": "2355.00"
+    },
+    {
+     "locator": {
+      "type": "csv",
+      "row": 4,
+      "column": 5
+     },
+     "text": "Sum of the amounts above"
+    }
+   ],
+   "gaps": []
+  }
+ ],
+ "citations": [
+  {
+   "id": "d6d848d2e7e9bf82393065df6d668b4eaedc550ea22e2340be6b6ae5f7f06482",
+   "owner_version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+   "kind": "source",
+   "claim": {
+    "type": "version"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "54a5e79547888d7a57612c16cdd5986de6bc720f2891db34fc57f42625816b2e",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/job_id"
+   },
+   "claim_text": "synthetic-0001",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "7cd66ba26c0db1c41720ead620358b83c787ad47a667642a57d5475a0b6f1edc",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/duration"
+   },
+   "claim_text": "2.81",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "c9e79053339cd91ae8faa775962042f04e09b4cafe0c7ecbf6a996cbcad1b57a",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/type"
+   },
+   "claim_text": "full",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "34f0ebc71e57addded5f85403bec84c99eca73fa6b8eae437209fdfacc73957d",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/content"
+   },
+   "claim_text": "FAX COVER SHEET\n\nTo: Intake Unit, Northwind Legal Aid\n\nFrom: Riverside Tenants Union, Elena Marsh\n\nDate: 09/28/2026    Pages: 2\n\nRE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)\n\nClient: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902\n\nCONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "06ec07f0e5e3d99beb8f577e838b23aa9154e8022fa53642c2a79396044f549f",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/embed"
+   },
+   "claim_text": "FAX COVER SHEET\n\nTo: Intake Unit, Northwind Legal Aid\n\nFrom: Riverside Tenants Union, Elena Marsh\n\nDate: 09/28/2026    Pages: 2\n\nRE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)\n\nClient: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902\n\nCONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "d6dee9f9d0150b49a0846b7918162399528837ddc799b93223038c8efa2a8928",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/enriched"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "efc46219ade1ac2325cce07e46bc6577e33544fe4e59062422b9db7c5f0dbf68",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/0/type"
+   },
+   "claim_text": "Title",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 0,
+      "bbox": [
+       0.1144,
+       0.0909,
+       0.3988,
+       0.1273
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "6042512749977d343eac273bef846af087e7589c4892a8f1df1c78865371002d",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/0/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "e121e6ea08cc860bfcc8776c84a2a8e62a4308489f85ac5bb943235618f77693",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/0/content"
+   },
+   "claim_text": "FAX COVER SHEET",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 0,
+      "bbox": [
+       0.1144,
+       0.0909,
+       0.3988,
+       0.1273
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "c4b907851bdf737bbde39614e716a820298271ff210babb77893872264aa9f85",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/0/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/0/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "FAX COVER SHEET",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "e4a8b9aaec5b13a5cfa888b82113082fa839b492f3ed4c7a1789e0e1b18bc575",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/1/type"
+   },
+   "claim_text": "Key Value",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 0,
+      "bbox": [
+       0.1144,
+       0.1409,
+       0.4086,
+       0.1631
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "bf7d84266737ea9e38692fd3a648a53d94c73403045600c7f539410da0f19148",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/1/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "fd10032be4ac340b0d0f8d44c9e9a54a0650ea01cd1e4df54f44fc066e2f1956",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/1/content"
+   },
+   "claim_text": "To: Intake Unit, Northwind Legal Aid",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 0,
+      "bbox": [
+       0.1144,
+       0.1409,
+       0.4086,
+       0.1631
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "7ededb33d88bcb7a2a979c32f83ac410d40ea3deee481180130db86adf65e7d8",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/1/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/1/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "To: Intake Unit, Northwind Legal Aid",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "66aa49b4bedc5bc55efe2f5692686c63cf970d556d16eb70a441f5f25ea9a7c8",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/2/type"
+   },
+   "claim_text": "Key Value",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 0,
+      "bbox": [
+       0.1144,
+       0.1715,
+       0.4805,
+       0.1937
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "5d1d8db7d47d4ee6e44fe77e6e515f173a0c6fb5dd64a5737d4d646f75c869e8",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/2/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "cb496966ae4b35c54dd6b5878e4fae5250dd67d287c58e2e71447be777007d23",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/2/content"
+   },
+   "claim_text": "From: Riverside Tenants Union, Elena Marsh",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 0,
+      "bbox": [
+       0.1144,
+       0.1715,
+       0.4805,
+       0.1937
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "8c3b735d86831e7d85ef4a83cacb60eaf4a7c455b1302e4136517f8b69f8face",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/2/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/2/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "From: Riverside Tenants Union, Elena Marsh",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "68a4ce7a2dff432fc0c5497c8a68fdb889302e6fe14cec46e6b32e97f4833db9",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/3/type"
+   },
+   "claim_text": "Key Value",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 0,
+      "bbox": [
+       0.1144,
+       0.202,
+       0.3498,
+       0.2242
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "e07caa3b3830b71662e74e98b9b28bd522014aa8c551859f8003868b4124866a",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/3/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "7e36a2aed61b115cf3161764d2d4f3b5eaca11a2d7a4c1f6ac4c96af90b4a7f1",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/3/content"
+   },
+   "claim_text": "Date: 09/28/2026    Pages: 2",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 0,
+      "bbox": [
+       0.1144,
+       0.202,
+       0.3498,
+       0.2242
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "d5232e027628766ae71eab0fa113437ecc889339faffbbf63584c5f510ed6e56",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/3/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/3/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Date: 09/28/2026    Pages: 2",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "e928f1716b3ae7ac46372ff605c0778c09857247ad2cc9de2362a3f8005c6fc4",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/4/type"
+   },
+   "claim_text": "Key Value",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 0,
+      "bbox": [
+       0.1144,
+       0.2326,
+       0.5595,
+       0.27290000000000003
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "b17d88d3c281b1d1a0fb539ef6272214515a0612231ee76c5e8131bacf3e2a74",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/4/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "41220a1695727cbe50284fd546ff3470f5bda285aa597048fbe5726663a0980c",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/4/content"
+   },
+   "claim_text": "RE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 0,
+      "bbox": [
+       0.1144,
+       0.2326,
+       0.5595,
+       0.27290000000000003
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "46c2b75545d52eddfa16871f1c9987386dcea6a8aa3c131bb7ae22ebb71bc106",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/4/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/4/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "RE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "8df27d19e059a9ddcc4242ff2bf750635cabd6e429fd261146f4d3361c055b66",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/5/type"
+   },
+   "claim_text": "Key Value",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 0,
+      "bbox": [
+       0.1144,
+       0.2812,
+       0.5864,
+       0.3034
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "f52ad6be91a71daa8e83a965f642872e23617105200e435e15a187f010565d21",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/5/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "c8c3a217142e8b74f21c6137f25bdc6f17d4d1f88d06e0e6b9f9bc0e8e297e2c",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/5/content"
+   },
+   "claim_text": "Client: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 0,
+      "bbox": [
+       0.1144,
+       0.2812,
+       0.5864,
+       0.3034
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "dcfcc0840e0774970db23823513d842741dd13c6ca3c4982a95ade6fbbd0912f",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/5/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/5/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Client: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "b5b90a2b118c6fc78c95356c235b9d1c51b3630f571f23b5766427ca019b2ed2",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/6/type"
+   },
+   "claim_text": "Text",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 0,
+      "bbox": [
+       0.1144,
+       0.3117,
+       0.5516,
+       0.3447
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "f6b93a02aee177e89f13f91eb1f2b7f778b4fa9bd49cb7ef3dc6df0b237a0257",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/6/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "121c3639a5e45d574c04786a5c4f94ed6abebf532aa9579aeb9601f67a6fd7fa",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/6/content"
+   },
+   "claim_text": "CONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 0,
+      "bbox": [
+       0.1144,
+       0.3117,
+       0.5516,
+       0.3447
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "cebd2b4ffb7e02f89c1120988a72400a1a234a5dd4b68e211727a53bd6cb0685",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/0/blocks/6/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/6/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "CONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "947f56eb175dafdca2cb97d335e702aa980e62ccd20a22c17d312e7c3c346428",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/content"
+   },
+   "claim_text": "Intake Note - 09/26/2026\n\nProblem: Water leaking through the bathroom ceiling for 8 weeks.\n\nHistory: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.\n\nNotice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”\n\nInspection: Active drip from the bathroom ceiling light fixture.\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\ndry. No signiﬁcant damage to other rooms.\n\nEmergencies: None. No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.\n\nAssessment: Habitability defect, water intrusion (HC 12.4), not\nrepaired after written notice.\n\nPlan: Repair and deduct for the ceiling leak, or a demand letter\nto the landlord before filing in housing court.\n\nElectronically signed: Elena Marsh, Tenant Organizer",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "216e4ebefa74f7c2fba65b7d80b211e53540dbe26a1d404cae3a6c9529c7858f",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/embed"
+   },
+   "claim_text": "Intake Note - 09/26/2026\n\nProblem: Water leaking through the bathroom ceiling for 8 weeks.\n\nHistory: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.\n\nNotice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”\n\nInspection: Active drip from the bathroom ceiling light fixture.\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\ndry. No signiﬁcant damage to other rooms.\n\nEmergencies: None. No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.\n\nAssessment: Habitability defect, water intrusion (HC 12.4), not\nrepaired after written notice.\n\nPlan: Repair and deduct for the ceiling leak, or a demand letter\nto the landlord before filing in housing court.\n\nElectronically signed: Elena Marsh, Tenant Organizer",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "7a62f22a65e52766e054eb10000e2bdb5015a391eafb165fea7b1a4d13eba289",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/enriched"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "f92e935c31efd9c697307698eed75684135ed4d6ae81b1a8cdad187bf79d3a09",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/0/type"
+   },
+   "claim_text": "Title",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.0909,
+       0.379,
+       0.1192
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "90a5a2395f545c62b804e731af72a4acf28a2bb0e7763b381d7221d0df5c2854",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/0/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "483f333a13cb04ac39047bbc984f84fac32e593052c41654b68b8831207d7d37",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/0/content"
+   },
+   "claim_text": "Intake Note - 09/26/2026",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.0909,
+       0.379,
+       0.1192
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "667bfb769f056a35d0ae4470c433b8b517b60ad7c87007122a8f16e982b59340",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/0/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/0/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Intake Note - 09/26/2026",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "35956102a1691a7a9b7f9a3a2b4d394edd99433fe93aa7476eb6f9793552e101",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/1/type"
+   },
+   "claim_text": "Text",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.1298,
+       0.6424000000000001,
+       0.152
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "fb75c7c2212bbc92ecc2d7039a17c740ce31c1b989d45be197fae9374a43408c",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/1/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "bf63d7e7cec8dc8b1c7e6495bf5da60cd7c4bf8e5cebd9aabd7e5212871d9a2e",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/1/content"
+   },
+   "claim_text": "Problem: Water leaking through the bathroom ceiling for 8 weeks.",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.1298,
+       0.6424000000000001,
+       0.152
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "3c50aeac86a0ffbaaa84d8352a28097dea00bd9bc2560e37a4718fe3bbefb06f",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/1/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/1/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Problem: Water leaking through the bathroom ceiling for 8 weeks.",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "0dc0888f88d2c629ff61b69160772f613563fc13ec2b3127a45227441ed236c7",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/2/type"
+   },
+   "claim_text": "Text",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.1604,
+       0.6125,
+       0.21869999999999998
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "bd4a711b879dc2b85363d5ce7b7a62273a20256cf13461c39228e9d99294a329",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/2/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "19bea5356fe111c9f58e01f8305ec13223e3d7fe1310eabb3af9fdf1cbc91a09",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/2/content"
+   },
+   "claim_text": "History: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.1604,
+       0.6125,
+       0.21869999999999998
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "9ba01551d6d31e41bbcce5732b04e51b2c65bb1436a3b5ff6f1439373fe63430",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/2/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/2/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "History: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "b403985801456769ec37b9e0ceadb74ce2c51ed3f31233665117bd5eb8dc153c",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/3/type"
+   },
+   "claim_text": "Text",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.227,
+       0.6214,
+       0.2853
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "fd885c94cd4fb111e6c66c6c6cea4c24a40ce9e88d5abe5314257fdd715ecf9a",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/3/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "fe7cb0326692aca25ad275793de7e7dd18778326525804ca2d739e6426ea8aec",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/3/content"
+   },
+   "claim_text": "Notice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.227,
+       0.6214,
+       0.2853
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "2b426c06b7547a7ab031b3a03f43c767fd90074727662e3454851704a457e997",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/3/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/3/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Notice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "c55b639bbddc6a68b26cc379e63a116265a4b76b97bd1191b35c5d93ef5b5ba0",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/4/type"
+   },
+   "claim_text": "Text",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.2937,
+       0.6013999999999999,
+       0.35200000000000004
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "0f93d0b8d9ecdb2abd4742a1a348309c1007aa0c4f0c439c209d5e24a873c062",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/4/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "82855c09c4d903f5e9d6e7949db6111eb3d240e92170dee194dc0f5dfc783c36",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/4/content"
+   },
+   "claim_text": "Inspection: Active drip from the bathroom ceiling light fixture.\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\ndry. No signiﬁcant damage to other rooms.",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.2937,
+       0.6013999999999999,
+       0.35200000000000004
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "6db77460e2ecb364deb3e1536850a1bb84ad7e82a4c63ca5f2c2cace97724a73",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/4/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/4/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Inspection: Active drip from the bathroom ceiling light fixture.\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\ndry. No signiﬁcant damage to other rooms.",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "a8aac27e13a8c52a7988841a873fe621f54b1d08cb9648ef6f53677ab234a2f4",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/5/type"
+   },
+   "claim_text": "Text",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.3604,
+       0.6464000000000001,
+       0.4007
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "a825094f9077a2e209265aa10cb28a651ec1a625f3b5655ca55709f8b020dce8",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/5/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "eebaac893def9d1748bdf073e15f0bb753152033a41fbcfda8742b112e6e8198",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/5/content"
+   },
+   "claim_text": "Emergencies: None. No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.3604,
+       0.6464000000000001,
+       0.4007
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "fb337f214ca6a906c61e3d69fa5df9f9db7a607fbf597287d292d237aa825d64",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/5/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/5/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Emergencies: None. No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "a47e02547f960b649bc44fc7484a97e0a837ec4330870123c2d313f59d6ac9d9",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/6/type"
+   },
+   "claim_text": "Text",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.409,
+       0.6154,
+       0.4493
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "19dd8ff377f757f0935dc164141d02ad6a036d60d4c98a32cb6540106efb39d1",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/6/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "26b812b7d3947b8a72b4006b03f87b663075a27ce3b68e9a3671dee5ade039c7",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/6/content"
+   },
+   "claim_text": "Assessment: Habitability defect, water intrusion (HC 12.4), not\nrepaired after written notice.",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.409,
+       0.6154,
+       0.4493
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "1154eed3425d07395c2d618f0acbf85e422823cd718aa7f839f04e6a14bf093d",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/6/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/6/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Assessment: Habitability defect, water intrusion (HC 12.4), not\nrepaired after written notice.",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "0cd994108982ef3905517638b7370e5e912047f14bc23081035042e9c3725a03",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/7/type"
+   },
+   "claim_text": "Text",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.4576,
+       0.6194999999999999,
+       0.4979
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "38a2bca62db9d0f0aafa16bb125bb1f2decddabe19ef8d1237e6e477bc7e441d",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/7/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "ed0f357a3cabd493765ba88262b4d444d3f3dc157154f48c8c6dbc9ce8b91a82",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/7/content"
+   },
+   "claim_text": "Plan: Repair and deduct for the ceiling leak, or a demand letter\nto the landlord before filing in housing court.",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.4576,
+       0.6194999999999999,
+       0.4979
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "b415d5fc4efd6ad124001fce35221885f65cc421379bcf605a789669f7f15982",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/7/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/7/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Plan: Repair and deduct for the ceiling leak, or a demand letter\nto the landlord before filing in housing court.",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "9d19ce4b5a88a63187bdd1418eb12d4e2f5b2b53bdea2ff5ec78b347bb94c627",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "classification",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/8/type"
+   },
+   "claim_text": "Text",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.5062,
+       0.5069,
+       0.5264
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "classifier": "reducto"
+   }
+  },
+  {
+   "id": "c582fa4454eb0f492379bfd6de9f3cedd0344151516a3ce46ee3495c8db8f7f3",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/8/bbox"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "8ada3f4b28064a10b083dd08b416f4537a7c3a1fd3a8742c4534471161e6354d",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "transcription",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/8/content"
+   },
+   "claim_text": "Electronically signed: Elena Marsh, Tenant Organizer",
+   "supports": [
+    {
+     "version": "ad6530b547357fc019abbadd0034ae19356924c842e89ce08c33f1451efa9753",
+     "locator": {
+      "type": "pdf",
+      "page": 1,
+      "bbox": [
+       0.1144,
+       0.5062,
+       0.5069,
+       0.5264
+      ]
+     },
+     "name": "fax_case_001",
+     "format": "pdf",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "transcriber": "reducto"
+   }
+  },
+  {
+   "id": "5a109924ade0f5520930edb73e6aea53e7e74d44db0797d8317c03f3edc83822",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "assessment",
+   "claim": {
+    "type": "json",
+    "pointer": "/result/chunks/1/blocks/8/confidence"
+   },
+   "claim_text": "high",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/8/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Electronically signed: Elena Marsh, Tenant Organizer",
+     "outside": false
+    }
+   ],
+   "attrs": {
+    "assessor": "reducto"
+   }
+  },
+  {
+   "id": "9913ea533ec8c59ba6109abe6eb6d2d6a39c1fdedfd1f5e77a8f368529a1c8a9",
+   "owner_version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+   "kind": "unsourced",
+   "claim": {
+    "type": "json",
+    "pointer": "/usage"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "d6d848d2e7e9bf82393065df6d668b4eaedc550ea22e2340be6b6ae5f7f06482",
+   "owner_version": "5d8dd4b844eb64104bf7c89d08c60f39163825449831b280416ea4b4b686563f",
+   "kind": "source",
+   "claim": {
+    "type": "version"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "d6d848d2e7e9bf82393065df6d668b4eaedc550ea22e2340be6b6ae5f7f06482",
+   "owner_version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+   "kind": "source",
+   "claim": {
+    "type": "version"
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "50d7fb960fe1e4d1b492aaed29671add5f0edca56eb06fc82744f5deefb4fc99",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 2,
+    "end": 30
+   },
+   "claim_text": "Intake summary: Jordan Avery",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/5/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Client: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "d9f6793025783064e3efd7b2bf1f21fa9a226aafd4df56d37c1890d40d9e6a72",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 32,
+    "end": 134
+   },
+   "claim_text": "Request: repair and deduct for a bathroom ceiling leak (HC 12.4), referred by Riverside Tenants Union.",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 3
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": null,
+     "outside": false
+    },
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/2/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "From: Riverside Tenants Union, Elena Marsh",
+     "outside": false
+    },
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/4/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "RE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "1375b6f188acea7b50673ca97dde748e1a9aae2bef0996802000a741a821188c",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "unsourced",
+   "claim": {
+    "type": "text",
+    "start": 139,
+    "end": 147
+   },
+   "claim_text": "Findings",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "21c7d763bdc7e9718081e61709adc6140ee30918156a92c51b45ffb92ea10b07",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "quote",
+   "claim": {
+    "type": "text",
+    "start": 151,
+    "end": 206
+   },
+   "claim_text": "Water leaking through the bathroom ceiling for 8 weeks.",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/1/content",
+      "start": 9,
+      "end": 64
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Water leaking through the bathroom ceiling for 8 weeks.",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "20392550d7b3eabca590379b9a909d0eac9e101fd5ffd585d6b47520e2e6f31b",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 209,
+    "end": 325
+   },
+   "claim_text": "The tenant reports a \"progressive ceiling leak in the bathroom\" with mold spreading over the wall behind the toilet.",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/2/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "History: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "aac72c36cc03085e4d189023e3df5cbc5018afe9bf28fc1a798180abeb46aaec",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "quote",
+   "claim": {
+    "type": "text",
+    "start": 231,
+    "end": 271
+   },
+   "claim_text": "progressive ceiling leak in the bathroom",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/2/content",
+      "start": 26,
+      "end": 68
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "progressive ceil-\ning leak in the bathroom",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "a45a2ae390a8cddf2a6945dcc5cf958b2600aa547fd28f475692dd37d1d60f0f",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "quote",
+   "claim": {
+    "type": "text",
+    "start": 328,
+    "end": 380
+   },
+   "claim_text": "Active drip from the bathroom ceiling light fixture.",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/4/content",
+      "start": 12,
+      "end": 64
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Active drip from the bathroom ceiling light fixture.",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "5c2ad3e1403dbea63e5f307d777514ff6ecada9726bed58e5d72c1c218135ff8",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "quote",
+   "claim": {
+    "type": "text",
+    "start": 383,
+    "end": 420
+   },
+   "claim_text": "No significant damage to other rooms.",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/4/content",
+      "start": 131,
+      "end": 167
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "No signiﬁcant damage to other rooms.",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "7f579ead015d3fc79b86bd4ef661275f0df31cbeecd7dbd3f19c52ca16e147d5",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "unsourced",
+   "claim": {
+    "type": "text",
+    "start": 425,
+    "end": 439
+   },
+   "claim_text": "Criteria check",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "43823e54bcc929ea5dc30d00216216f755e0e528d4191b816824a30d6415742d",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "unsourced",
+   "claim": {
+    "type": "text",
+    "start": 443,
+    "end": 463
+   },
+   "claim_text": "Criterion | Evidence",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "2561a08c2e75ee791e2e6546ca8eab1677acac0674b421be6e0c9d1a33d85d25",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 476,
+    "end": 495
+   },
+   "claim_text": "| Repair not made |",
+   "supports": [
+    {
+     "version": "5d8dd4b844eb64104bf7c89d08c60f39163825449831b280416ea4b4b686563f",
+     "locator": {
+      "type": "text",
+      "start": 311,
+      "end": 341
+     },
+     "name": "policy_ip112",
+     "format": "markdown",
+     "text": "A needed repair still not made",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "e18b39f2377650a8b9a9f12caadd2986a5fedb3170108856b292f5d3d25fee8d",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "quote",
+   "claim": {
+    "type": "text",
+    "start": 496,
+    "end": 542
+   },
+   "claim_text": "Habitability defect, water intrusion (HC 12.4)",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/6/content",
+      "start": 12,
+      "end": 58
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Habitability defect, water intrusion (HC 12.4)",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "f04c1e995fc04ea0ba20f239ea7db5965fe6ded9fc423280ae6fccc887893262",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 547,
+    "end": 581
+   },
+   "claim_text": "At least 6 weeks of written notice",
+   "supports": [
+    {
+     "version": "5d8dd4b844eb64104bf7c89d08c60f39163825449831b280416ea4b4b686563f",
+     "locator": {
+      "type": "text",
+      "start": 342,
+      "end": 382
+     },
+     "name": "policy_ip112",
+     "format": "markdown",
+     "text": "after at least 6 weeks of written notice",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "0665a925d823f5f1061a88f4fec31e8e0720e167e1413dea9cca1972c5b9d1f2",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 584,
+    "end": 632
+   },
+   "claim_text": "Six weeks of letters and calls, with no response",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/3/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Notice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "61af715af84af753f0b5d4613854c01f6a7178eeb8b65f13ec881cdbb4dcdc8c",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 637,
+    "end": 649
+   },
+   "claim_text": "No emergency",
+   "supports": [
+    {
+     "version": "5d8dd4b844eb64104bf7c89d08c60f39163825449831b280416ea4b4b686563f",
+     "locator": {
+      "type": "text",
+      "start": 612,
+      "end": 727
+     },
+     "name": "policy_ip112",
+     "format": "markdown",
+     "text": "Emergency conditions include a gas leak, sewage backup, and no heat when the outside temperature is below freezing.",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "61181aa431cfa69c90625547590e82469d5a4a9745acb169185ad21755b3fe69",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "quote",
+   "claim": {
+    "type": "text",
+    "start": 652,
+    "end": 718
+   },
+   "claim_text": "No gas leak, no sewage backup, no exposed wiring, no loss of heat.",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/5/content",
+      "start": 19,
+      "end": 85
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "ebe6527c3ab49dfa590a8bbe4e07e1ce9cae463e9df5e07467beb70ce5b3b1a1",
+   "owner_version": "d6db7d986d34be9af035f7bb16e94ae24d2015f76a541628065074e2d9d2b8c2",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 722,
+    "end": 884
+   },
+   "claim_text": "Policy IP-112 accepts a case when a needed repair is still not made after at least 6 weeks of written notice, and letters and emails both count as written notice.",
+   "supports": [
+    {
+     "version": "5d8dd4b844eb64104bf7c89d08c60f39163825449831b280416ea4b4b686563f",
+     "locator": {
+      "type": "text",
+      "start": 311,
+      "end": 399
+     },
+     "name": "policy_ip112",
+     "format": "markdown",
+     "text": "A needed repair still not made after at least 6 weeks of written notice to the landlord.",
+     "outside": false
+    },
+    {
+     "version": "5d8dd4b844eb64104bf7c89d08c60f39163825449831b280416ea4b4b686563f",
+     "locator": {
+      "type": "text",
+      "start": 483,
+      "end": 563
+     },
+     "name": "policy_ip112",
+     "format": "markdown",
+     "text": "Written notice includes a letter, an email, or a message through a tenant portal",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "694c980bfe1743bcc256b1b3ccbf57dadb63ae8ce6f55111f8a9bca182548cbd",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 4,
+    "end": 32
+   },
+   "claim_text": "Intake summary: Jordan Avery",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/5/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Client: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "9b83439a69448b872581a9d13511a1886f3d3bab72dbc182f64b06bd128c858e",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 34,
+    "end": 136
+   },
+   "claim_text": "Request: repair and deduct for a bathroom ceiling leak (HC 12.4), referred by Riverside Tenants Union.",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/2/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "From: Riverside Tenants Union, Elena Marsh",
+     "outside": false
+    },
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/0/blocks/4/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "RE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "5a285ea3e270df9160aa77265b52f8e0c770b293e03a20a616ae5ce7890beea2",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "unsourced",
+   "claim": {
+    "type": "text",
+    "start": 141,
+    "end": 149
+   },
+   "claim_text": "Findings",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "033eb039200b09db5dfb257988df1679248e2251164e6b1acfa8a566e72ccc4f",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "quote",
+   "claim": {
+    "type": "text",
+    "start": 153,
+    "end": 208
+   },
+   "claim_text": "Water leaking through the bathroom ceiling for 8 weeks.",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/1/content",
+      "start": 9,
+      "end": 64
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Water leaking through the bathroom ceiling for 8 weeks.",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "333ee2f5364b325c0193ee9f495ae8bb2ffe1bc7bf9e1cfe3fccb3091e6d57cd",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 211,
+    "end": 327
+   },
+   "claim_text": "The tenant reports a \"progressive ceiling leak in the bathroom\" with mold spreading over the wall behind the toilet.",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/2/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "History: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "1083463b4dca21ecf25bfed12ccbd4e74d5f8518ffe93ee5ab35de7089fa0334",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "quote",
+   "claim": {
+    "type": "text",
+    "start": 233,
+    "end": 273
+   },
+   "claim_text": "progressive ceiling leak in the bathroom",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/2/content",
+      "start": 26,
+      "end": 68
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "progressive ceil-\ning leak in the bathroom",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "ad366b53783d65b75a59a39ca6423de7e713872f48f9266f94e55ef499922081",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "quote",
+   "claim": {
+    "type": "text",
+    "start": 330,
+    "end": 382
+   },
+   "claim_text": "Active drip from the bathroom ceiling light fixture.",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/4/content",
+      "start": 12,
+      "end": 64
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Active drip from the bathroom ceiling light fixture.",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "3b576c3949b54e364ab0fb3af03f2236be717681d6361b313519b020cd391367",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "quote",
+   "claim": {
+    "type": "text",
+    "start": 385,
+    "end": 422
+   },
+   "claim_text": "No significant damage to other rooms.",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/4/content",
+      "start": 131,
+      "end": 167
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "No signiﬁcant damage to other rooms.",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "20b103020b1ffeee64c5c821b32573e7c4c7fdbcc790b79b7d07a31e9f2792aa",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "unsourced",
+   "claim": {
+    "type": "text",
+    "start": 427,
+    "end": 441
+   },
+   "claim_text": "Criteria check",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "f62227b57994223b7ccae3113d23c0aac8b19aaa5d97f097220e8dd1a7768887",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "unsourced",
+   "claim": {
+    "type": "text",
+    "start": 445,
+    "end": 465
+   },
+   "claim_text": "Criterion | Evidence",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "fa086a3c000ff55badabb98b1cb42e6b4614abf4959977ce3c548393bc0a278f",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 478,
+    "end": 497
+   },
+   "claim_text": "| Repair not made |",
+   "supports": [
+    {
+     "version": "5d8dd4b844eb64104bf7c89d08c60f39163825449831b280416ea4b4b686563f",
+     "locator": {
+      "type": "text",
+      "start": 311,
+      "end": 341
+     },
+     "name": "policy_ip112",
+     "format": "markdown",
+     "text": "A needed repair still not made",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "a9402804312d8858415a00bea1c9f6c1e16640bd83fe387e0fad2a50664dd19b",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "quote",
+   "claim": {
+    "type": "text",
+    "start": 498,
+    "end": 544
+   },
+   "claim_text": "Habitability defect, water intrusion (HC 12.4)",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/6/content",
+      "start": 12,
+      "end": 58
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Habitability defect, water intrusion (HC 12.4)",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "7e21fc630e0823155770a5bc678ba5f609e97f22abd26b8980e485758d60fd86",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 549,
+    "end": 583
+   },
+   "claim_text": "At least 6 weeks of written notice",
+   "supports": [
+    {
+     "version": "5d8dd4b844eb64104bf7c89d08c60f39163825449831b280416ea4b4b686563f",
+     "locator": {
+      "type": "text",
+      "start": 342,
+      "end": 382
+     },
+     "name": "policy_ip112",
+     "format": "markdown",
+     "text": "after at least 6 weeks of written notice",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "9a20e70a79d77d3e90a2c221809a079d5785261d58a2afca1be01e037ac34c76",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 586,
+    "end": 634
+   },
+   "claim_text": "Six weeks of letters and calls, with no response",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/3/content"
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "Notice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "dab870b2f0126ab13dfde749ba7f3e9d3c0d7cce863c83a924bcc0e5c726f6b7",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 639,
+    "end": 651
+   },
+   "claim_text": "No emergency",
+   "supports": [
+    {
+     "version": "5d8dd4b844eb64104bf7c89d08c60f39163825449831b280416ea4b4b686563f",
+     "locator": {
+      "type": "text",
+      "start": 612,
+      "end": 727
+     },
+     "name": "policy_ip112",
+     "format": "markdown",
+     "text": "Emergency conditions include a gas leak, sewage backup, and no heat when the outside temperature is below freezing.",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "b2e4487ee96731bb433e4fc710bbd972b5032fed9d2445835930755221b59483",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "quote",
+   "claim": {
+    "type": "text",
+    "start": 654,
+    "end": 720
+   },
+   "claim_text": "No gas leak, no sewage backup, no exposed wiring, no loss of heat.",
+   "supports": [
+    {
+     "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
+     "locator": {
+      "type": "json",
+      "pointer": "/result/chunks/1/blocks/5/content",
+      "start": 19,
+      "end": 85
+     },
+     "name": "fax_case_001.reducto",
+     "format": "json",
+     "text": "No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "ccd3ebd99f54512c24e0a031156a53793798df6e716dc19fd782835a27b482be",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 724,
+    "end": 886
+   },
+   "claim_text": "Policy IP-112 accepts a case when a needed repair is still not made after at least 6 weeks of written notice, and letters and emails both count as written notice.",
+   "supports": [
+    {
+     "version": "5d8dd4b844eb64104bf7c89d08c60f39163825449831b280416ea4b4b686563f",
+     "locator": {
+      "type": "text",
+      "start": 311,
+      "end": 399
+     },
+     "name": "policy_ip112",
+     "format": "markdown",
+     "text": "A needed repair still not made after at least 6 weeks of written notice to the landlord.",
+     "outside": false
+    },
+    {
+     "version": "5d8dd4b844eb64104bf7c89d08c60f39163825449831b280416ea4b4b686563f",
+     "locator": {
+      "type": "text",
+      "start": 483,
+      "end": 563
+     },
+     "name": "policy_ip112",
+     "format": "markdown",
+     "text": "Written notice includes a letter, an email, or a message through a tenant portal",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "4f69c826bcd8b4f230a1b3e8de0bfc28900ea8e6e22608377a9aaf654e0eae6c",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "unsourced",
+   "claim": {
+    "type": "text",
+    "start": 891,
+    "end": 899
+   },
+   "claim_text": "Decision",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "fafbebdfa18ded62de59a5c47f0c5721315b23320e80042e1a304fcf5a89ed5d",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 901,
+    "end": 928
+   },
+   "claim_text": "All three criteria are met.",
+   "supports": [
+    {
+     "version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+     "locator": {
+      "type": "text",
+      "start": 478,
+      "end": 497
+     },
+     "name": "summary_case_001_reviewed",
+     "format": "markdown",
+     "text": "| Repair not made |",
+     "outside": false
+    },
+    {
+     "version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+     "locator": {
+      "type": "text",
+      "start": 547,
+      "end": 585
+     },
+     "name": "summary_case_001_reviewed",
+     "format": "markdown",
+     "text": "| At least 6 weeks of written notice |",
+     "outside": false
+    },
+    {
+     "version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+     "locator": {
+      "type": "text",
+      "start": 637,
+      "end": 653
+     },
+     "name": "summary_case_001_reviewed",
+     "format": "markdown",
+     "text": "| No emergency |",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "3ac2a487458994b681734dc5d0d7cebef3befb76bbe4b7c7d70022f2012ad0f7",
+   "owner_version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
+   "kind": "source",
+   "claim": {
+    "type": "text",
+    "start": 929,
+    "end": 999
+   },
+   "claim_text": "Reviewer note: repair and deduct is reasonable given the ongoing leak.",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "43d4c93f2b26f5c8439f5517f107a5d340b88b9a9e9fab1d83e069ea02f4e25e",
+   "owner_version": "698d7373cf3af55f70a87c56550a0bab1f6fbea50ce27db93c80979e82ac2a7f",
+   "kind": "unsourced",
+   "claim": {
+    "type": "text",
+    "start": 2,
+    "end": 31
+   },
+   "claim_text": "Expense history: Jordan Avery",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "546a4633f4ffb9e4005f1949276626c557d9aef4ed4dca42f3ac6ebd933a19a2",
+   "owner_version": "698d7373cf3af55f70a87c56550a0bab1f6fbea50ce27db93c80979e82ac2a7f",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 35,
+    "end": 117
+   },
+   "claim_text": "Four expenses were logged between 2026-08-05 and 2026-09-30, for $2,665.00 in all.",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "column": 3
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": null,
+     "outside": false
+    },
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "column": 7
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "9572bb4d6d748ded039a0c3384623f14737ee6deb5199aee319e6580d23ceb7d",
+   "owner_version": "698d7373cf3af55f70a87c56550a0bab1f6fbea50ce27db93c80979e82ac2a7f",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 120,
+    "end": 193
+   },
+   "claim_text": "A dehumidifier and a plumber visit in August were paid; the plumber notes",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 1
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": null,
+     "outside": false
+    },
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 2
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "245098c89284713fc27feefa16931b04d04578ed6348ae6a698b0613e67569c7",
+   "owner_version": "698d7373cf3af55f70a87c56550a0bab1f6fbea50ce27db93c80979e82ac2a7f",
+   "kind": "quote",
+   "claim": {
+    "type": "text",
+    "start": 195,
+    "end": 206
+   },
+   "claim_text": "no response",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 9,
+      "start": 32,
+      "end": 43
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "no response",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "0b09e90718325ff8fb8de544c3f522e566db3487fcdf0f8889849efc5f86acc1",
+   "owner_version": "698d7373cf3af55f70a87c56550a0bab1f6fbea50ce27db93c80979e82ac2a7f",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 208,
+    "end": 226
+   },
+   "claim_text": "from the landlord.",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 9
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "Leak traced to the unit above; \"no response\" from landlord",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "741387ddfad48e680b65fd6a784468acd1066f45cef861376f39ff15d56822ec",
+   "owner_version": "698d7373cf3af55f70a87c56550a0bab1f6fbea50ce27db93c80979e82ac2a7f",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 229,
+    "end": 272
+   },
+   "claim_text": "The ceiling repair is awaiting the landlord",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 3
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "cb1086859641f132cf3edb96f303320e1c34a08f9b41fc9a0d867d1e246373e6",
+   "owner_version": "698d7373cf3af55f70a87c56550a0bab1f6fbea50ce27db93c80979e82ac2a7f",
+   "kind": "quote",
+   "claim": {
+    "type": "text",
+    "start": 274,
+    "end": 298
+   },
+   "claim_text": "Ceiling repair, bathroom",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 5
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "Ceiling repair, bathroom",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "e24d9d1a07c9ae5cd218c1944ad1a657482b82e90398c5309062ed0375cede13",
+   "owner_version": "698d7373cf3af55f70a87c56550a0bab1f6fbea50ce27db93c80979e82ac2a7f",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "text",
+    "start": 302,
+    "end": 359
+   },
+   "claim_text": "Mold cleanup supplies bought for the repair were refused.",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 4
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "3d8dc4f4eefd651d336a0eb16ae71e7008b928b03778ea5636940fb9c97c9e35",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "unsourced",
+   "claim": {
+    "type": "csv",
+    "column": 0
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "69dccf8adac5424acec37b2511168ed7b9a00949d87da0dcb5e4a1e11ab00d67",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "unsourced",
+   "claim": {
+    "type": "csv",
+    "row": 0
+   },
+   "claim_text": null,
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "1b3340c42c426dc50afa7bb33f9403aadbd0c2576b0a4ec65cd93993e9fa7249",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "quote",
+   "claim": {
+    "type": "csv",
+    "row": 1,
+    "column": 1
+   },
+   "claim_text": "R100",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 4
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "R100",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "59bf94f72b3cb175aa267894408a3af7045b341372407e49e29ef091734fc94c",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "quote",
+   "claim": {
+    "type": "csv",
+    "row": 1,
+    "column": 2
+   },
+   "claim_text": "Dehumidifier rental",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 5
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "Dehumidifier rental",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "4579da9710e7aa79796aedfbb5f428c8827d0abe0ac1e03db4b6ab80a7ac72e0",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "quote",
+   "claim": {
+    "type": "csv",
+    "row": 1,
+    "column": 3
+   },
+   "claim_text": "960.00",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 7
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "960.00",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "f0b99cb691320305d0156e475ca90ec999ed1dcc46c3c7f05941b74789e7a63f",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "quote",
+   "claim": {
+    "type": "csv",
+    "row": 1,
+    "column": 4
+   },
+   "claim_text": "paid",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 8
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "paid",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "e08eee912162d15098fcf54cc90ed80456fcbf60d41a26d60b2e4556829c0488",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "csv",
+    "row": 1,
+    "column": 5
+   },
+   "claim_text": "Rented for the leak",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 1
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": null,
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "debb8e4751abbf166aed6c73d85df6a14f1f62f44a63cf6d01b7ab72109a63fd",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "quote",
+   "claim": {
+    "type": "csv",
+    "row": 2,
+    "column": 1
+   },
+   "claim_text": "R200",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 4
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "R200",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "5c4a16b58a232d784abcb6f45d7679ede1348a5525e290fda86c63b9116da977",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "quote",
+   "claim": {
+    "type": "csv",
+    "row": 2,
+    "column": 2
+   },
+   "claim_text": "Plumber visit, leak diagnosis",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 5
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "Plumber visit, leak diagnosis",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "0197deaebebf788496eef82fce135391f99515f42330143d5d23984898c7d984",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "quote",
+   "claim": {
+    "type": "csv",
+    "row": 2,
+    "column": 3
+   },
+   "claim_text": "145.00",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 7
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "145.00",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "39c486c1584848e61f8052f8b87c900d59c0e61c50983c88f4164f67057aceef",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "quote",
+   "claim": {
+    "type": "csv",
+    "row": 2,
+    "column": 4
+   },
+   "claim_text": "paid",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 8
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "paid",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "8e3928133852d2657003c66a6c3ad02788fdac54a570a17c5865bf421e0c6d1c",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "csv",
+    "row": 2,
+    "column": 5,
+    "start": 0,
+    "end": 13
+   },
+   "claim_text": "Plumber notes",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 9
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "Leak traced to the unit above; \"no response\" from landlord",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "049750c12050b1b3aa9a315a463b958f757a8e3bf80a82e72947611523462ccb",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "quote",
+   "claim": {
+    "type": "csv",
+    "row": 2,
+    "column": 5,
+    "start": 15,
+    "end": 26
+   },
+   "claim_text": "no response",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 9,
+      "start": 32,
+      "end": 43
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "no response",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "8b2067444fe34f3c3591616206236e292232016b19e0989776720cbe7d844cfe",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "csv",
+    "row": 2,
+    "column": 5,
+    "start": 28,
+    "end": 45
+   },
+   "claim_text": "from the landlord",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 9,
+      "start": 45,
+      "end": 58
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "from landlord",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "d230bd350c08e5cf7940e3071a2eee339085a40b4a57985ca1d9d99df729d75d",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "quote",
+   "claim": {
+    "type": "csv",
+    "row": 3,
+    "column": 1
+   },
+   "claim_text": "R300",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 4
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "R300",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "344af04495b198503658d7264082d9c3f12704f1c23f5161e69f836c187c7cba",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "quote",
+   "claim": {
+    "type": "csv",
+    "row": 3,
+    "column": 2
+   },
+   "claim_text": "Ceiling repair, bathroom",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 5
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "Ceiling repair, bathroom",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "0f2ca8f78f723556ef70907458cce0f776d0a12b5611405dde5f52f62baff8cc",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "quote",
+   "claim": {
+    "type": "csv",
+    "row": 3,
+    "column": 3
+   },
+   "claim_text": "1250.00",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 7
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "1250.00",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "c9e6f69ca7bd35ad31c5d3eacb32cf70ce2109bef7bbd1b44f09018ef09c5c62",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "quote",
+   "claim": {
+    "type": "csv",
+    "row": 3,
+    "column": 4
+   },
+   "claim_text": "pending",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 8
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "pending",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "fa34370032db2cd2b4309f393f8a4ed44bec70178a973877cbb73697e7a6c011",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "quote",
+   "claim": {
+    "type": "csv",
+    "row": 3,
+    "column": 5,
+    "start": 0,
+    "end": 26
+   },
+   "claim_text": "Awaiting landlord response",
+   "supports": [
+    {
+     "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 9,
+      "start": 29,
+      "end": 55
+     },
+     "name": "expenses_case_001",
+     "format": "csv",
+     "text": "Awaiting landlord response",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "4749464864ca302f9053d1438f137af7624fa7e40239ff7ce254005620e850dc",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "unsourced",
+   "claim": {
+    "type": "csv",
+    "row": 4,
+    "column": 1
+   },
+   "claim_text": "TOTAL",
+   "supports": [],
+   "attrs": {}
+  },
+  {
+   "id": "0b28c94aae62d20ecf2f08e413fbe64e7b6a29916d686bc9c4505d72374e7dae",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "paraphrase",
+   "claim": {
+    "type": "csv",
+    "row": 4,
+    "column": 3
+   },
+   "claim_text": "2355.00",
+   "supports": [
+    {
+     "version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+     "locator": {
+      "type": "csv",
+      "row": 1,
+      "column": 3
+     },
+     "name": "expense_rollup_case_001",
+     "format": "csv",
+     "text": "960.00",
+     "outside": false
+    },
+    {
+     "version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+     "locator": {
+      "type": "csv",
+      "row": 2,
+      "column": 3
+     },
+     "name": "expense_rollup_case_001",
+     "format": "csv",
+     "text": "145.00",
+     "outside": false
+    },
+    {
+     "version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+     "locator": {
+      "type": "csv",
+      "row": 3,
+      "column": 3
+     },
+     "name": "expense_rollup_case_001",
+     "format": "csv",
+     "text": "1250.00",
+     "outside": false
+    }
+   ],
+   "attrs": {}
+  },
+  {
+   "id": "8b46ef4246ab486bca0efd66409b1bbcb479bc5c581b17a237451043ac184bfc",
+   "owner_version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
+   "kind": "unsourced",
+   "claim": {
+    "type": "csv",
+    "row": 4,
+    "column": 5
+   },
+   "claim_text": "Sum of the amounts above",
+   "supports": [],
+   "attrs": {}
+  }
+ ]
+}

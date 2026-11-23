@@ -1,0 +1,796 @@
+:root {
+  --cited: #4d7c5b;
+  --source: #4a6fa5;
+  --unsourced: #b07a2a;
+  --uncited: #c0504d;
+  --accent: #e8a33d;
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --ink: #2b303b;
+  --ink-soft: #5b6270;
+  --muted: #8a909b;
+  --line: #ebebe7;
+  --hover: #f3f3ef;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  overflow: hidden;
+}
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.muted {
+  color: var(--muted);
+}
+.error {
+  color: var(--uncited);
+  padding: 6px 0;
+}
+.fatal {
+  padding: 48px;
+  max-width: 640px;
+}
+.dot {
+  display: inline-block;
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.badge {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #efeee9;
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+/* Layout: the graph fills the window; everything else floats over it. */
+.app {
+  position: fixed;
+  inset: 0;
+}
+.graph {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 40% 45%, #ffffff 0%, var(--bg) 70%);
+}
+.brand {
+  position: absolute;
+  top: 18px;
+  left: 22px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12px;
+  pointer-events: none;
+  user-select: none;
+}
+.wordmark {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.workspace {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--ink-soft);
+}
+.workspace-picker {
+  pointer-events: auto;
+  font-family: inherit;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: white;
+  padding: 2px 5px;
+  max-width: 240px;
+}
+.brand-actions {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  pointer-events: auto;
+  user-select: text;
+}
+.brand-actions:empty {
+  display: none;
+}
+
+/* Add sources: a button, and a line on what the last add did. */
+.add-sources {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.add-sources > button,
+.add-sources-status > button {
+  padding: 2px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 12px;
+  cursor: pointer;
+}
+.add-sources > button:disabled {
+  cursor: progress;
+  color: var(--muted);
+}
+.add-sources-status {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.add-sources-status .error {
+  padding: 0;
+}
+.add-sources-status > button.link {
+  border: none;
+  background: none;
+  padding: 0 2px;
+  color: var(--muted);
+}
+/* In the top bar the status floats below the button, over the graph. */
+.brand .add-sources-status {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: 420px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(43, 48, 59, 0.12), 0 0 0 1px var(--line);
+}
+.layout-switch {
+  position: absolute;
+  top: 48px;
+  left: 18px;
+  display: flex;
+  padding: 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(6px);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 11.5px;
+  user-select: none;
+}
+.layout-switch button {
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.layout-switch button:hover {
+  background: var(--hover);
+}
+.layout-switch button.on {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 550;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--line);
+}
+.legend-card {
+  position: absolute;
+  left: 18px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(6px);
+  font-size: 11px;
+  color: var(--ink-soft);
+  user-select: none;
+}
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Drawer */
+.drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  box-shadow: -12px 0 40px rgba(30, 35, 45, 0.07);
+  transform: translateX(calc(100% + 48px));
+  transition: transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  visibility: hidden;
+}
+.drawer.open {
+  transform: none;
+  visibility: visible;
+}
+.drawer:not(.open) {
+  transition:
+    transform 220ms ease-in,
+    visibility 0s 220ms;
+}
+.drawer-grip {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 2;
+}
+.drawer-grip:hover,
+.drawer.resizing .drawer-grip {
+  background: linear-gradient(to right, transparent 3px, #d9d9d3 3px, #d9d9d3 5px, transparent 5px);
+}
+.drawer-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 16px 6px 28px;
+}
+.drawer-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.drawer-title h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.drawer-name {
+  flex: none;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--muted);
+}
+.drawer-actions {
+  display: flex;
+  gap: 2px;
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.icon:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--ink);
+}
+.icon:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.drawer-sub {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 28px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--muted);
+}
+.toggle-source {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.toggle-source input {
+  margin: 0;
+  accent-color: var(--ink-soft);
+}
+.drawer-body {
+  flex: 1;
+  overflow: auto;
+  padding: 20px 28px 120px;
+}
+.legend {
+  display: flex;
+  gap: 12px;
+}
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+/* Highlights, one class per sourcing (also used by the legend swatches) */
+.hl {
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background-color 120ms;
+}
+.hl-cited {
+  background: rgba(77, 124, 91, 0.1);
+  box-shadow: inset 0 -1.5px 0 rgba(77, 124, 91, 0.45);
+}
+.hl-source {
+  background: rgba(74, 111, 165, 0.07);
+  box-shadow: inset 0 -1px 0 rgba(74, 111, 165, 0.35);
+}
+.hl-unsourced {
+  background: rgba(176, 122, 42, 0.1);
+  box-shadow: inset 0 -1.5px 0 rgba(176, 122, 42, 0.45);
+}
+.hl-uncited {
+  background: rgba(192, 80, 77, 0.06);
+  text-decoration: underline wavy rgba(192, 80, 77, 0.55);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.hl-cited:hover {
+  background: rgba(77, 124, 91, 0.2);
+}
+.hl-source:hover {
+  background: rgba(74, 111, 165, 0.15);
+}
+.hl-unsourced:hover {
+  background: rgba(176, 122, 42, 0.2);
+}
+.hl-uncited:hover {
+  background: rgba(192, 80, 77, 0.12);
+}
+[data-target] {
+  outline: 1.5px solid rgba(232, 163, 61, 0.75);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.flash {
+  animation: flash 1.6s ease-out;
+}
+@keyframes flash {
+  0%,
+  25% {
+    background-color: rgba(232, 163, 61, 0.38);
+  }
+}
+
+/* Markdown */
+.md {
+  max-width: 720px;
+  line-height: 1.7;
+  color: #343a46;
+}
+.md h1,
+.md h2,
+.md h3 {
+  line-height: 1.3;
+  color: var(--ink);
+  font-weight: 600;
+}
+.md h1 {
+  font-size: 22px;
+  margin: 0 0 16px;
+}
+.md h2 {
+  font-size: 17px;
+  margin: 28px 0 10px;
+}
+.md h3 {
+  font-size: 15px;
+  margin: 22px 0 8px;
+}
+.md table {
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.md th,
+.md td {
+  border-bottom: 1px solid var(--line);
+  padding: 6px 12px 6px 0;
+  text-align: left;
+  vertical-align: top;
+}
+.md th {
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.md code {
+  background: #f4f4f0;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 0.92em;
+}
+.md blockquote {
+  border-left: 2px solid var(--line);
+  margin-left: 0;
+  padding-left: 14px;
+  color: var(--ink-soft);
+}
+.md hr {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 24px 0;
+}
+.md-source {
+  white-space: pre-wrap;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: #343a46;
+  margin: 0;
+}
+
+/* JSON */
+.json {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.json-row {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.json-key {
+  color: #8a5a44;
+}
+.json-string {
+  color: #3d6b4f;
+}
+.json-scalar {
+  color: #4a5fa0;
+}
+.toggle {
+  border: none;
+  background: none;
+  padding: 0 4px 0 0;
+  cursor: pointer;
+  color: var(--muted);
+  width: 16px;
+}
+.target-block {
+  border-radius: 3px;
+}
+
+/* Tables (CSV, TSV) */
+.table-wrap {
+  overflow: auto;
+}
+.csv {
+  border-collapse: collapse;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.csv th,
+.csv td {
+  border: 1px solid var(--line);
+  padding: 3px 7px;
+  text-align: left;
+  vertical-align: top;
+}
+.csv td {
+  white-space: pre-wrap;
+  max-width: 280px;
+  background: var(--surface);
+}
+.csv th {
+  color: var(--muted);
+  font-weight: normal;
+  font-variant-numeric: tabular-nums;
+  background: var(--bg);
+}
+.csv thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.csv .row-number {
+  text-align: right;
+}
+.csv .missing {
+  background: repeating-linear-gradient(45deg, var(--bg), var(--bg) 4px, var(--line) 4px, var(--line) 5px);
+}
+.csv .target-line > th,
+.csv th.target-line {
+  color: var(--accent);
+  font-weight: 600;
+}
+.csv td.target-cell {
+  background: rgba(232, 163, 61, 0.12);
+  outline: none; /* the row or column is outlined, not each of its cells */
+}
+
+/* PDF */
+.pdf {
+  max-width: 860px;
+}
+.pdf-page {
+  position: relative;
+  margin: 0 0 20px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  background: white;
+}
+.pdf-page canvas {
+  display: block;
+}
+.pdf-box {
+  position: absolute;
+  border: 1px solid rgba(77, 124, 91, 0.5);
+  background: rgba(77, 124, 91, 0.06);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background-color 120ms;
+}
+.pdf-box:hover {
+  background: rgba(77, 124, 91, 0.18);
+}
+.pdf-target {
+  border: 1.5px solid var(--accent);
+  background: rgba(232, 163, 61, 0.1);
+  pointer-events: none;
+}
+.pdf-page-label {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Popover */
+.popover {
+  position: fixed;
+  z-index: 10;
+  max-height: 60vh;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow:
+    0 12px 32px rgba(30, 35, 45, 0.12),
+    0 2px 6px rgba(30, 35, 45, 0.05);
+  padding: 6px;
+  font-size: 13px;
+  animation: pop-in 120ms ease-out;
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+.pop-citation {
+  padding: 6px 4px;
+}
+.pop-citation + .pop-citation {
+  border-top: 1px solid var(--line);
+}
+.pop-head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  padding: 0 6px 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.kind {
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.pop-attrs {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pop-link {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.pop-link:hover {
+  background: var(--hover);
+}
+.pop-outside {
+  cursor: default;
+}
+.pop-outside:hover {
+  background: none;
+}
+.pop-target {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.pop-target b {
+  font-weight: 550;
+}
+.pop-where {
+  color: var(--muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pop-go {
+  margin-left: auto;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.pop-link:hover .pop-go {
+  opacity: 1;
+}
+.pop-quote {
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.pop-note,
+.pop-empty {
+  padding: 2px 6px 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Browsing a big store: the document list on the left, the graph around the open document. */
+.graph-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.doclist {
+  position: absolute;
+  top: 84px; /* below the layout switch */
+  left: 18px;
+  bottom: 168px;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 1px 3px rgba(43, 48, 59, 0.08);
+  overflow: hidden;
+}
+.doclist-filter {
+  margin: 10px 10px 6px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 13px;
+}
+.doclist-count {
+  padding: 0 12px 6px;
+  font-size: 11px;
+}
+.doclist-items {
+  flex: 1;
+  margin: 0;
+  padding: 0 4px;
+  list-style: none;
+  overflow-y: auto;
+}
+.doclist-items button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.doclist-items button:hover {
+  background: var(--hover);
+}
+.doclist-items button.on {
+  background: #fbf0dd;
+}
+.doclist-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.doclist-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+}
+.doclist-pager button {
+  padding: 2px 6px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+.doclist-pager button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+.browse-status {
+  position: absolute;
+  top: 16px;
+  left: 310px; /* DOCLIST_INSET in App.tsx */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(6px);
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.browse-status > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.browse-status button {
+  flex: none;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 12px;
+  cursor: pointer;
+}

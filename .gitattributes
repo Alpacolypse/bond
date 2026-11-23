@@ -1,0 +1,3 @@
+# Fixtures are evidence: Bond names a version by its bytes, so git must never rewrite their line endings (as it
+# does on a Windows checkout by default).
+fixtures/** -text

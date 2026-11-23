@@ -1,0 +1,72 @@
+[project]
+name = "bond"
+version = "0.1.0"
+description = "Immutable documents with explicit, inspectable provenance."
+readme = "README.md"
+license = "LicenseRef-Proprietary"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Anuj Iravane" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "markdown-it-py>=4.2.0",
+    "pypdf>=6.20.0",
+]
+
+[project.optional-dependencies]
+# `bond view`: the viewer on localhost
+view = [
+    "fastapi>=0.143.0",
+    "python-multipart>=0.0.20",
+    "uvicorn>=0.54.0",
+]
+# `bond mcp`: the MCP server, and its app view (which answers the viewer's API in process)
+mcp = [
+    "fastapi>=0.143.0",
+    "mcp>=2.3.0",
+]
+
+[project.scripts]
+bond = "bond.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.8.15,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "boto3>=1.43.114",
+    "fastapi>=0.143.0",
+    "httpx>=0.28.1",
+    "mcp>=2.3.0",
+    "moto>=5.2.4",
+    "psycopg-pool>=3.3.3",
+    "psycopg[binary]>=3.3.6",
+    "pytest>=9.1.1",
+    "reportlab>=5.0.1",
+    "ruff>=0.17.0",
+    "ty>=0.0.86",
+    "types-boto3[s3]>=1.43.117",
+    "uvicorn>=0.54.0",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["bond", "case_001", "conftest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# the examples are importable from tests, as case_001 and seed
+pythonpath = ["examples"]
+
+[tool.ty.environment]
+# pytest puts examples/ on sys.path (see pythonpath above) so tests can import case_001
+extra-paths = ["examples"]

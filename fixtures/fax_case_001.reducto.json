@@ -1,0 +1,235 @@
+{
+  "job_id": "synthetic-0001",
+  "duration": 2.81,
+  "result": {
+    "type": "full",
+    "chunks": [
+      {
+        "content": "FAX COVER SHEET\n\nTo: Intake Unit, Northwind Legal Aid\n\nFrom: Riverside Tenants Union, Elena Marsh\n\nDate: 09/28/2026    Pages: 2\n\nRE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)\n\nClient: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902\n\nCONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
+        "embed": "FAX COVER SHEET\n\nTo: Intake Unit, Northwind Legal Aid\n\nFrom: Riverside Tenants Union, Elena Marsh\n\nDate: 09/28/2026    Pages: 2\n\nRE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)\n\nClient: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902\n\nCONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
+        "enriched": null,
+        "blocks": [
+          {
+            "type": "Title",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.0909,
+              "width": 0.2844,
+              "height": 0.0364,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "FAX COVER SHEET",
+            "confidence": "high"
+          },
+          {
+            "type": "Key Value",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.1409,
+              "width": 0.2942,
+              "height": 0.0222,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "To: Intake Unit, Northwind Legal Aid",
+            "confidence": "high"
+          },
+          {
+            "type": "Key Value",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.1715,
+              "width": 0.3661,
+              "height": 0.0222,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "From: Riverside Tenants Union, Elena Marsh",
+            "confidence": "high"
+          },
+          {
+            "type": "Key Value",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.202,
+              "width": 0.2354,
+              "height": 0.0222,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "Date: 09/28/2026    Pages: 2",
+            "confidence": "high"
+          },
+          {
+            "type": "Key Value",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.2326,
+              "width": 0.4451,
+              "height": 0.0403,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "RE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)",
+            "confidence": "high"
+          },
+          {
+            "type": "Key Value",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.2812,
+              "width": 0.472,
+              "height": 0.0222,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "Client: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.3117,
+              "width": 0.4372,
+              "height": 0.033,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "CONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
+            "confidence": "high"
+          }
+        ]
+      },
+      {
+        "content": "Intake Note - 09/26/2026\n\nProblem: Water leaking through the bathroom ceiling for 8 weeks.\n\nHistory: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.\n\nNotice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”\n\nInspection: Active drip from the bathroom ceiling light fixture.\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\ndry. No signiﬁcant damage to other rooms.\n\nEmergencies: None. No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.\n\nAssessment: Habitability defect, water intrusion (HC 12.4), not\nrepaired after written notice.\n\nPlan: Repair and deduct for the ceiling leak, or a demand letter\nto the landlord before filing in housing court.\n\nElectronically signed: Elena Marsh, Tenant Organizer",
+        "embed": "Intake Note - 09/26/2026\n\nProblem: Water leaking through the bathroom ceiling for 8 weeks.\n\nHistory: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.\n\nNotice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”\n\nInspection: Active drip from the bathroom ceiling light fixture.\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\ndry. No signiﬁcant damage to other rooms.\n\nEmergencies: None. No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.\n\nAssessment: Habitability defect, water intrusion (HC 12.4), not\nrepaired after written notice.\n\nPlan: Repair and deduct for the ceiling leak, or a demand letter\nto the landlord before filing in housing court.\n\nElectronically signed: Elena Marsh, Tenant Organizer",
+        "enriched": null,
+        "blocks": [
+          {
+            "type": "Title",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.0909,
+              "width": 0.2646,
+              "height": 0.0283,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Intake Note - 09/26/2026",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.1298,
+              "width": 0.528,
+              "height": 0.0222,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Problem: Water leaking through the bathroom ceiling for 8 weeks.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.1604,
+              "width": 0.4981,
+              "height": 0.0583,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "History: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.227,
+              "width": 0.507,
+              "height": 0.0583,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Notice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.2937,
+              "width": 0.487,
+              "height": 0.0583,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Inspection: Active drip from the bathroom ceiling light fixture.\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\ndry. No signiﬁcant damage to other rooms.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.3604,
+              "width": 0.532,
+              "height": 0.0403,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Emergencies: None. No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.409,
+              "width": 0.501,
+              "height": 0.0403,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Assessment: Habitability defect, water intrusion (HC 12.4), not\nrepaired after written notice.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.4576,
+              "width": 0.5051,
+              "height": 0.0403,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Plan: Repair and deduct for the ceiling leak, or a demand letter\nto the landlord before filing in housing court.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.5062,
+              "width": 0.3925,
+              "height": 0.0202,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Electronically signed: Elena Marsh, Tenant Organizer",
+            "confidence": "high"
+          }
+        ]
+      }
+    ]
+  },
+  "usage": {
+    "num_pages": 2,
+    "credits": 2
+  }
+}

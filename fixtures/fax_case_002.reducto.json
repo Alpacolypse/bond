@@ -1,0 +1,235 @@
+{
+  "job_id": "synthetic-0002",
+  "duration": 3.07,
+  "result": {
+    "type": "full",
+    "chunks": [
+      {
+        "content": "FAX COVER SHEET\n\nTo: Intake Unit, Northwind Legal Aid\n\nFrom: Lakeshore Housing Clinic, Tomas Reyes\n\nDate: 10/02/2026    Pages: 2\n\nRE: Request for representation, rodent infestation in the\nkitchen and bedroom (HC 14.1)\n\nClient: Priya Natarajan    Unit: 7C    Matter ID: NWL-5520817\n\nCONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
+        "embed": "FAX COVER SHEET\n\nTo: Intake Unit, Northwind Legal Aid\n\nFrom: Lakeshore Housing Clinic, Tomas Reyes\n\nDate: 10/02/2026    Pages: 2\n\nRE: Request for representation, rodent infestation in the\nkitchen and bedroom (HC 14.1)\n\nClient: Priya Natarajan    Unit: 7C    Matter ID: NWL-5520817\n\nCONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
+        "enriched": null,
+        "blocks": [
+          {
+            "type": "Title",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.0909,
+              "width": 0.2844,
+              "height": 0.0364,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "FAX COVER SHEET",
+            "confidence": "high"
+          },
+          {
+            "type": "Key Value",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.1409,
+              "width": 0.2942,
+              "height": 0.0222,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "To: Intake Unit, Northwind Legal Aid",
+            "confidence": "high"
+          },
+          {
+            "type": "Key Value",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.1715,
+              "width": 0.3831,
+              "height": 0.0222,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "From: Lakeshore Housing Clinic, Tomas Reyes",
+            "confidence": "high"
+          },
+          {
+            "type": "Key Value",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.202,
+              "width": 0.2354,
+              "height": 0.0222,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "Date: 10/02/2026    Pages: 2",
+            "confidence": "high"
+          },
+          {
+            "type": "Key Value",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.2326,
+              "width": 0.4511,
+              "height": 0.0403,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "RE: Request for representation, rodent infestation in the\nkitchen and bedroom (HC 14.1)",
+            "confidence": "high"
+          },
+          {
+            "type": "Key Value",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.2812,
+              "width": 0.491,
+              "height": 0.0222,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "Client: Priya Natarajan    Unit: 7C    Matter ID: NWL-5520817",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.3117,
+              "width": 0.4372,
+              "height": 0.033,
+              "page": 1,
+              "original_page": 1
+            },
+            "content": "CONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
+            "confidence": "high"
+          }
+        ]
+      },
+      {
+        "content": "Housing Clinic Visit - 09/30/2026\n\nProblem: Mice in the kitchen and bedroom, with droppings in the cabinets,\nfor 5 weeks since the unit next door was renovated.\n\nHistory: Droppings turn up daily along the kitchen baseboards and\nunder the sink. The tenant's son was “bitten once” in September.\n\nNotice given: 4 weeks of written notice (2 letters), a portal\nmessage, and traps the tenant bought herself, without\nimprovement.\n\nInspection: Fresh droppings in 3 rooms. Gnaw marks on the cabinet\ndoors and a stuﬀed toy. Gaps around the pipes under the sink.\n\nPhotos: Dated photographs from 09/12/2026 show droppings and\ngnaw marks in the kitchen.\n\nAssessment: Suspected rodent infestation, kitchen and bedroom\n(HC 14.1), with signs of active spread.\n\nPlan: Demand letter for professional extermination and a city\ninspec-\ntion request.\n\nElectronically signed: Tomas Reyes, Housing Counselor",
+        "embed": "Housing Clinic Visit - 09/30/2026\n\nProblem: Mice in the kitchen and bedroom, with droppings in the cabinets,\nfor 5 weeks since the unit next door was renovated.\n\nHistory: Droppings turn up daily along the kitchen baseboards and\nunder the sink. The tenant's son was “bitten once” in September.\n\nNotice given: 4 weeks of written notice (2 letters), a portal\nmessage, and traps the tenant bought herself, without\nimprovement.\n\nInspection: Fresh droppings in 3 rooms. Gnaw marks on the cabinet\ndoors and a stuﬀed toy. Gaps around the pipes under the sink.\n\nPhotos: Dated photographs from 09/12/2026 show droppings and\ngnaw marks in the kitchen.\n\nAssessment: Suspected rodent infestation, kitchen and bedroom\n(HC 14.1), with signs of active spread.\n\nPlan: Demand letter for professional extermination and a city\ninspec-\ntion request.\n\nElectronically signed: Tomas Reyes, Housing Counselor",
+        "enriched": null,
+        "blocks": [
+          {
+            "type": "Title",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.0909,
+              "width": 0.3562,
+              "height": 0.0283,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Housing Clinic Visit - 09/30/2026",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.1298,
+              "width": 0.5949,
+              "height": 0.0403,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Problem: Mice in the kitchen and bedroom, with droppings in the cabinets,\nfor 5 weeks since the unit next door was renovated.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.1784,
+              "width": 0.532,
+              "height": 0.0403,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "History: Droppings turn up daily along the kitchen baseboards and\nunder the sink. The tenant's son was “bitten once” in September.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.227,
+              "width": 0.4631,
+              "height": 0.0583,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Notice given: 4 weeks of written notice (2 letters), a portal\nmessage, and traps the tenant bought herself, without\nimprovement.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.2937,
+              "width": 0.546,
+              "height": 0.0403,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Inspection: Fresh droppings in 3 rooms. Gnaw marks on the cabinet\ndoors and a stuﬀed toy. Gaps around the pipes under the sink.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.3423,
+              "width": 0.5271,
+              "height": 0.0403,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Photos: Dated photographs from 09/12/2026 show droppings and\ngnaw marks in the kitchen.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.3909,
+              "width": 0.52,
+              "height": 0.0403,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Assessment: Suspected rodent infestation, kitchen and bedroom\n(HC 14.1), with signs of active spread.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.4395,
+              "width": 0.488,
+              "height": 0.0583,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Plan: Demand letter for professional extermination and a city\ninspec-\ntion request.",
+            "confidence": "high"
+          },
+          {
+            "type": "Text",
+            "bbox": {
+              "left": 0.1144,
+              "top": 0.5062,
+              "width": 0.4133,
+              "height": 0.0202,
+              "page": 2,
+              "original_page": 2
+            },
+            "content": "Electronically signed: Tomas Reyes, Housing Counselor",
+            "confidence": "high"
+          }
+        ]
+      }
+    ]
+  },
+  "usage": {
+    "num_pages": 2,
+    "credits": 2
+  }
+}
