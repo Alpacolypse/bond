@@ -465,14 +465,15 @@ def write(
     citations = _citations(bond, compiled)
     if isinstance(citations, Refused):
         return citations
-    if issues := bond.check_write(document, compiled.content, citations, format=fmt, base=base_version, policy=policy):
-        return Refused(_explain(issues, compiled, codec, document))
+    try:
+        plan = bond.plan_write(document, compiled.content, citations, format=fmt, base=base_version, policy=policy)
+    except WriteError as e:  # every issue the write would be refused for
+        return Refused(_explain(e.errors, compiled, codec, document))
     if dry_run:
         return Checked()
     try:
-        result = bond.write_document(document, compiled.content, citations, format=fmt, base=base_version,
-                                     policy=policy)
-    except WriteError as e:  # another write moved the document between the check and this one
+        result = bond.commit(plan)
+    except WriteError as e:  # another write moved the document between planning and committing
         return Refused(_explain(e.errors, compiled, codec, document))
     whole = Ref(result.version, VersionLocator())
     return Written(_handle(bond, whole), result.advanced, bond.check_support(whole, limit=SUPPORT_LIMIT).status)

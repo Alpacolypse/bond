@@ -52,6 +52,7 @@ from .models import (
     WriteResult,
 )
 from .parsers import Malformed, ParsedDoc
+from .plans import FilingChange, PlannedVersion, WritePlan, checked
 from .policies import STRICT, Policy
 from .storage import Blobs, Conflict, NewVersion, filing_problem
 from .storage.filing import Filing
@@ -162,6 +163,14 @@ class Bond:
         identity: it changes no version id, and verify never reads it. Ingesting bytes again where they already
         are adds no entry, so it doesn't record a new origin either.
         """
+        return self.commit(self.plan_ingest(document, source, format=format, base=base, title=title, origin=origin))
+
+    def plan_ingest(
+        self, document: str, source: bytes | str | os.PathLike[str], *,
+        format: Format | None = None, base: VersionId | None = None, title: str | None = None,
+        origin: str | None = None,
+    ) -> WritePlan:
+        """The plan ingest commits; raises WriteError as ingest does. Stores nothing."""
         if isinstance(source, bytes):
             data, fmt = source, format or sniff(source)
         else:
@@ -170,9 +179,9 @@ class Bond:
             fmt = format or from_suffix(path.suffix) or sniff(data)
         whole = [Citation(CitationKind.SOURCE, VersionLocator(), [])]
         version = version_id(hash_bytes(data), fmt, whole)
-        if self.records.version(version):  # skip parsing it again
-            return self._file(version, document, base, None, title, origin)
-        return self._write(data, fmt, document, whole, base, STRICT, title, None, origin)
+        if self.records.version(version):  # stored already: only filing it is left, so skip parsing it again
+            return self._plan_filing((), FilingChange(document, version, base, None, origin, title), STRICT)
+        return self._plan_written(data, fmt, document, whole, base, STRICT, title, origin)
 
     # --- reading versions -----------------------------------------------------
 
@@ -308,8 +317,24 @@ class Bond:
 
         A caller that expects refusals, like an agent's tools, asks check_write first.
         """
+        return self.commit(self.plan_write(document, content, citations, format=format, base=base, policy=policy,
+                                           title=title))
+
+    def plan_write(
+        self,
+        document: str,
+        content: bytes | str,
+        citations: Sequence[Citation],
+        *,
+        format: Format | None = None,
+        base: VersionId | None = None,
+        policy: Policy = STRICT,
+        title: str | None = None,
+    ) -> WritePlan:
+        """The plan write_document commits: checked now, against the workspace as it is, or WriteError with every
+        issue. Stores nothing; commit(plan) does the write. See bond.plans."""
         data, fmt = _encoded(content, format)
-        return self._write(data, fmt, document, citations, base, policy, title, None, None)
+        return self._plan_written(data, fmt, document, citations, base, policy, title, None)
 
     def check_write(
         self,
@@ -339,22 +364,84 @@ class Bond:
             issues.append(_conflict_issue(conflict))
         return issues
 
-    def _write(
+    def _plan_written(
         self, content: bytes, format: Format, document: str, citations: Sequence[Citation], base: VersionId | None,
-        policy: Policy, title: str | None, imported: Imported | None, origin: str | None,
-    ) -> WriteResult:
+        policy: Policy, title: str | None, origin: str | None,
+    ) -> WritePlan:
         if issues := self._issues(content, format, document, citations, base, policy, title):
             raise WriteError(issues)
-        version = version_id(hash_bytes(content), format, list(citations))
         content_hash = hash_bytes(content)
-        self.blobs.put(content_hash, content)  # before any row refers to it
+        version = version_id(content_hash, format, list(citations))
         new = NewVersion(version, content_hash, format, content, list(citations))
-        filed = self.filing.file(version, document, base, imported=imported, origin=origin,
-                                 before=partial(self.records.put, new))  # its record, before the entry naming it
-        if isinstance(filed, Conflict):  # another write moved the document since it was checked
+        return checked(WritePlan(self.workspace.id, (PlannedVersion(new),),
+                                 FilingChange(document, version, base, None, origin, title), policy))
+
+    def _plan_filing(
+        self, versions: tuple[PlannedVersion, ...], filing: FilingChange | None, policy: Policy,
+    ) -> WritePlan:
+        """A plan that files a version stored already (or brought with it), checked for its label and filing."""
+        if filing is not None:
+            issues = _label_issues(filing.document, filing.title)
+            conflict = filing_problem(self.filing.document(filing.document), filing.document, filing.base,
+                                      filing.version)
+            if conflict:
+                issues.append(_conflict_issue(conflict))
+            if issues:
+                raise WriteError(issues)
+        return checked(WritePlan(self.workspace.id, versions, filing, policy))
+
+    def commit(self, plan: WritePlan) -> WriteResult:
+        """Do a planned write: store its versions (blobs, then records), file one (its history entry, then its
+        title), and say what changed. Raises WriteError(stale_base) if the document moved since the plan was made,
+        having stored no version it files. A plan that wasn't made by this process's checks (one loaded from JSON)
+        is checked again first, and refused with every issue as a write would be. Committing again is harmless."""
+        if plan.workspace != self.workspace.id:
+            raise ValueError(f"this plan was made in another workspace ({plan.workspace}), not {self.workspace.id}")
+        for pv in plan.versions:
+            new = pv.new
+            if hash_bytes(new.data) != new.content_hash or version_id(
+                    new.content_hash, new.format, list(new.citations)) != new.id:
+                raise BondError(f"the plan's version {new.id[:12]}… doesn't hash to its id")
+        if not plan.checked:
+            self._recheck(plan)
+        filed_new = None
+        stored = False
+        for pv in plan.versions:
+            self.blobs.put(pv.new.content_hash, pv.new.data)  # before any record names it
+            if plan.filing is not None and pv.new.id == plan.filing.version:
+                filed_new = pv.new  # stored with its filing, only if that goes through
+            else:
+                stored |= self.records.put(pv.new)
+        if plan.filing is None:  # an import that files nothing: advanced says whether it stored anything
+            return WriteResult(plan.version or VersionId(""), stored)
+        f = plan.filing
+        before = None if filed_new is None else partial(self.records.put, filed_new)
+        filed = self.filing.file(f.version, f.document, f.base, imported=f.imported, origin=f.origin, before=before)
+        if isinstance(filed, Conflict):  # another write moved the document since the plan was made
             raise WriteError([_conflict_issue(filed)])
-        self._title(document, title)
-        return WriteResult(version, filed.advanced)
+        self._title(f.document, f.title)
+        return WriteResult(f.version, filed.advanced)
+
+    def _recheck(self, plan: WritePlan) -> None:
+        """Check a plan from outside as the write it plans would be checked."""
+        issues: list[Issue] = []
+        for pv in plan.versions:
+            if not pv.imported:
+                issues += self._check(pv.new.data, pv.new.format, pv.new.citations, plan.policy, frozenset())
+        if plan.filing is not None:
+            issues += _label_issues(plan.filing.document, plan.filing.title)
+        if issues:
+            raise WriteError(issues)
+
+    def stage(self, plan: WritePlan) -> str:
+        """Put a plan's bytes in this workspace's blobs, and return the plan as JSON, to keep and commit later."""
+        for content_hash, data in plan.blobs().items():
+            self.blobs.put(content_hash, data)
+        return plan.to_json()
+
+    def load_plan(self, text: str) -> WritePlan:
+        """A plan stage returned, with its bytes read from this workspace's blobs; commit checks it again."""
+        return WritePlan.from_json(text, self.blobs)
 
     def _title(self, document: str, title: str | None) -> None:
         """Label a document just filed; title was checked before anything was stored."""
@@ -429,19 +516,6 @@ class Bond:
 
     # --- filing --------------------------------------------------------------
 
-    def _file(
-        self, version: VersionId, document: str, base: VersionId | None, imported: Imported | None,
-        title: str | None, origin: str | None,
-    ) -> WriteResult:
-        """File a version that is stored already."""
-        if issues := _label_issues(document, title):
-            raise WriteError(issues)
-        filed = self.filing.file(version, document, base, imported=imported, origin=origin)
-        if isinstance(filed, Conflict):
-            raise WriteError([_conflict_issue(filed)])
-        self._title(document, title)
-        return WriteResult(version, filed.advanced)
-
     def document(self, name: str) -> DocumentRef:
         """The document with this name, with its head; raises UnknownDocument if there is none.
 
@@ -474,35 +548,53 @@ class Bond:
         (frontier()); importing one of them later changes nothing here, since its id is already committed to.
         Import never promotes derived or unsourced text to a source declaration.
         """
+        return self.commit(self.plan_import(source, document, name=name, base=base, depth=depth, limit=limit))
+
+    def plan_import(
+        self, source: Bond, document: str, *, name: str | None = None, base: VersionId | None = None,
+        depth: int | None = 0, limit: int | None = None,
+    ) -> WritePlan:
+        """The plan import_document commits: the versions it copies, each checked against its id in source, and
+        the filing. Raises WriteError for a filing that would be refused. Stores nothing."""
         _check_other(self, source)
         head = source.document(document).head
         imported = Imported(source.workspace.id, source.workspace.name, head)
-        self._bring(source, [head], depth, limit)
-        return self._file(head, document if name is None else name, base, imported, None, None)
+        versions = self._bring(source, [head], depth, limit)
+        return self._plan_filing(versions, FilingChange(document if name is None else name, head, base, imported),
+                                 STRICT)
 
     def import_version(
         self, source: Bond, version: VersionId, *, depth: int | None = 0, limit: int | None = None,
     ) -> WriteResult:
         """Copy a version an earlier import left outside (see frontier()) from source, without filing it, and what
         it rests on as import_document does. advanced says whether anything was copied."""
+        result = self.commit(self.plan_import_version(source, version, depth=depth, limit=limit))
+        return WriteResult(version, result.advanced)
+
+    def plan_import_version(
+        self, source: Bond, version: VersionId, *, depth: int | None = 0, limit: int | None = None,
+    ) -> WritePlan:
+        """The plan import_version commits. Stores nothing."""
         _check_other(self, source)
         if self.records.version(version) is None and not self.index.supported_by(version):
             raise ValueError(f"nothing in this workspace rests on version {version[:12]}…; import a document "
                              "by name instead")
-        return WriteResult(version, bool(self._bring(source, [version], depth, limit)))
+        return self._plan_filing(self._bring(source, [version], depth, limit), None, STRICT)
 
     def frontier(self) -> list[VersionId]:
         """Versions that something in this workspace rests on but that aren't in it: the frontier imports left."""
         return self.index.outside()
 
-    def _bring(self, source: Bond, versions: list[VersionId], depth: int | None, limit: int | None) -> list[VersionId]:
-        """Copy versions from source, then what they rest on, depth hops down; those already here are kept, but
-        what they rest on is still followed. Returns the versions copied."""
+    def _bring(
+        self, source: Bond, versions: list[VersionId], depth: int | None, limit: int | None,
+    ) -> tuple[PlannedVersion, ...]:
+        """The versions to copy from source: these, then what they rest on, depth hops down; those already here are
+        kept, but what they rest on is still followed. Each before any that rests on it. Stores nothing."""
         if depth is not None and depth < 0:
             raise ValueError("depth must be non-negative or None")
         if limit is not None and limit < 1:
             raise ValueError("limit must be at least 1")
-        brought: list[VersionId] = []
+        brought: list[PlannedVersion] = []
         seen: set[VersionId] = set()
         level, hops = versions, 0
         while level:
@@ -511,27 +603,25 @@ class Bond:
                 if v in seen:
                     continue
                 if limit is not None and len(seen) >= limit:
-                    return brought
+                    return tuple(reversed(brought))
                 seen.add(v)
                 cited = self._copy(source, v, brought)
                 following += [s.version for c in cited for s in c.supports if s.version != v]
             if depth is not None and hops >= depth:
                 break
             level, hops = following, hops + 1
-        return brought
+        return tuple(reversed(brought))
 
-    def _copy(self, source: Bond, v: VersionId, brought: list[VersionId]) -> list[StoredCitation]:
-        """Copy one version from source unless it is here; its citations, none if source doesn't have it either
-        (it stays on the frontier)."""
+    def _copy(self, source: Bond, v: VersionId, brought: list[PlannedVersion]) -> list[StoredCitation]:
+        """Add one version from source to brought unless it is here; its citations, none if source doesn't have it
+        either (it stays on the frontier)."""
         if self.records.version(v) is not None:
             return self.records.citations(v)
         if source.records.version(v) is None:
             return []
         new = _checked_import(source, v)
-        self.blobs.put(new.content_hash, new.data)  # before any row refers to it
-        self.records.put(new)
-        brought.append(v)
-        return self.records.citations(v)
+        brought.append(PlannedVersion(new, imported=True))
+        return source.records.citations(v)
 
     # --- citations / trace ---------------------------------------------------
 

@@ -88,6 +88,22 @@ From the command line: `bond import --from ./policies --into ./cases/case-001 po
 
 [examples/workspaces.py](../examples/workspaces.py) builds a policies workspace and a workspace per case.
 
+## Plans: deciding a write apart from doing it
+
+```python
+plan = bond.plan_write("note", content, cite)   # checked now; stores nothing; WriteError as a write would raise
+result = bond.commit(plan)                       # stores it and files it; stale_base if the document moved since
+```
+
+| Method | What it does |
+|---|---|
+| `plan_write(...)`, `plan_ingest(...)`, `plan_import(...)`, `plan_import_version(...)` | Take what `write_document`, `ingest`, `import_document` and `import_version` take, and return a `WritePlan` (`bond.plans`): the versions to store and where to file one. Checked against the workspace as it is; nothing is stored. Those four methods are `commit` of these. |
+| `commit(plan)` | Store a plan's versions (blobs, then records) and file one (its history entry, then its title). Refused with `stale_base` if the document moved since the plan was made, having filed nothing. Committing again is harmless. |
+| `stage(plan)` | Put a plan's bytes in the blobs, and return it as JSON (bytes named by hash), to keep where a host keeps its steps. |
+| `load_plan(text)` | A staged plan, with its bytes read back. It is checked again when committed, so a plan from outside can't store what a write couldn't. |
+
+A plan stays good: versions are never removed, so what it checked stays true, except the document it files in, which `commit` checks again atomically. So a host can plan in one step (an agent's tool) and commit in another (the loop that runs it), or commit again after a crash.
+
 ## Formats
 
 Everything Bond knows about a format is one entry in the format registry (`formats.py`): its media type, file suffixes, how to recognise its bytes, its parser, and whether it has text of its own to read, search and quote (a PDF doesn't). The core, the citation kinds, the server and the authoring tools ask the registry, the parsed document or what a locator addresses; none of them branches on a particular format. Adding a format is a `Format` value, a parser and a registry entry, plus an authoring codec to write it.
