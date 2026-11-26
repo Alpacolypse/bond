@@ -59,7 +59,7 @@ def test_a_retried_write_is_a_no_op_whatever_its_base(bond):
 
 
 def test_writers_racing_from_one_base_file_exactly_one_version(bond):
-    # Each writer's check passes against the head it read; filing admits the first, and the rest store nothing.
+    # Each writer's check passes against the head it read; filing admits the first, and the rest are refused.
     v1 = bond.write_document("note", b"One.", source(), format=Format.MARKDOWN)
     writers = 8
     start = threading.Barrier(writers)
@@ -78,7 +78,9 @@ def test_writers_racing_from_one_base_file_exactly_one_version(bond):
     assert len(refusals) == writers - 1 and all(e.codes == [E.STALE_BASE] for e in refusals)
     [_, winner] = bond.history("note")
     assert winner.base == v1.version
-    assert {v.id for v in details.versions(bond)} == {v1.version, winner.version}  # no loser stored a version
+    # A loser's version may be stored (its record goes in before the entry that would file it), but never filed.
+    assert all(details.filed_in(bond, v.id) == [] for v in details.versions(bond)
+               if v.id not in {v1.version, winner.version})
 
 
 def test_a_document_needs_a_name_and_a_title_if_any(bond):

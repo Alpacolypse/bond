@@ -143,7 +143,7 @@ class Workspace:
     """A self-contained set of documents and their provenance: what an agent is opened on.
 
     Citations only point at versions in the same workspace; material from another one comes in by import.
-    The id is Bond's; the name is a label, unique among the workspaces of one catalog.
+    The id is Bond's; the name is a label, unique among the workspaces of one store.
     """
 
     id: str

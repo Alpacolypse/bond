@@ -1,9 +1,10 @@
-"""Blobs in a local directory, for development, tests and single-machine stores."""
+"""Blobs on this machine: in a local directory, for development, tests and single-machine stores; or in memory."""
 
 from __future__ import annotations
 
 import os
 import tempfile
+import threading
 import time
 from collections.abc import Sequence
 from pathlib import Path
@@ -30,6 +31,22 @@ class LocalBlobs:
         # Blobs are never deleted, so one that is there stays there.
         path = self.path(content_hash)
         return _read(path) if path.is_file() else None
+
+
+class MemoryBlobs:
+    """Blobs in this process's memory: for tests, and for workspaces that live as long as their process."""
+
+    def __init__(self) -> None:
+        self._blobs: dict[str, bytes] = {}
+        self._lock = threading.Lock()
+
+    def put(self, content_hash: str, data: bytes) -> None:
+        with self._lock:
+            self._blobs.setdefault(content_hash, bytes(data))
+
+    def get(self, content_hash: str) -> bytes | None:
+        with self._lock:
+            return self._blobs.get(content_hash)
 
 
 # On Windows, opening a file that was just renamed into place can be refused for a moment while another handle on it

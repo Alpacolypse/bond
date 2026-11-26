@@ -18,7 +18,7 @@ from bond import (
 from bond.models import Issue, SupportStatus
 from bond.storage.local import LocalBlobs
 from case_001 import SUMMARY, build_citations
-from conftest import raw_sql, store_unchecked
+from conftest import rewrite_record, store_unchecked
 
 FIRST = "Water leaking through the bathroom ceiling for 8 weeks."
 
@@ -85,20 +85,29 @@ def test_a_policy_cannot_waive_integrity(bond, case):
 # --- verify -----------------------------------------------------------------------
 
 
+def set_kind(bond, version, citation, kind):
+    """Change one stored citation's kind behind Bond's back."""
+
+    def change(record):
+        for c in record["citations"]:
+            if c["id"] == citation:
+                c["kind"] = kind
+
+    rewrite_record(bond, version, change)
+
+
 def test_verify_detects_tampering_anywhere_beneath(bond, case):
     summary = bond.write_document("summary", SUMMARY.encode(), build_citations(bond, case), format=Format.MARKDOWN).version
     assert bond.verify(summary) == []
     # Rewriting one citation in the fax's OCR output, two hops down, breaks its id, and the
     # rewritten citation breaks its kind's rules too.
     first = bond.citations(case["fax"])[0]
-    raw_sql(bond, "UPDATE bond_citations SET kind = 'paraphrase' WHERE owner_version = ? AND id = ?",
-            (case["fax"], first.id))
+    set_kind(bond, case["fax"], first.id, "paraphrase")
     issues = bond.verify(summary)
     assert codes(issues) == {IssueCode.ID_MISMATCH, IssueCode.INVALID_CITATION}
     assert {i.version for i in issues} == {case["fax"]}
     assert any(f"citation {first.id[:12]}… does not hash to its id" in i.message for i in issues)
-    raw_sql(bond, "UPDATE bond_citations SET kind = ? WHERE owner_version = ? AND id = ?",
-            (first.kind.value, case["fax"], first.id))
+    set_kind(bond, case["fax"], first.id, first.kind.value)
     assert bond.verify(summary) == []
     # So does changing a blob's bytes.
     path = blob_path(bond, case["policy"])

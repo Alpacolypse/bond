@@ -7,7 +7,7 @@ import pytest
 from bond import Bond, BondError, Format
 from bond.cli import _is_loopback, main, mcp_served, parse, view_workspaces
 from bond.local import Home
-from bond.storage.sqlite import SQLiteCatalog
+from bond.storage.sqlite import SQLiteStore
 from conftest import POSTGRES, postgres_pool
 
 
@@ -31,25 +31,25 @@ def test_view_refuses_mixed_up_arguments(tmp_path):
         assert e.value.code == 2, argv
 
 
-def test_a_catalog_is_created_only_when_asked(tmp_path):
-    with pytest.raises(BondError, match="no Bond catalog"):
-        SQLiteCatalog(tmp_path / "bond.db", create=False)
+def test_a_store_is_created_only_when_asked(tmp_path):
+    with pytest.raises(BondError, match="no Bond store"):
+        SQLiteStore(tmp_path / "bond.db", create=False)
     assert not (tmp_path / "bond.db").exists()
-    SQLiteCatalog(tmp_path / "bond.db").close()
-    SQLiteCatalog(tmp_path / "bond.db", create=False).close()
+    SQLiteStore(tmp_path / "bond.db").close()
+    SQLiteStore(tmp_path / "bond.db", create=False).close()
 
 
 @pytest.mark.skipif(not POSTGRES, reason="BOND_TEST_POSTGRES unset")
 def test_view_opens_postgres_with_local_blobs_without_creating_tables(tmp_path):
-    from bond.storage.postgres import PostgresCatalog
+    from bond.storage.postgres import PostgresStore
 
     with postgres_pool() as pool:
-        with pytest.raises(BondError, match="holds no Bond catalog"):
-            PostgresCatalog(pool, create=False)
+        with pytest.raises(BondError, match="holds no Bond store"):
+            PostgresStore(pool, create=False)
         with pool.connection() as conn:
             assert conn.execute("SELECT count(*) FROM pg_tables WHERE schemaname = current_schema()").fetchone() == (0,)
-        PostgresCatalog(pool)
-        assert PostgresCatalog(pool, create=False).all_documents() == []
+        PostgresStore(pool)
+        assert list(PostgresStore(pool, create=False).list(())) == []
 
 
 def test_hosts():

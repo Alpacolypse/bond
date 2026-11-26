@@ -23,10 +23,9 @@ from bond import (
     SupportStatus as S,
 )
 from bond.authoring import ToolError, Tools
-from bond.ids import dumps
 from bond.locators import CsvLocator
 from bond.models import SupportReason as R
-from conftest import FIXTURES, raw_sql, store_unchecked
+from conftest import FIXTURES, rewrite_record, store_unchecked
 
 
 def write(bond, name, text, citations):
@@ -41,13 +40,12 @@ def rests_on(bond: Bond, citing: Ref, *cited: Ref) -> None:
     """Rewrite the records of citing's version, whose one citation is a source, so that it is a paraphrase resting on
     cited: what no write can store, since a version's id commits to what it rests on, but another code path writing
     rows could. Bond reads such records as they are."""
-    [c] = bond.citations(citing.version)
-    raw_sql(bond, "UPDATE bond_citations SET kind = 'paraphrase' WHERE workspace = ? AND owner_version = ? AND id = ?",
-            (bond.workspace.id, citing.version, c.id))
-    for position, ref in enumerate(cited, len(c.supports)):
-        raw_sql(bond, "INSERT INTO bond_supports (workspace, owner_version, citation_id, position, version, locator) "
-                "VALUES (?, ?, ?, ?, ?, ?)", (bond.workspace.id, citing.version, c.id, position, ref.version,
-                                              dumps(ref.locator.to_dict())))
+    def change(record):
+        [c] = record["citations"]
+        c["kind"] = "paraphrase"
+        c["supports"] += [[ref.version, ref.locator.to_dict()] for ref in cited]
+
+    rewrite_record(bond, citing.version, change)
 
 
 def derived(bond, name, supports):
@@ -240,8 +238,11 @@ def test_cycle_does_not_loop_or_pass_and_invalid_ancestor_is_diagnosed(bond):
 def test_an_invalid_ancestor_is_diagnosed(bond):
     base = source(bond)
     top = derived(bond, "top", [base])
-    raw_sql(bond, "UPDATE bond_supports SET locator = ? WHERE workspace = ? AND owner_version = ?",
-            (dumps(TextLocator(0, 1000).to_dict()), bond.workspace.id, top.version))  # past the end of base's text
+    def past_the_end(record):  # of base's text
+        for c in record["citations"]:
+            c["supports"] = [[v, TextLocator(0, 1000).to_dict()] for v, _ in c["supports"]]
+
+    rewrite_record(bond, top.version, past_the_end)
     r = bond.check_support(top)
     assert r.status is S.UNSUPPORTED
     assert [(i.reason, i.ref) for i in r.issues] == [(R.INVALID_REFERENCE, Ref(base.version, TextLocator(0, 1000)))]

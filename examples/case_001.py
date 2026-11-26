@@ -61,11 +61,11 @@ def retitle(bond: Bond) -> None:
     """Give every document in the store that has a title in TITLES that title.
 
     A write can title the document it writes (title=); these were written by helpers and importers that
-    don't take one, so they are titled afterwards, through the catalog.
+    don't take one, so they are titled afterwards, through Bond's filing.
     """
     for doc in bond.documents():
         if doc.name in TITLES:
-            bond.catalog.retitle(doc.name, TITLES[doc.name])
+            bond.filing.retitle(doc.name, TITLES[doc.name])
 
 
 # --- citations, as the examples write them ----------------------------------------------

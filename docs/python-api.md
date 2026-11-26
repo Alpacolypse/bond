@@ -5,7 +5,7 @@ A `Bond` is one workspace. See [Concepts](concepts.md) for what versions, citati
 ```python
 from bond import Bond, Citation, CitationKind, Ref, TextLocator, VersionLocator
 
-bond = Bond.local("./cases/case-001")  # a workspace; or Bond(catalog, blobs) on your database and bucket: see storage.md
+bond = Bond.local("./cases/case-001")  # a workspace; or Bond(store, blobs, name) on your database and bucket: see storage.md
 
 policy = bond.ingest("policy", "policy.md", title="Policy IP-112")   # a source throughout, filed as "policy"
 [hit] = bond.search("at least 6 weeks of written notice")     # discovery and citing in one
@@ -47,7 +47,7 @@ Lower-level reads for tools built on Bond (version records, the documents a vers
 
 | Function | Does |
 |---|---|
-| `document(name)`, `documents()` | A document (`id`, `name`, `head`, `title`), or all of them. `document` raises `UnknownDocument` for a name that isn't filed; `catalog.get_document(name)` returns `None` instead, to ask whether there is one. |
+| `document(name)`, `documents()` | A document (`id`, `name`, `head`, `title`), or all of them. `document` raises `UnknownDocument` for a name that isn't filed; `bond.filing.document(name)` returns `None` instead, to ask whether there is one. |
 | `history(name)` | The versions a document pointed at, oldest first, each with the `base` it was written from. A revert is a new entry. |
 
 A write files its version in a document by name, which must not be blank (`invalid_name`, as for a blank title). Leave `base` out to create the document; to write its next version, pass its head as `base`.

@@ -256,7 +256,7 @@ class Summaries:
     def lineage(self, doc: DocumentRef) -> list[VersionId]:
         """A document's versions, each once at its latest entry, oldest first: the head is last."""
         if doc.id not in self._lineage:
-            entries = [e.version for e in self.bond.catalog.history(doc.id)]
+            entries = [e.version for e in self.bond.filing.history(doc.id)]
             self._lineage[doc.id] = list(reversed(dict.fromkeys(reversed(entries))))
         return self._lineage[doc.id]
 
@@ -304,7 +304,7 @@ def shown(bond: Bond, ref: Ref) -> JsonObject:
     A JSON value in a version outside the workspace is shown by its stored position: only its version knows
     the keys."""
     locator = ref.locator
-    if not isinstance(locator, JsonLocator) or bond.catalog.get_version(ref.version) is None:
+    if not isinstance(locator, JsonLocator) or bond.records.version(ref.version) is None:
         return locator.to_dict()
     d: JsonObject = {"type": "json", "pointer": details.pointer(bond, ref)}
     if locator.span is not None:
@@ -344,7 +344,7 @@ def citations(bond: Bond, cited: list[StoredCitation]) -> list[CitationView]:
 
     def version(v: VersionId) -> Version | None:
         if v not in versions:
-            versions[v] = bond.catalog.get_version(v)
+            versions[v] = bond.records.version(v)
         return versions[v]
 
     def name(v: VersionId) -> str:
@@ -373,7 +373,7 @@ def graph(bond: Bond) -> Graph:
 
     Computed from citation rows alone, without parsing any version.
     """
-    counts = bond.catalog.citation_counts()
+    counts = bond.index.counts()
     summaries = Summaries(bond)
     nodes = []
     for version in details.versions(bond):
@@ -382,7 +382,7 @@ def graph(bond: Bond) -> Graph:
                           c.whole_source if c else False))
     nodes += [outside_node(v) for v in bond.frontier()]
     edges: dict[tuple[str, str], GraphEdge] = {}
-    for edge in bond.catalog.citation_edges():
+    for edge in bond.index.edges():
         a, b = edge.citing, edge.cited
         e = edges.setdefault((a, b), {"id": f"{a}->{b}", "from": a, "to": b, "count": 0, "kinds": {}})
         e["count"] += edge.citations
@@ -408,7 +408,7 @@ def documents(bond: Bond, q: str = "", offset: int = 0, limit: int = 50) -> Docu
     )
     page: list[DocumentRow] = []
     for d in matching[offset:offset + limit]:
-        history = bond.catalog.history(d.id)
+        history = bond.filing.history(d.id)
         imported = history[-1].imported
         page.append({
             "id": d.id, "name": d.name, "title": d.title, "head": d.head, "created_at": d.created_at,
@@ -435,7 +435,7 @@ def neighborhood(
 
     def citations_of(v: VersionId) -> list[StoredCitation]:
         if v not in owned:
-            owned[v] = bond.catalog.citations_of(v)
+            owned[v] = bond.records.citations(v)
         return owned[v]
 
     included, frontier, truncated = [center], [center], False
@@ -444,7 +444,7 @@ def neighborhood(
         next_frontier = []
         for v in frontier:
             near = [s.version for c in citations_of(v) for s in c.supports]
-            near += [c.owner_version for c in bond.catalog.citations_supported_by(v)]
+            near += [c.owner_version for c in bond.index.supported_by(v)]
             brought = 0
             for n in dict.fromkeys(near):
                 if n in seen:
@@ -462,7 +462,7 @@ def neighborhood(
     nodes: list[GraphNode] = []
     edges: dict[tuple[str, str], GraphEdge] = {}
     for v in included:
-        stored = bond.catalog.get_version(v)
+        stored = bond.records.version(v)
         if stored is None:
             nodes.append(outside_node(v))
             continue

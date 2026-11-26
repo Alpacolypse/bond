@@ -303,10 +303,10 @@ def import_document(
     A document of that name that didn't come from source is never replaced. Missing dependencies remain
     explicit; they never cause a fallback to source adoption. The result inspects at most limit spans.
     """
-    if source.catalog.get_document(document) is None:
+    if source.filing.document(document) is None:
         raise ToolError(f"workspace {source.workspace.name!r} has no document named {document!r}")
     base: VersionId | None = None
-    if (here := bond.catalog.get_document(document)) is not None:
+    if (here := bond.filing.document(document)) is not None:
         first = bond.history(document)[0].imported
         if first is None or first.workspace != source.workspace.id:
             raise ToolError(f"this workspace already has a document named {document!r} that wasn't imported from "
@@ -384,7 +384,7 @@ def read(bond: Bond, document: str) -> Reading:
 
 
 def _head(bond: Bond, document: str) -> VersionId:
-    doc = bond.catalog.get_document(document)
+    doc = bond.filing.document(document)
     if doc is None:
         raise ToolError(f"no document is named {document!r}")
     return doc.head
@@ -396,7 +396,7 @@ def _head(bond: Bond, document: str) -> VersionId:
 def draft(bond: Bond, document: str) -> Draft:
     """A document's current version as a draft to edit; its base is what a write or edit starts from."""
     head = _head(bond, document)
-    if outside := [s.version for c in bond.citations(head) for s in c.supports if bond.catalog.get_version(s.version)
+    if outside := [s.version for c in bond.citations(head) for s in c.supports if bond.records.version(s.version)
                    is None]:
         raise ToolError(f"{document!r} rests on {len(set(outside))} version(s) outside this workspace, so its "
                         "citations can't be written out for editing; read() shows it as it is")
@@ -443,7 +443,7 @@ def write(
     """
     base_version: VersionId | None = None
     if base is None:
-        if bond.catalog.get_document(document) is not None:
+        if bond.filing.document(document) is not None:
             return Refused([f"{document!r} already exists; pass the base draft() returned for it, so your change is "
                             "based on it"])
         fmt = format or DEFAULT_FORMAT
@@ -591,7 +591,7 @@ def _handle(bond: Bond, ref: Ref) -> str:
 
 def _ref_handle(bond: Bond, ref: Ref) -> str:
     """A ref's handle, or for a version outside the workspace, which nothing here can resolve, its whole id."""
-    if bond.catalog.get_version(ref.version) is None:
+    if bond.records.version(ref.version) is None:
         return ref.version
     return _handle(bond, ref)
 
