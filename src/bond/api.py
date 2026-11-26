@@ -29,8 +29,10 @@ from .models import (
     CitationKind,
     CorruptVersion,
     Declarations,
+    DocumentFreshness,
     DocumentRef,
     Format,
+    Freshness,
     HistoryEntry,
     Hit,
     Imported,
@@ -38,11 +40,14 @@ from .models import (
     IssueCode,
     Ref,
     SelfRef,
+    SpanFate,
+    SpanStatus,
     StoredCitation,
     Support,
     SupportReport,
     Trace,
     TraceEdge,
+    TranscriptionOf,
     UnknownDocument,
     UnknownVersion,
     Version,
@@ -249,10 +254,12 @@ class Bond:
         if not matches:
             return []
         owned = self.records.citations(version.id)
-        names = [d.name for d in self.index.holding(version.id)]
+        holding = self.index.holding(version.id)
+        names = [d.name for d in holding]
+        newer = {d.name: d.head for d in holding if d.head != version.id}
         return [
             Hit(Ref(version.id, m.locator), list(names), version.format, m.snippet, m.context,
-                self._declarations(Ref(version.id, m.locator), owned))
+                self._declarations(Ref(version.id, m.locator), owned), dict(newer))
             for m in matches
         ]
 
@@ -359,6 +366,8 @@ class Bond:
         policy: Policy, title: str | None,
     ) -> list[Issue]:
         issues = _label_issues(document, title) + self._check(content, format, citations, policy, frozenset())
+        if policy.refuse_superseded:
+            issues += self._superseded(citations)
         version = version_id(hash_bytes(content), format, list(citations))
         if conflict := filing_problem(self.filing.document(document), document, base, version):
             issues.append(_conflict_issue(conflict))
@@ -374,7 +383,8 @@ class Bond:
         version = version_id(content_hash, format, list(citations))
         new = NewVersion(version, content_hash, format, content, list(citations))
         return checked(WritePlan(self.workspace.id, (PlannedVersion(new),),
-                                 FilingChange(document, version, base, None, origin, title), policy))
+                                 FilingChange(document, version, base, None, origin, title), policy,
+                                 warnings=tuple(self._superseded(citations))))
 
     def _plan_filing(
         self, versions: tuple[PlannedVersion, ...], filing: FilingChange | None, policy: Policy,
@@ -421,7 +431,7 @@ class Bond:
             raise WriteError([_conflict_issue(filed)])
         if f.title is not None and (filed.advanced or f.base == f.version or self._untitled_since_filed(f.document)):
             self.filing.retitle(f.document, f.title)
-        return WriteResult(f.version, filed.advanced)
+        return WriteResult(f.version, filed.advanced, plan.warnings)
 
     def _untitled_since_filed(self, document: str) -> bool:
         """For a plan committed again, its version already the head: whether no title came since it was filed, so
@@ -442,6 +452,8 @@ class Bond:
         for pv in plan.versions:
             if not pv.imported:
                 issues += self._check(pv.new.data, pv.new.format, pv.new.citations, plan.policy, frozenset())
+                if plan.policy.refuse_superseded:
+                    issues += self._superseded(pv.new.citations)
         if plan.filing is not None:
             if plan.filing.version not in ids and self.records.version(plan.filing.version) is None:
                 raise BondError(f"the plan files version {plan.filing.version[:12]}…, which it doesn't hold and "
@@ -674,7 +686,11 @@ class Bond:
         nodes, edges, complete = _walk(ref, down, max_depth, limit)
         # A node past max_depth was never stepped into; find out whether it is here all the same.
         outside |= {n.version for n in nodes if n.version not in owned and self.records.version(n.version) is None}
-        return Trace(ref, nodes, edges, complete, frozenset(outside))
+        newer: dict[VersionId, dict[str, VersionId]] = {}
+        for v in dict.fromkeys(n.version for n in nodes):
+            if moved := {d.name: d.head for d in self.index.holding(v) if d.head != v}:
+                newer[v] = moved
+        return Trace(ref, nodes, edges, complete, frozenset(outside), newer)
 
     @_one_view
     def cited_by(self, ref: Ref) -> list[StoredCitation]:
@@ -688,6 +704,75 @@ class Bond:
             c for c in self.index.supported_by(ref.version)
             if any(s.version == ref.version and overlaps(s.locator, ref.locator) for s in c.supports)
         ]
+
+    def transcriptions_of(self, version: VersionId) -> list[TranscriptionOf]:
+        """Versions whose TRANSCRIPTION citations rest on version: its transcriptions, found by what they cite,
+        never by their names. Each with its producer and where it is filed. Raises UnknownVersion."""
+        self._version(version)
+        found: dict[VersionId, str | None] = {}
+        for c in self.cited_by(Ref(version, VersionLocator())):
+            if c.kind is CitationKind.TRANSCRIPTION:
+                found.setdefault(c.owner_version, c.attrs.get("transcriber"))
+        return [TranscriptionOf(v, producer, [d.name for d in self.index.holding(v)])
+                for v, producer in found.items()]
+
+    def freshness(self, ref: Ref, document: str | None = None, as_of: str | None = None) -> Freshness:
+        """Whether ref's version is still current in each document that holds it (or only in document), computed
+        now, never stored. For a version a document has moved past: its head, when it moved, and, for a span
+        narrower than the whole version, whether the span's text is in the head (where, if so). as_of, a time
+        as Bond records them, also asks whether the version was the document's head then. Raises ValueError if
+        ref's locator isn't valid in its version.
+
+        A source can be superseded a moment after any check, so this is a question to ask, not a guarantee.
+        Bond never moves a citation to a newer version: a span's fate is a suggestion of where to look.
+        """
+        self._check_ref(ref)
+        v = ref.version
+        holding = [d for d in self.index.holding(v) if document is None or d.name == document]
+        found: list[DocumentFreshness] = []
+        imported = False
+        for d in holding:
+            history = self.filing.history(d.id)
+            imported |= any(e.version == v and e.imported is not None for e in history)
+            current = d.head == v
+            superseded_at = None
+            if not current:
+                last = max(i for i, e in enumerate(history) if e.version == v)
+                superseded_at = history[last + 1].at
+            current_as_of = None
+            if as_of is not None:
+                then = [e for e in history if e.at <= as_of]
+                current_as_of = bool(then) and then[-1].version == v
+            span = None if current or isinstance(ref.locator, VersionLocator) else self._span_fate(ref, d.head)
+            found.append(DocumentFreshness(d.name, current, d.head, superseded_at, current_as_of, span))
+        return Freshness(ref, tuple(found), imported)
+
+    def _span_fate(self, ref: Ref, head: VersionId) -> SpanFate:
+        """What became of a span's text in head: there at the same place, elsewhere, or not at all."""
+        old = self._doc(ref.version).text(ref.locator) if spec(self._version(ref.version).format).has_text else None
+        if not old or not old.strip() or not spec(self._version(head).format).has_text:
+            return SpanFate(SpanStatus.UNKNOWN, None)
+        doc = self._doc(head)
+        if doc.check(ref.locator) is None and doc.text(ref.locator) == old:
+            return SpanFate(SpanStatus.UNCHANGED, Ref(head, ref.locator))
+        if matches := doc.search(old):
+            return SpanFate(SpanStatus.MOVED, Ref(head, matches[0].locator))
+        return SpanFate(SpanStatus.GONE, None)
+
+    def _superseded(self, citations: Sequence[Citation]) -> list[Issue]:
+        """A CITES_SUPERSEDED issue for each support, in a version stored here and valid in it, that no document
+        holding it has as its head any more."""
+        found: list[Issue] = []
+        for i, c in enumerate(citations):
+            for j, s in enumerate(c.supports):
+                if not isinstance(s, Ref) or self.records.version(s.version) is None or self._locator_problem(s):
+                    continue
+                fresh = self.freshness(s)
+                if fresh.superseded:
+                    found.append(Issue(IssueCode.CITES_SUPERSEDED, superseded_message(fresh), citation_index=i,
+                                       support_index=j, locator=c.claim,
+                                       hint="search the newer version and cite it, if what you cite still holds"))
+        return found
 
     # --- verify --------------------------------------------------------------
 
@@ -813,6 +898,17 @@ def _encoded(content: bytes | str, format: Format | None) -> tuple[bytes, Format
     """Content as stored, UTF-8 for text, and its format, sniffed if not given."""
     data = content.encode("utf-8") if isinstance(content, str) else content
     return data, format or sniff(data)
+
+
+def superseded_message(fresh: Freshness) -> str:
+    """What a CITES_SUPERSEDED issue says of a superseded version, by version id."""
+    parts = []
+    for d in fresh.documents:
+        fate = {None: "", SpanStatus.UNCHANGED: "; the cited text is unchanged there",
+                SpanStatus.MOVED: "; the cited text is there, elsewhere", SpanStatus.GONE: "; the cited text is gone there",
+                SpanStatus.UNKNOWN: ""}[None if d.span is None else d.span.status]
+        parts.append(f"{d.document!r} has moved past it to {d.head[:12]}…{fate}")
+    return f"cites version {fresh.ref.version[:12]}…, which no document holds as its head now: " + "; ".join(parts)
 
 
 def _check_other(here: Bond, source: Bond) -> None:

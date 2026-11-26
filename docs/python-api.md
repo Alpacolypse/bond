@@ -38,10 +38,13 @@ bond.write_document("note", edited, [Citation(CitationKind.PARAPHRASE, TextLocat
 | `citations(version)` | The citations a version was written with. |
 | `trace(ref, max_depth=None, limit=None)` | Follow provenance from a reference down to its sources, as a DAG: each distinct reference is one node, and each edge is a citation. `limit` keeps the nearest nodes, and `complete` says whether limits omitted any traversal. Versions outside the workspace are reported separately, as its `frontier`. |
 | `cited_by(ref)` | The reverse of one hop: citations, from any version, with a support overlapping a reference. |
+| `freshness(ref, document=None, as_of=None)` | Whether a reference's version is still the head of each document that holds it (or only `document`), computed now, never stored. For each that moved past it: its head, when it moved (`superseded_at`), and for a span, whether its text is in the head (`unchanged`, `moved`, `gone` or `unknown`, with where). `as_of` also asks whether it was the head then. `superseded` is true when no document holds it as its head any more. A suggestion of where to look: Bond never moves a citation. |
 | `verify(version, policy=STRICT)` | Check a version and every version beneath it: recompute their hashes and ids, and run the write checks again on each as it was written. Returns the issues found, each naming its version (none if intact). |
 | `blob(version)`, `text(ref)` | A version's raw bytes; the text a reference addresses (`Ref(v, VersionLocator())` for all of it). A version whose stored bytes are missing or malformed raises `CorruptVersion`; `verify` reports it instead. |
 
 Lower-level reads for tools built on Bond (version records, the documents a version is filed in, where a span is and the text around it, claim units, JSON Pointers) are functions in `bond.details`.
+
+A write (or plan) that cites a superseded version still goes through, with a `cites_superseded` warning in `WriteResult.warnings` (and `WritePlan.warnings`) naming the citation and support. `Policy(refuse_superseded=True)` refuses it instead. Search hits and traces say the same where they find older versions: `Hit.newer` and `Trace.newer` map each document that moved past a version to its head.
 
 ## Filing
 
@@ -149,5 +152,7 @@ record(bond, "fax.pdf", REDUCTO, parse_bytes)             # a parse Reducto retu
 | `transcribe(bond, document, transcriber)` | Run a `Transcriber` (a `Transcription` with `transcribe(source, format) -> bytes`) on the source `document` holds, and `record` its output. |
 | `record(bond, document, transcription, output)` | Write a producer's output for the source `document` now holds as `<document>.<producer>`, in the producer's output format, from that document's head if it exists: recording after a new version of the source, or a new run, writes its next version, and the same output for the same source changes nothing. The write allows the producer's id; `PRODUCERS` holds `pypdf` and `reducto`, so others verify with `Policy(producers=PRODUCERS \| {...})`. Raises `TranscriptionError` if the source has text of its own, isn't a format the producer reads, or the output isn't the producer's, with nothing written. |
 | `import_reducto(bond, pdf, parse, name)` | Ingest a PDF as `name` and record its Reducto parse as `name.reducto`, for a PDF not added yet. |
+
+What a transcription transcribes is read from its citations, never from its name: `bond.transcriptions_of(version)` lists the versions with `transcription` citations into it, each with its producer and where it is filed. `<document>.<producer>` is only where `record` files one by default. So a transcription recorded just as its source moved on is evidence of the older version, and says so: reading a PDF whose current version has no transcription names those of its earlier versions, and that they may not match it.
 
 A transcription's citations name its producer, and what rests on them can come back supported down to the page. So its output must reach `record` from whatever ran the producer, never by way of a model: an agent may ask for a transcription through a tool its deployment offers, but never hands one in. On the command line, `bond transcribe` is a person's command for the same reason (see [Running Bond locally](local.md#only-people-add-sources)).

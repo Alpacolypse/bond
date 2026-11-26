@@ -25,7 +25,7 @@ from dataclasses import dataclass, field, replace
 from .ids import dumps, supports
 from .jsonvalue import JsonObject, JsonValue
 from .locators import locator_from_dict
-from .models import SELF, BondError, Citation, CitationKind, Format, Imported, Ref, SelfRef, Support, VersionId
+from .models import SELF, BondError, Citation, CitationKind, Format, Imported, Issue, Ref, SelfRef, Support, VersionId
 from .parsers import load_json
 from .policies import STRICT, Policy
 from .storage import Blobs, NewVersion
@@ -73,6 +73,7 @@ class WritePlan:
     filing: FilingChange | None
     policy: Policy = STRICT  # what written versions were checked against, and are again if the plan is loaded
     subject: VersionId | None = None  # for a plan that files nothing (import_version): the version it brings
+    warnings: tuple[Issue, ...] = ()  # what planning found that doesn't stop the write; not kept by to_json
     _mark: _Checked | None = field(default=None, compare=False, repr=False)
 
     @property
@@ -98,7 +99,8 @@ class WritePlan:
             "bond_plan": PLAN_FORMAT,
             "workspace": self.workspace,
             "policy": {"gaps": self.policy.gaps, "kinds": sorted(k.value for k in self.policy.kinds),
-                       "producers": sorted(self.policy.producers)},
+                       "producers": sorted(self.policy.producers),
+                       "refuse_superseded": self.policy.refuse_superseded},
             "versions": [
                 {"id": pv.new.id, "content_hash": pv.new.content_hash, "format": pv.new.format.value,
                  "imported": pv.imported, "citations": [_citation(c) for c in pv.new.citations]}
@@ -123,7 +125,8 @@ class WritePlan:
         p = _obj(loaded.get("policy"))
         policy = Policy(gaps=p.get("gaps") is True,
                         kinds=frozenset(CitationKind(_s(k)) for k in _seq(p.get("kinds"))),
-                        producers=frozenset(_s(x) for x in _seq(p.get("producers"))))
+                        producers=frozenset(_s(x) for x in _seq(p.get("producers"))),
+                        refuse_superseded=p.get("refuse_superseded") is True)
         versions = []
         for raw in _seq(loaded.get("versions")):
             v = _obj(raw)

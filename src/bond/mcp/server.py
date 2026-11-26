@@ -63,13 +63,15 @@ searched or cited until a transcription of it exists; reading one names its tran
 naming that span, the handle of the passage it sits in, and support: "supported" when everything in it rests, \
 hop by hop, on declared sources; otherwise partially_supported, unsupported, unknown (missing dependencies or \
 budget) or not_applicable (nothing that needs support). Prefer supported evidence. To cite part of a passage, \
-search(workspace, phrase, within=<passage handle>). Copy handles from search results; never make one up.
+search(workspace, phrase, within=<passage handle>). Copy handles from search results; never make one up. \
+A span whose document has moved on to a newer version names it in "newer"; search that for the same text and \
+cite it instead, unless the older version is what you mean.
    trace(workspace, handle) gives the same support status with the reasons it falls short, and what the span \
 rests on, hop by hop, down to its sources, each with its own handle. Neither evaluates whether a claim is true.
 3. write(workspace, document, draft) creates a document. To change one, draft(workspace, document) gives its \
 draft (its citations as tags) and its base, then edit(workspace, document, edits, base) or write(workspace, \
 document, draft, base). Each successful write returns the next base, and the support status of what you \
-wrote. If someone else changed the document since your base, call draft(workspace, document) again.
+wrote, with warnings for anything it cites that has a newer version. If someone else changed the document since your base, call draft(workspace, document) again.
 
 Markdown drafts cite with inline tags around the text they cover:
   <bond:cite kind="quote" from="HANDLE">text exactly as the handle's span has it</bond:cite>
