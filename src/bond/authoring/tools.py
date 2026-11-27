@@ -33,6 +33,7 @@ from ..models import (
     IssueCode,
     Ref,
     SelfRef,
+    SpanStatus,
     Support,
     SupportReason,
     SupportStatus,
@@ -74,9 +75,12 @@ class Evidence:
     text: str  # exactly the text the handle cites
     support: SupportStatus  # whether everything in it rests, hop by hop, on declared sources; trace() says how
     kinds: list[CitationKind]  # the kinds of the citations overlapping it
+    # Documents that hold its version but have moved past it, each with the handle of its whole head now: search
+    # that for the same text before citing an older version. Empty when its version is current wherever it is.
+    newer: dict[str, str] = field(default_factory=dict)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class SearchHit(Evidence):
     """Evidence a search found: which phrase it matched, and where."""
 
@@ -148,6 +152,7 @@ class Grounds:
     rests_on: list[Link]  # none if nothing covers it
     undeclared: list[str]  # handles of the parts of it no citation covers
     outside: bool = False  # it stayed in the workspace this was imported from, so nothing more is known of it here
+    newer: dict[str, str] = field(default_factory=dict)  # documents that moved past its version: their heads' handles
 
 
 @dataclass(frozen=True)
@@ -183,6 +188,7 @@ class Written:
     base: str  # the handle of the document's version: the base for the next change
     advanced: bool  # whether the document moved; False if it already held exactly this
     support: SupportStatus  # whether all of it rests on declared sources
+    warnings: list[str] = field(default_factory=list)  # what didn't stop the write but is worth acting on
     status: Literal["written"] = "written"
 
 
@@ -198,6 +204,7 @@ class Refused:
 class Checked:
     """A dry run that found nothing to stop the write; nothing was written."""
 
+    warnings: list[str] = field(default_factory=list)  # what wouldn't stop the write but is worth acting on
     status: Literal["checked"] = "checked"
 
 
@@ -242,7 +249,7 @@ def _hit(bond: Bond, phrase: str, ref: Ref, documents: list[str]) -> SearchHit:
     evidence = _evidence(bond, ref, documents)
     passage = _passage(bond, ref)
     return SearchHit(evidence.handle, evidence.documents, evidence.text, evidence.support, evidence.kinds,
-                     phrase=phrase, where=_where(bond, ref), context=_context(bond, ref),
+                     evidence.newer, phrase=phrase, where=_where(bond, ref), context=_context(bond, ref),
                      passage=None if passage is None else _handle(bond, passage))
 
 
@@ -252,7 +259,13 @@ def _evidence(bond: Bond, ref: Ref, documents: list[str] | None = None) -> Evide
         documents = [d.name for d in details.filed_in(bond, ref.version)]
     kinds = sorted({c.kind for c in bond.declarations(ref).citations}, key=lambda k: k.value)
     support = bond.check_support(ref, limit=SUPPORT_LIMIT).status
-    return Evidence(_handle(bond, ref), documents, bond.text(ref) or "", support, kinds)
+    return Evidence(_handle(bond, ref), documents, bond.text(ref) or "", support, kinds, _newer(bond, ref.version))
+
+
+def _newer(bond: Bond, version: VersionId) -> dict[str, str]:
+    """The documents holding version that have moved past it, each with the handle of its whole head."""
+    return {d.name: _handle(bond, Ref(d.head, VersionLocator())) for d in details.filed_in(bond, version)
+            if d.head != version}
 
 
 def _passage(bond: Bond, ref: Ref) -> Ref | None:
@@ -354,9 +367,10 @@ def _grounds(bond: Bond, trace: Trace, node: Ref) -> Grounds:
         Link(e.citation.kind, e.citation.attrs, [_ref_handle(bond, s) for s in e.citation.supports])
         for e in trace.edges_at(node)
     ]
+    newer = {name: _handle(bond, Ref(head, VersionLocator())) for name, head in trace.newer.get(node.version, {}).items()}
     return Grounds(_handle(bond, node), [d.name for d in details.filed_in(bond, node.version)],
                    None if text is None else clip(text, TRACE_TEXT), details.where(bond, node), links,
-                   [_handle(bond, r) for r in bond.declarations(node).undeclared])
+                   [_handle(bond, r) for r in bond.declarations(node).undeclared], newer=newer)
 
 
 # --- read -----------------------------------------------------------------------
@@ -371,14 +385,19 @@ def read(bond: Bond, document: str) -> Reading:
     """
     version = details.version(bond, _head(bond, document))
     if not spec(version.format).has_text:
-        transcribing = sorted({
-            d.name for c in bond.cited_by(Ref(version.id, VersionLocator()))
-            if c.kind is CitationKind.TRANSCRIPTION
-            for d in details.filed_in(bond, c.owner_version)
-        })
-        where = (f"; documents that transcribe it: {', '.join(map(repr, transcribing))}" if transcribing else
-                 "; no document transcribes it yet, so its text can't be read or cited: ask the person to have it "
-                 "transcribed")
+        # Documents whose head transcribes this version: one that held such a transcription once may hold one of
+        # another version of the source now.
+        transcribing = sorted({d for t in bond.transcriptions_of(version.id) for d in t.current})
+        if transcribing:
+            where = f"; documents that transcribe it: {', '.join(map(repr, transcribing))}"
+        else:
+            earlier = sorted({d for e in bond.history(document) if e.version != version.id
+                              for t in bond.transcriptions_of(e.version) for d in t.documents})
+            where = "; no document transcribes its current version yet, so its text can't be read or cited: ask the "
+            where += "person to have it transcribed"
+            if earlier:
+                where += (f" (these transcribe an earlier version of it, and may not match it now: "
+                          f"{', '.join(map(repr, earlier))})")
         raise ToolError(f"{document!r} is {version.format.value}, which has no text of its own{where}")
     return Reading(document, version.format, bond.text(Ref(version.id, VersionLocator())) or "")
 
@@ -465,17 +484,41 @@ def write(
     citations = _citations(bond, compiled)
     if isinstance(citations, Refused):
         return citations
-    if issues := bond.check_write(document, compiled.content, citations, format=fmt, base=base_version, policy=policy):
-        return Refused(_explain(issues, compiled, codec, document))
-    if dry_run:
-        return Checked()
     try:
-        result = bond.write_document(document, compiled.content, citations, format=fmt, base=base_version,
-                                     policy=policy)
-    except WriteError as e:  # another write moved the document between the check and this one
+        plan = bond.plan_write(document, compiled.content, citations, format=fmt, base=base_version, policy=policy)
+    except WriteError as e:  # every issue the write would be refused for
+        return Refused(_explain(e.errors, compiled, codec, document))
+    warnings = [_superseded_note(bond, citations, w) for w in plan.warnings]
+    if dry_run:
+        return Checked(warnings)
+    try:
+        result = bond.commit(plan)
+    except WriteError as e:  # another write moved the document between planning and committing
         return Refused(_explain(e.errors, compiled, codec, document))
     whole = Ref(result.version, VersionLocator())
-    return Written(_handle(bond, whole), result.advanced, bond.check_support(whole, limit=SUPPORT_LIMIT).status)
+    return Written(_handle(bond, whole), result.advanced, bond.check_support(whole, limit=SUPPORT_LIMIT).status,
+                   warnings)
+
+
+def _superseded_note(bond: Bond, citations: Sequence[Citation], issue: Issue) -> str:
+    """A CITES_SUPERSEDED warning in the writer's terms: which handle, and where to look now, by handle."""
+    if issue.citation_index is None or issue.support_index is None:
+        return issue.message
+    support = citations[issue.citation_index].supports[issue.support_index]
+    if not isinstance(support, Ref):
+        return issue.message
+    fresh = bond.freshness(support)
+    parts = []
+    for d in fresh.documents:
+        head = _handle(bond, Ref(d.head, VersionLocator()))
+        fate = d.span.status if d.span is not None else None
+        if fate in (SpanStatus.UNCHANGED, SpanStatus.MOVED) and d.span is not None and d.span.at is not None:
+            parts.append(f"{d.document!r} is at {head} now, where the same text is {_handle(bond, d.span.at)}")
+        elif fate is SpanStatus.GONE:
+            parts.append(f"{d.document!r} is at {head} now, which no longer has that text")
+        else:
+            parts.append(f"{d.document!r} is at {head} now")
+    return f"{_handle(bond, support)} cites an older version: " + "; ".join(parts)
 
 
 def edit(

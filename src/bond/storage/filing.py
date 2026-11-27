@@ -206,8 +206,21 @@ class Filing:
             raise UnknownDocument(name)
         while True:
             seq = self._last_seq(self._titles(claim.id)) + 1
-            if self.store.create((*self._titles(claim.id), seq), encode({"title": title, "at": now()})):
+            # after: the history entry the document was at, so a replayed write can tell whether a title came since
+            value: JsonObject = {"title": title, "at": now(), "after": head.seq}
+            if self.store.create((*self._titles(claim.id), seq), encode(value)):
                 return replace(head.ref, title=title)
+
+    def titled_after(self, doc: DocumentId) -> int:
+        """The history entry the document was at when it was last titled; 0 if it never was."""
+        seq = self._last_seq(self._titles(doc))
+        data = None if seq == 0 else self.store.get((*self._titles(doc), seq))
+        if data is None:
+            return 0
+        after = decode(data, "a title").get("after")
+        if not isinstance(after, int):
+            raise BondError(f"the store holds {after!r} where a title's entry seq belongs; it is corrupt")
+        return after
 
 
 def _claim(obj: Mapping[str, JsonValue]) -> Claim:

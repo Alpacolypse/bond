@@ -56,7 +56,7 @@ from .api import Bond
 from .formats import spec
 from .http.viewer import GRAPH_LIMIT
 from .local import Home, is_path
-from .models import BondError
+from .models import BondError, VersionId
 from .sources import NewSource, add_sources, readable
 from .storage import Blobs
 from .workspaces import Fixed, Workspaces
@@ -123,6 +123,9 @@ def parse(argv: Sequence[str] | None = None) -> argparse.Namespace:
                                  "source's format: pypdf, for a PDF's own text layer)")
     transcribe.add_argument("--output", type=Path, metavar="FILE",
                             help="record this file as the producer's output instead of running it")
+    transcribe.add_argument("--of", dest="source", metavar="VERSION",
+                            help="with --output: the version of the document the producer read (default: the "
+                                 "one it holds now)")
     _home_argument(transcribe)
     link = commands.add_parser("link", help="let documents be imported from one workspace into another")
     link.add_argument("workspace", help="the workspace documents may be imported into")
@@ -244,13 +247,16 @@ def run_transcribe(args: argparse.Namespace) -> int:
             raise BondError(f"Bond doesn't know producer {args.producer!r} (it knows {', '.join(TRANSCRIPTIONS)})")
         if args.output is not None and args.producer is None:
             raise BondError("--output is a producer's output: name the producer with --with")
+        if args.source is not None and args.output is None:
+            raise BondError("--of names the version a recorded output was read from: give the output with --output")
         if args.output is not None and not args.output.is_file():
             raise BondError(f"not a file: {args.output}")
         with open_local(home_of(args), args.workspace) as bond:
             source = source_of(bond, args.document)
             if args.output is not None:
                 chosen = TRANSCRIPTIONS[args.producer]
-                result = record(bond, args.document, chosen, args.output.read_bytes())
+                of = None if args.source is None else VersionId(args.source)
+                result = record(bond, args.document, chosen, args.output.read_bytes(), source=of)
             else:
                 runnable = transcribers_for(source.format)
                 if args.producer is not None:

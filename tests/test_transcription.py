@@ -153,7 +153,7 @@ def test_an_agent_reading_an_untranscribed_pdf_is_told_why_it_cant(bond: Bond):
 
     bond.ingest("fax", FAX, format=Format.PDF)
     tools = Tools(bond)
-    with pytest.raises(ToolError, match="no document transcribes it yet"):
+    with pytest.raises(ToolError, match="no document transcribes its current version yet"):
         tools.read("fax")
     transcribe(bond, "fax", TEXT_LAYER)
     with pytest.raises(ToolError, match="documents that transcribe it: 'fax.pypdf'"):

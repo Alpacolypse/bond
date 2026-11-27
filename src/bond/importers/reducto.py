@@ -75,7 +75,7 @@ def import_reducto(bond: Bond, pdf: bytes, parse: bytes, name: str) -> ImportRes
     if isinstance(parsed, Malformed):
         raise TranscriptionError(f"not a Reducto parse: {parsed.reason}")
     pdf_result = bond.ingest(name, pdf, format=Format.PDF, base=_head(bond, name))
-    return ImportResult(pdf_result, record(bond, name, REDUCTO, parse))
+    return ImportResult(pdf_result, record(bond, name, REDUCTO, parse, source=pdf_result.version))
 
 
 def _head(bond: Bond, name: str) -> VersionId | None:

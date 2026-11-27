@@ -31,7 +31,7 @@ from typing import Protocol, runtime_checkable
 
 from .api import Bond
 from .formats import parse, spec
-from .models import BondError, Citation, Format, Version, WriteResult
+from .models import BondError, Citation, Format, Version, VersionId, WriteResult
 from .parsers import Malformed, ParsedDoc
 from .policies import PRODUCERS, Policy
 
@@ -79,8 +79,15 @@ def transcription_name(document: str, producer: str) -> str:
     return f"{document}.{producer}"
 
 
-def record(bond: Bond, document: str, transcription: Transcription, output: bytes) -> WriteResult:
-    """Write a producer's output for the source document now holds, as its transcription by that producer.
+def record(
+    bond: Bond, document: str, transcription: Transcription, output: bytes, *, source: VersionId | None = None,
+) -> WriteResult:
+    """Write a producer's output for a version of document, as its transcription by that producer.
+
+    source is the version the producer read; pass it whenever the producer ran on something read before now (an
+    OCR job sent the bytes earlier, say), since document may hold another version by the time it returns, and
+    the output must cite what was read. It must be a version document has held. Without it, the output is taken
+    as read from what document holds now.
 
     The output is stored byte-for-byte in the producer's output format and filed as transcription_name(document,
     producer), advancing it from its head when it exists, so recording again after a new version of the source, or a
@@ -89,12 +96,13 @@ def record(bond: Bond, document: str, transcription: Transcription, output: byte
     PRODUCERS holds it. Raises UnknownDocument; TranscriptionError if the source has text of its own, isn't a format
     the producer reads, or the output isn't the producer's; or WriteError (a region the source doesn't have, say).
     """
-    source = _read_by(source_of(bond, document), transcription)
+    read = source_of(bond, document) if source is None else held_source(bond, document, source)
+    source_version = _read_by(read, transcription)
     parsed = parse(transcription.output, output)
     if isinstance(parsed, Malformed):
         raise TranscriptionError(f"not {transcription.producer} output: {parsed.reason}")
     try:
-        citations = transcription.citations(parsed, source)
+        citations = transcription.citations(parsed, source_version)
     except ValueError as e:
         raise TranscriptionError(str(e)) from None
     name = transcription_name(document, transcription.producer)
@@ -105,16 +113,28 @@ def record(bond: Bond, document: str, transcription: Transcription, output: byte
 
 
 def transcribe(bond: Bond, document: str, transcriber: Transcriber) -> WriteResult:
-    """Run transcriber on the source document now holds, and record() what it returns."""
+    """Run transcriber on the source document now holds, and record() what it returns, citing the version it read
+    even if document moved on meanwhile."""
     source = _read_by(source_of(bond, document), transcriber)
-    return record(bond, document, transcriber, transcriber.transcribe(bond.blob(source.id), source.format))
+    output = transcriber.transcribe(bond.blob(source.id), source.format)
+    return record(bond, document, transcriber, output, source=source.id)
+
+
+def held_source(bond: Bond, document: str, version: VersionId) -> Version:
+    """version, if document has held it and it can be transcribed. Raises UnknownDocument or TranscriptionError."""
+    if all(e.version != version for e in bond.history(document)):
+        raise TranscriptionError(f"{document!r} has never held version {version[:12]}…")
+    return _transcribable(bond, document, version)
 
 
 def source_of(bond: Bond, document: str) -> Version:
     """The version document holds, if it can be transcribed: its format has no text of its own. Raises
     UnknownDocument or TranscriptionError."""
-    head = bond.document(document).head
-    source = bond.records.version(head)
+    return _transcribable(bond, document, bond.document(document).head)
+
+
+def _transcribable(bond: Bond, document: str, version: VersionId) -> Version:
+    source = bond.records.version(version)
     if source is None:
         raise TranscriptionError(f"{document!r} holds no version here")
     if spec(source.format).has_text:
