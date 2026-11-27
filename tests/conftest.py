@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import json
 import os
 import uuid
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import LiteralString
+from typing import Any
 
 import pytest
 from psycopg_pool import ConnectionPool
@@ -13,20 +14,23 @@ from psycopg_pool import ConnectionPool
 import case_001
 from bond import Bond, Citation, Format, VersionId
 from bond.authoring import Outcome, Refused, Written
-from bond.ids import hash_bytes, version_id
+from bond.ids import dumps, hash_bytes, version_id
 from bond.parsers import JsonDoc, Malformed
 from bond.storage import NewVersion
+from bond.storage.index import MemoryIndex
 from bond.storage.local import LocalBlobs
-from bond.storage.sql import SqlCatalog, SqlValue
-from bond.storage.sqlite import SQLiteCatalog
+from bond.storage.sql import SqlStore
+from bond.storage.sqlite import SQLiteStore
+from bond.storage.store import Key, MemoryStore, Store, key_path
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = ROOT / "fixtures"
 
-# A Postgres DSN to also run the Bond suite and the catalog contract against, e.g.
+# A Postgres DSN to also run the Bond suite and the store contract against, e.g.
 # BOND_TEST_POSTGRES=postgresql://bond@localhost:55432/bond. Each test gets its own schema.
 POSTGRES = os.environ.get("BOND_TEST_POSTGRES")
-CATALOGS = ["sqlite", pytest.param("postgres", marks=pytest.mark.skipif(not POSTGRES, reason="BOND_TEST_POSTGRES unset"))]
+STORES = ["sqlite", "memory",
+          pytest.param("postgres", marks=pytest.mark.skipif(not POSTGRES, reason="BOND_TEST_POSTGRES unset"))]
 
 
 @contextmanager
@@ -48,40 +52,23 @@ def postgres_pool() -> Generator[ConnectionPool]:
 
 
 @contextmanager
-def catalog_of(kind: str, tmp_path: Path) -> Generator[SqlCatalog]:
-    if kind == "sqlite":
-        catalog = SQLiteCatalog(tmp_path / "bond.db")
-        try:
-            yield catalog
-        finally:
-            catalog.close()
+def store_of(kind: str, tmp_path: Path) -> Generator[Store]:
+    """A new, empty store of a kind, closed after."""
+    if kind == "memory":
+        yield MemoryStore()
+    elif kind == "sqlite":
+        with SQLiteStore(tmp_path / "bond.db") as store:
+            yield store
     else:
-        from bond.storage.postgres import PostgresCatalog
+        from bond.storage.postgres import PostgresStore
 
         with postgres_pool() as pool:
-            yield PostgresCatalog(pool)
+            yield PostgresStore(pool)
 
 
-@contextmanager
-def workspaces_of(kind: str, tmp_path: Path, *names: str) -> Generator[list[SqlCatalog]]:
-    """Catalogs on one database, each opened on its own workspace."""
-    if kind == "sqlite":
-        catalogs: list[SqlCatalog] = [SQLiteCatalog(tmp_path / "bond.db", workspace=name) for name in names]
-        try:
-            yield catalogs
-        finally:
-            for catalog in catalogs:
-                catalog.close()
-    else:
-        from bond.storage.postgres import PostgresCatalog
-
-        with postgres_pool() as pool:
-            yield [PostgresCatalog(pool, workspace=name) for name in names]
-
-
-@pytest.fixture(params=CATALOGS)
+@pytest.fixture(params=STORES)
 def bond(request: pytest.FixtureRequest, tmp_path: Path):
-    with catalog_of(request.param, tmp_path / "store") as catalog, Bond(catalog, LocalBlobs(tmp_path / "store" / "blobs")) as b:
+    with store_of(request.param, tmp_path / "store") as store, Bond(store, LocalBlobs(tmp_path / "store" / "blobs")) as b:
         yield b
 
 
@@ -91,11 +78,26 @@ def case(bond: Bond) -> dict[str, VersionId]:
     return case_001.ingest(bond)
 
 
-def raw_sql(bond: Bond, sql: LiteralString, params: tuple[SqlValue, ...] = ()) -> None:
-    """Run a statement on a store's catalog behind Bond's back, as another code path might (? placeholders)."""
-    assert isinstance(bond.catalog, SqlCatalog)
-    with bond.catalog._write() as ex:
-        ex.run(sql, params)
+def overwrite(store: Store, key: Key, value: bytes) -> None:
+    """Replace a key's value behind Bond's back, as a corrupted store or another code path might: no Store can."""
+    if isinstance(store, MemoryStore):
+        store._values[key_path(key)] = (key, value)
+    elif isinstance(store, SqlStore):
+        with store._read() as ex:
+            assert ex.run("UPDATE bond_keys SET value = ? WHERE key = ?", (value, key_path(key))) == 1
+    else:
+        pytest.skip(f"can't overwrite keys in {type(store).__name__}")
+
+
+def rewrite_record(bond: Bond, version: VersionId, change: Callable[[dict[str, Any]], None]) -> None:
+    """Change a version's stored record (its JSON, as bond.storage.records writes it) behind Bond's back."""
+    key = (bond.workspace.id, "records", version)
+    data = bond.store.get(key)
+    assert data is not None, version
+    record = json.loads(data)
+    change(record)
+    overwrite(bond.store, key, dumps(record).encode())
+    bond.index = MemoryIndex(bond.records, bond.filing)  # read what was rewritten
 
 
 def store_unchecked(bond: Bond, content: str, citations: list[Citation], document: str) -> VersionId:
@@ -103,7 +105,8 @@ def store_unchecked(bond: Bond, content: str, citations: list[Citation], documen
     data = content.encode()
     version = version_id(hash_bytes(data), Format.MARKDOWN, citations)
     bond.blobs.put(hash_bytes(data), data)
-    bond.catalog.file(version, document, None, NewVersion(version, hash_bytes(data), Format.MARKDOWN, data, citations))
+    new = NewVersion(version, hash_bytes(data), Format.MARKDOWN, data, citations)
+    bond.filing.file(version, document, None, before=lambda: bond.records.put(new))
     return version
 
 

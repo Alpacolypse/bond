@@ -1,7 +1,8 @@
-"""Records hold no content: the rows Bond stores for versions and their citations are hashes, enums, numbers,
-positional locators and registered producer ids, whatever the documents say. See docs/storage.md, "What Bond stores".
+"""Records hold no content: the records Bond stores for versions and their citations are hashes, enums, numbers,
+positional locators and registered producer ids, whatever the documents say, and no key holds any text at all.
+See docs/storage.md, "What Bond stores".
 
-Document names, titles and origins are filing, and may hold anything a person types; they live in other tables.
+Document names, titles and origins are filing, and may hold anything a person types; they live in other keys' values.
 """
 
 from __future__ import annotations
@@ -10,7 +11,7 @@ import json
 import re
 from collections.abc import Mapping
 from datetime import datetime
-from typing import LiteralString
+from typing import Any
 
 import pytest
 import seed
@@ -21,29 +22,13 @@ from bond.importers.text_layer import TEXT_LAYER
 from bond.jsonvalue import JsonValue
 from bond.locators import locator_from_dict
 from bond.policies import PRODUCERS
-from bond.storage.sql import Row, SqlCatalog
+from bond.storage.store import Key
 from bond.transcription import transcribe
 from conftest import refused, written
 
-# The record tables and their columns, as selected here. A new column must be added to this closed schema, with a
-# check that it can't hold content.
-RECORD_TABLES: dict[LiteralString, tuple[LiteralString, ...]] = {
-    "bond_versions": ("workspace", "id", "content_hash", "format", "created_at"),
-    "bond_citations": ("workspace", "owner_version", "id", "kind", "claim_locator", "attrs"),
-    "bond_supports": ("workspace", "owner_version", "citation_id", "position", "version", "locator"),
-}
-ORDERED = {"bond_versions", "bond_citations"}  # record tables the catalog lists in insertion order
-# Workspace and document names, titles, where an import came from (a workspace's name) and where an ingested file
-# came from (its origin, a path or URL) are filing: labels a person or host chose.
-FILING_TABLES: dict[LiteralString, tuple[LiteralString, ...]] = {
-    "bond_workspaces": ("id", "name", "created_at"),
-    "bond_documents": ("id", "workspace", "name", "title", "created_at"),
-    "bond_history": ("workspace", "document_id", "seq", "version", "base", "at", "from_workspace",
-                     "from_workspace_name", "from_version", "origin"),
-}
-
 HASH = re.compile(r"[0-9a-f]{64}")
 WORKSPACE_ID = re.compile(r"ws_[0-9a-f]{32}")  # Bond's id for a workspace, never its name
+DOCUMENT_ID = re.compile(r"doc_[0-9a-f]{32}")
 PRODUCER_ATTRS = {"transcriber", "classifier", "assessor"}
 
 # Words from the documents that must never reach a record. Each has a letter outside 0-9a-f, so no hash can hold
@@ -97,58 +82,6 @@ def store(bond: Bond, request) -> Bond:
     return bond
 
 
-def sql(bond: Bond) -> SqlCatalog:
-    assert isinstance(bond.catalog, SqlCatalog)
-    return bond.catalog
-
-
-def rows(bond: Bond, table: LiteralString, columns: tuple[LiteralString, ...]) -> list[Row]:
-    with sql(bond)._read() as ex:
-        return ex.all(f"SELECT {', '.join(columns)} FROM {table}")
-
-
-def test_record_tables_have_only_the_columns_this_schema_checks(store):
-    catalog = sql(store)
-    for table, columns in RECORD_TABLES.items():
-        with catalog._read() as ex:
-            [row] = ex.all(f"SELECT * FROM {table} LIMIT 1")
-        # Postgres gives the tables it orders by insertion a column of their own (SQLite's rowid is implicit).
-        ordered = bool(catalog.ORDER_DEFINITION) and table in ORDERED
-        assert len(row) == len(columns) + ordered, f"{table} has a column this closed schema doesn't check"
-        if ordered:
-            with catalog._read() as ex:
-                assert all(isinstance(n, int) for (n,) in ex.all(f"SELECT {catalog.ORDER} FROM {table}"))
-
-
-def texts(row: Row) -> tuple[str, ...]:
-    """A record's columns, which must all be text."""
-    assert all(isinstance(value, str) for value in row), row
-    return tuple(str(value) for value in row)
-
-
-def test_every_record_field_is_a_hash_an_enum_a_number_or_a_registered_id(store):
-    kinds, formats = {k.value for k in CitationKind}, {f.value for f in Format}
-    versions = rows(store, "bond_versions", RECORD_TABLES["bond_versions"])
-    citations = rows(store, "bond_citations", RECORD_TABLES["bond_citations"])
-    supports = rows(store, "bond_supports", RECORD_TABLES["bond_supports"])
-    assert versions and citations and supports
-    for ws, v, content_hash, fmt, created_at in map(texts, versions):
-        assert WORKSPACE_ID.fullmatch(ws) and HASH.fullmatch(v) and HASH.fullmatch(content_hash) and fmt in formats
-        datetime.fromisoformat(created_at)
-    for ws, owner, cid, kind, claim, attrs in map(texts, citations):
-        assert WORKSPACE_ID.fullmatch(ws) and HASH.fullmatch(owner) and HASH.fullmatch(cid) and kind in kinds
-        assert_closed_locator(json.loads(claim))
-        attrs = json.loads(attrs)
-        assert set(attrs) <= PRODUCER_ATTRS and all(value in PRODUCERS for value in attrs.values()), attrs
-    for row in supports:
-        ws, owner, cid, version, locator = texts(row[:3] + row[4:])
-        position = row[3]
-        assert WORKSPACE_ID.fullmatch(ws)
-        assert HASH.fullmatch(owner) and HASH.fullmatch(cid) and HASH.fullmatch(version)
-        assert isinstance(position, int) and not isinstance(position, bool)
-        assert_closed_locator(json.loads(locator))
-
-
 def assert_closed_locator(d: Mapping[str, JsonValue]) -> None:
     """A stored locator: its type, and numbers. No keys, no text."""
     locator_from_dict(d)
@@ -158,26 +91,6 @@ def assert_closed_locator(d: Mapping[str, JsonValue]) -> None:
             continue
         values = value if isinstance(value, list) else [value]
         assert all(isinstance(n, (int, float)) and not isinstance(n, bool) for n in values), (key, value)
-
-
-def test_no_word_of_any_document_reaches_a_record(store):
-    for table, columns in RECORD_TABLES.items():
-        for row in rows(store, table, columns):
-            text = json.dumps(row, ensure_ascii=False).lower()
-            assert not [w for w in WORDS if w in text], (table, row)
-
-
-def test_the_words_are_in_the_store_so_their_absence_from_records_means_something(store):
-    filing = " ".join(json.dumps(r, ensure_ascii=False) for t, c in FILING_TABLES.items() for r in rows(store, t, c))
-    assert "Zelphine Quarrow" in filing and "CL-QX7731" in filing  # document names and a title are filing
-    assert "Unions/Wexmoor Tenants Union/roster.csv" in filing  # and so is an origin
-    # And the content itself is the agent's to read, through the version.
-    [summary] = [d for d in store.documents() if d.name == "summaries/CL-QX7731.json"]
-    text = store.text(Ref(summary.head, VersionLocator()))
-    assert text is not None and "CL-QX7731" in text
-    [cited] = store.citations(summary.head)
-    assert details.pointer(store, Ref(summary.head, cited.claim)) == "/CL-QX7731/Zelphine Quarrow"
-    assert "CL-QX7731" in details.pointer(store, cited.supports[0])
 
 
 def test_words_offered_as_attrs_are_refused(store):
@@ -196,3 +109,55 @@ def test_words_offered_as_attrs_are_refused(store):
                       {"transcriber": "Zelphine Quarrow"})],
             format=Format.JSON,
         )
+
+
+def keyed(bond: Bond) -> dict[Key, Any]:
+    """Every key in the store, with its value as JSON."""
+    store = bond.store
+    found = {}
+    for key in store.list(()):
+        data = store.get(key)
+        assert data is not None
+        found[key] = json.loads(data)
+    return found
+
+
+def test_no_key_holds_text_from_any_document_or_name(store):
+    # Keys reach logs that values don't, so even names, which are filing, are hashed in them.
+    for key in keyed(store):
+        for e in key:
+            assert isinstance(e, int) or e in {"workspaces", "records", "names", "entries", "titles"} or any(
+                p.fullmatch(e) for p in (HASH, WORKSPACE_ID, DOCUMENT_ID)), key
+
+
+def test_every_record_value_is_a_hash_an_enum_a_number_or_a_registered_id(store):
+    kinds, formats = {k.value for k in CitationKind}, {f.value for f in Format}
+    records = [value for key, value in keyed(store).items() if key[1:2] == ("records",)]
+    assert records
+    for r in records:
+        assert set(r) == {"id", "content_hash", "format", "created_at", "citations"}, "a field this check doesn't cover"
+        assert HASH.fullmatch(r["id"]) and HASH.fullmatch(r["content_hash"]) and r["format"] in formats
+        datetime.fromisoformat(r["created_at"])
+        for c in r["citations"]:
+            assert set(c) == {"id", "kind", "claim", "attrs", "supports"}, "a field this check doesn't cover"
+            assert HASH.fullmatch(c["id"]) and c["kind"] in kinds
+            assert_closed_locator(c["claim"])
+            assert set(c["attrs"]) <= PRODUCER_ATTRS and all(v in PRODUCERS for v in c["attrs"].values())
+            for version, locator in c["supports"]:
+                assert HASH.fullmatch(version)
+                assert_closed_locator(locator)
+        text = json.dumps(r, ensure_ascii=False).lower()
+        assert not [w for w in WORDS if w in text], r
+
+
+def test_the_words_are_in_the_store_so_their_absence_from_records_means_something(store):
+    filing = " ".join(json.dumps(v, ensure_ascii=False) for k, v in keyed(store).items() if k[1:2] != ("records",))
+    assert "Zelphine Quarrow" in filing and "CL-QX7731" in filing  # document names and a title are filing
+    assert "Unions/Wexmoor Tenants Union/roster.csv" in filing  # and so is an origin
+    # And the content itself is the agent's to read, through the version.
+    [summary] = [d for d in store.documents() if d.name == "summaries/CL-QX7731.json"]
+    text = store.text(Ref(summary.head, VersionLocator()))
+    assert text is not None and "CL-QX7731" in text
+    [cited] = store.citations(summary.head)
+    assert details.pointer(store, Ref(summary.head, cited.claim)) == "/CL-QX7731/Zelphine Quarrow"
+    assert "CL-QX7731" in details.pointer(store, cited.supports[0])

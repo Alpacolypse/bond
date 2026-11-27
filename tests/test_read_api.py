@@ -76,6 +76,6 @@ def test_cited_by_transcribed_text_finds_its_assessment(bond, case):
 
 
 def test_a_small_parsed_cache_still_reads_every_version(bond, case, summary):
-    reader = Bond(bond.catalog, bond.blobs, parsed_cache_size=1)  # shares the store, so isn't closed
+    reader = Bond(bond.store, bond.blobs, bond.workspace.name, parsed_cache_size=1)  # shares the store and blobs
     for v in (case["pdf"], case["fax"], summary, case["fax"]):
         assert details.claim_units(reader, v) == details.claim_units(bond, v)

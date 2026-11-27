@@ -100,7 +100,7 @@ Bond is a **core**, two **APIs** over it, and **deployments** that decide where 
 - **`bond.mcp`** is the API for agents: authoring tools over MCP, plus an in-chat view of the document. **`bond.http`** is the read-only JSON API behind the viewer.
 - **`bond.local`** is one deployment: one person's computer, with workspaces in a Bond home and the person granting access. Another deployment implements the `Workspaces` protocol over its own stores and access control and leaves `bond.local` out.
 
-Storage is pluggable: SQLite or Postgres for the catalog, and a local directory or S3 for blobs.
+Storage is pluggable: any store that can create a key once (SQLite, Postgres or memory ship with Bond), and a local directory or S3 for blobs.
 
 ## Documentation
 

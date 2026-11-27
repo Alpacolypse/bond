@@ -11,11 +11,13 @@ reads for the viewer in bond.http.viewer, both on top of these."""
 
 from __future__ import annotations
 
+import functools
 import os
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
-from functools import lru_cache
+from functools import lru_cache, partial
 from pathlib import Path
+from typing import Concatenate
 
 from . import kinds
 from .formats import from_suffix, parse, sniff, spec
@@ -51,15 +53,31 @@ from .models import (
 )
 from .parsers import Malformed, ParsedDoc
 from .policies import STRICT, Policy
-from .storage import Blobs, Catalog, Conflict, NewVersion, filing_problem
+from .storage import Blobs, Conflict, NewVersion, filing_problem
+from .storage.filing import Filing
+from .storage.index import MemoryIndex
+from .storage.records import Records
+from .storage.store import Store
+from .storage.workspace import open_workspace
 from .support import check_support, partition
 
 # Parsed documents kept in memory by default. Versions are immutable, so any eviction is safe.
 DEFAULT_PARSED_CACHE_SIZE = 256
 
 
+
+def _one_view[**P, R](method: Callable[Concatenate[Bond, P], R]) -> Callable[Concatenate[Bond, P], R]:
+    """Run a query against one catch-up of the index, however many lookups it makes."""
+
+    @functools.wraps(method)
+    def wrapper(self: Bond, *args: P.args, **kwargs: P.kwargs) -> R:
+        with self.index.view():
+            return method(self, *args, **kwargs)
+
+    return wrapper
+
 class Bond:
-    """One provenance-enforcing workspace: its rows in a catalog, its bytes in blobs.
+    """One provenance-enforcing workspace: its keys in a store, its bytes in blobs.
 
     A workspace is a closed world, like a case: writes cite versions in it.
     Imports preserve references to dependencies that have not yet been copied.
@@ -67,10 +85,21 @@ class Bond:
     or transaction of its own. See bond.storage for the backends.
     """
 
-    def __init__(self, catalog: Catalog, blobs: Blobs, parsed_cache_size: int = DEFAULT_PARSED_CACHE_SIZE):
-        """A workspace over catalog and blobs, keeping up to parsed_cache_size parsed versions in memory."""
-        self.catalog = catalog
+    def __init__(
+        self, store: Store, blobs: Blobs, workspace: str | None = None, *, create: bool = True,
+        parsed_cache_size: int = DEFAULT_PARSED_CACHE_SIZE,
+    ):
+        """The workspace named workspace in store (created if missing, unless create is False; with no name, the only
+        one there is), its bytes in blobs, keeping up to parsed_cache_size parsed versions in memory.
+
+        The store and blobs stay the caller's: close() leaves them open."""
+        self.store = store
         self.blobs = blobs
+        self.workspace: Workspace = open_workspace(store, workspace, create)  # the workspace this Bond reads and writes
+        self.records = Records(store, self.workspace.id)  # its versions
+        self.filing = Filing(store, self.workspace.id)  # its documents
+        self.index = MemoryIndex(self.records, self.filing)  # reverse lookups, derived from both
+        self._owned: list[object] = []  # what this Bond opened itself, and closes
         # Per instance, so the cache doesn't keep this Bond alive after it is closed.
         self._load = lru_cache(maxsize=parsed_cache_size)(self._load_version)
 
@@ -79,27 +108,33 @@ class Bond:
         cls, root: str | os.PathLike[str], parsed_cache_size: int = DEFAULT_PARSED_CACHE_SIZE,
         create: bool = True,
     ) -> Bond:
-        """Open a workspace in a local directory: a SQLite catalog and a directory of blobs.
+        """Open a workspace in a local directory: a SQLite store and a directory of blobs, closed with the Bond.
 
         It is created if it doesn't exist, named after the directory, unless create is False.
         """
         from .storage.local import LocalBlobs
-        from .storage.sqlite import SQLiteCatalog
+        from .storage.sqlite import SQLiteStore
 
         root = Path(root)
         # A new directory's workspace is named after it; an existing one opens the workspace it holds.
         name = None if (root / "bond.db").exists() else root.resolve().name
-        catalog = SQLiteCatalog(root / "bond.db", workspace=name, create=create)
-        return cls(catalog, LocalBlobs(root / "blobs"), parsed_cache_size)
-
-    @property
-    def workspace(self) -> Workspace:
-        """The workspace this Bond reads and writes."""
-        return self.catalog.workspace
+        store = SQLiteStore(root / "bond.db", create=create)
+        try:
+            bond = cls(store, LocalBlobs(root / "blobs"), name, create=create, parsed_cache_size=parsed_cache_size)
+        except BaseException:
+            store.close()
+            raise
+        bond._owned.append(store)
+        return bond
 
     def close(self) -> None:
-        """Close the catalog; a pool or client its host passed in stays open."""
-        self.catalog.close()
+        """Stop this Bond, and close what it opened itself (Bond.local's store); a store, pool or client its host
+        passed in stays open."""
+        for owned in self._owned:
+            close = getattr(owned, "close", None)
+            if callable(close):
+                close()
+        self._owned.clear()
 
     def __enter__(self) -> Bond:
         return self
@@ -135,7 +170,7 @@ class Bond:
             fmt = format or from_suffix(path.suffix) or sniff(data)
         whole = [Citation(CitationKind.SOURCE, VersionLocator(), [])]
         version = version_id(hash_bytes(data), fmt, whole)
-        if self.catalog.get_version(version):  # skip parsing it again
+        if self.records.version(version):  # skip parsing it again
             return self._file(version, document, base, None, title, origin)
         return self._write(data, fmt, document, whole, base, STRICT, title, None, origin)
 
@@ -158,13 +193,14 @@ class Bond:
 
     def _version(self, version: VersionId) -> Version:
         """A stored version's record; raises UnknownVersion if there is none."""
-        stored = self.catalog.get_version(version)
+        stored = self.records.version(version)
         if stored is None:
             raise UnknownVersion(version)
         return stored
 
     # --- search --------------------------------------------------------------
 
+    @_one_view
     def search(
         self, phrase: str, *, documents: list[str] | None = None, within: Ref | None = None, limit: int = 50,
     ) -> list[Hit]:
@@ -196,15 +232,19 @@ class Bond:
             return [self._version(within.version)]
         if documents is not None:
             return [self._version(v) for v in dict.fromkeys(self.document(d).head for d in documents)]
-        return self.catalog.head_versions()
+        heads = {d.head for d in self.filing.documents()}
+        return [v for v in self.index.versions() if v.id in heads]
 
     def _search_version(self, version: Version, phrase: str) -> list[Hit]:
-        owned = self.catalog.citations_of(version.id)
-        names = [d.name for d in self.catalog.documents_holding(version.id)]
+        matches = self._doc(version.id).search(phrase)
+        if not matches:
+            return []
+        owned = self.records.citations(version.id)
+        names = [d.name for d in self.index.holding(version.id)]
         return [
             Hit(Ref(version.id, m.locator), list(names), version.format, m.snippet, m.context,
                 self._declarations(Ref(version.id, m.locator), owned))
-            for m in self._doc(version.id).search(phrase)
+            for m in matches
         ]
 
     def declarations(self, ref: Ref) -> Declarations:
@@ -214,7 +254,7 @@ class Bond:
         format coverage rules; PDF selections use geometric coverage rather than text extraction.
         """
         self._check_ref(ref)
-        return self._declarations(ref, self.catalog.citations_of(ref.version))
+        return self._declarations(ref, self.records.citations(ref.version))
 
     def _declarations(self, ref: Ref, citations: list[StoredCitation]) -> Declarations:
         selected = tuple(c for c in citations if overlaps(c.claim, ref.locator))
@@ -295,7 +335,7 @@ class Bond:
     ) -> list[Issue]:
         issues = _label_issues(document, title) + self._check(content, format, citations, policy, frozenset())
         version = version_id(hash_bytes(content), format, list(citations))
-        if conflict := filing_problem(self.catalog.get_document(document), document, base, version):
+        if conflict := filing_problem(self.filing.document(document), document, base, version):
             issues.append(_conflict_issue(conflict))
         return issues
 
@@ -308,10 +348,9 @@ class Bond:
         version = version_id(hash_bytes(content), format, list(citations))
         content_hash = hash_bytes(content)
         self.blobs.put(content_hash, content)  # before any row refers to it
-        filed = self.catalog.file(
-            version, document, base, NewVersion(version, content_hash, format, content, list(citations)),
-            imported, origin,
-        )
+        new = NewVersion(version, content_hash, format, content, list(citations))
+        filed = self.filing.file(version, document, base, imported=imported, origin=origin,
+                                 before=partial(self.records.put, new))  # its record, before the entry naming it
         if isinstance(filed, Conflict):  # another write moved the document since it was checked
             raise WriteError([_conflict_issue(filed)])
         self._title(document, title)
@@ -320,7 +359,7 @@ class Bond:
     def _title(self, document: str, title: str | None) -> None:
         """Label a document just filed; title was checked before anything was stored."""
         if title is not None:
-            self.catalog.retitle(document, title)
+            self.filing.retitle(document, title)
 
     def _check(
         self, content: bytes, format: Format, citations: Sequence[Citation], policy: Policy,
@@ -367,7 +406,7 @@ class Bond:
                     problem = doc.check(support.locator) if doc is not None else None
                 case Ref() if support.version in unchecked:
                     continue
-                case Ref() if self.catalog.get_version(support.version) is None:
+                case Ref() if self.records.version(support.version) is None:
                     errors.append(Issue(
                         IssueCode.UNKNOWN_VERSION, f"version {support.version!r} does not exist", citation_index=i,
                         support_index=j, locator=support.locator,
@@ -397,7 +436,7 @@ class Bond:
         """File a version that is stored already."""
         if issues := _label_issues(document, title):
             raise WriteError(issues)
-        filed = self.catalog.file(version, document, base, None, imported, origin)
+        filed = self.filing.file(version, document, base, imported=imported, origin=origin)
         if isinstance(filed, Conflict):
             raise WriteError([_conflict_issue(filed)])
         self._title(document, title)
@@ -406,20 +445,20 @@ class Bond:
     def document(self, name: str) -> DocumentRef:
         """The document with this name, with its head; raises UnknownDocument if there is none.
 
-        To ask whether there is one, catalog.get_document(name) returns None instead.
+        To ask whether there is one, filing.document(name) returns None instead.
         """
-        doc = self.catalog.get_document(name)
+        doc = self.filing.document(name)
         if doc is None:
             raise UnknownDocument(name)
         return doc
 
     def documents(self) -> list[DocumentRef]:
         """Every document, oldest first."""
-        return self.catalog.all_documents()
+        return self.filing.documents()
 
     def history(self, name: str) -> list[HistoryEntry]:
         """A document's history, oldest first: the versions it pointed at, and the base each was written from."""
-        return self.catalog.history(self.document(name).id)
+        return self.filing.history(self.document(name).id)
 
     # --- between workspaces ----------------------------------------------------
 
@@ -447,14 +486,14 @@ class Bond:
         """Copy a version an earlier import left outside (see frontier()) from source, without filing it, and what
         it rests on as import_document does. advanced says whether anything was copied."""
         _check_other(self, source)
-        if self.catalog.get_version(version) is None and not self.catalog.citations_supported_by(version):
+        if self.records.version(version) is None and not self.index.supported_by(version):
             raise ValueError(f"nothing in this workspace rests on version {version[:12]}…; import a document "
                              "by name instead")
         return WriteResult(version, bool(self._bring(source, [version], depth, limit)))
 
     def frontier(self) -> list[VersionId]:
         """Versions that something in this workspace rests on but that aren't in it: the frontier imports left."""
-        return self.catalog.outside_versions()
+        return self.index.outside()
 
     def _bring(self, source: Bond, versions: list[VersionId], depth: int | None, limit: int | None) -> list[VersionId]:
         """Copy versions from source, then what they rest on, depth hops down; those already here are kept, but
@@ -484,15 +523,15 @@ class Bond:
     def _copy(self, source: Bond, v: VersionId, brought: list[VersionId]) -> list[StoredCitation]:
         """Copy one version from source unless it is here; its citations, none if source doesn't have it either
         (it stays on the frontier)."""
-        if self.catalog.get_version(v) is not None:
-            return self.catalog.citations_of(v)
-        if source.catalog.get_version(v) is None:
+        if self.records.version(v) is not None:
+            return self.records.citations(v)
+        if source.records.version(v) is None:
             return []
         new = _checked_import(source, v)
         self.blobs.put(new.content_hash, new.data)  # before any row refers to it
-        self.catalog.put_version(new)
+        self.records.put(new)
         brought.append(v)
-        return self.catalog.citations_of(v)
+        return self.records.citations(v)
 
     # --- citations / trace ---------------------------------------------------
 
@@ -503,8 +542,9 @@ class Bond:
         """
         self._version(version)
         doc = self._doc(version)
-        return sorted(self.catalog.citations_of(version), key=lambda c: (doc.position(c.claim), c.id))
+        return sorted(self.records.citations(version), key=lambda c: (doc.position(c.claim), c.id))
 
+    @_one_view
     def trace(self, ref: Ref, max_depth: int | None = None, limit: int | None = None) -> Trace:
         """Follow provenance from ref down to its sources, as a DAG.
 
@@ -523,17 +563,18 @@ class Bond:
 
         def down(node: Ref) -> list[tuple[StoredCitation, list[Ref]]]:
             if node.version not in owned:
-                here = self.catalog.get_version(node.version) is not None
-                owned[node.version] = self.catalog.citations_of(node.version) if here else []
+                here = self.records.version(node.version) is not None
+                owned[node.version] = self.records.citations(node.version) if here else []
                 if not here:
                     outside.add(node.version)
             return [(c, c.supports) for c in _edges_at(owned[node.version], node.locator)]
 
         nodes, edges, complete = _walk(ref, down, max_depth, limit)
         # A node past max_depth was never stepped into; find out whether it is here all the same.
-        outside |= {n.version for n in nodes if n.version not in owned and self.catalog.get_version(n.version) is None}
+        outside |= {n.version for n in nodes if n.version not in owned and self.records.version(n.version) is None}
         return Trace(ref, nodes, edges, complete, frozenset(outside))
 
+    @_one_view
     def cited_by(self, ref: Ref) -> list[StoredCitation]:
         """Citations, from any version, with a support in ref.version that overlaps ref.locator.
 
@@ -542,7 +583,7 @@ class Bond:
         """
         self._check_ref(ref)
         return [
-            c for c in self.catalog.citations_supported_by(ref.version)
+            c for c in self.index.supported_by(ref.version)
             if any(s.version == ref.version and overlaps(s.locator, ref.locator) for s in c.supports)
         ]
 
@@ -569,7 +610,8 @@ class Bond:
         beneath version was checked. Raises UnknownVersion if version itself
         isn't in this workspace.
         """
-        self._version(version)
+        if self.records.as_stored(version) is None:
+            raise UnknownVersion(version)
         issues: list[Issue] = []
         seen: set[VersionId] = set()
         outside: dict[VersionId, None] = {}
@@ -579,11 +621,11 @@ class Bond:
             if v in seen:
                 continue
             seen.add(v)
-            stored = self.catalog.get_version(v)
-            if stored is None:
+            record = self.records.as_stored(v)  # checked against v itself, whatever version it names
+            if record is None:
                 outside[v] = None
                 continue
-            cited = self.catalog.citations_of(v)
+            stored, cited = record.version, record.citations
             beneath = [s.version for c in cited for s in c.supports if s.version != v]
             unchecked = frozenset(s for s in set(beneath) if not self._intact(s))
             issues += [replace(i, version=v) for i in self._verify_one(stored, cited, policy, unchecked)]
@@ -617,9 +659,10 @@ class Bond:
     def _intact(self, version: VersionId) -> bool:
         """Whether what rests on a version can be checked against it: it is here, and its bytes are there, hash to
         its content hash and are well-formed."""
-        stored = self.catalog.get_version(version)
-        if stored is None:
+        record = self.records.as_stored(version)
+        if record is None or record.stored_id != version:
             return False
+        stored = record.version
         data = self.blobs.get(stored.content_hash)
         return (data is not None and hash_bytes(data) == stored.content_hash
                 and not isinstance(self._load(version), Malformed))
@@ -658,7 +701,7 @@ class _Graph:
     bond: Bond
 
     def parsed(self, version: VersionId) -> ParsedDoc | None:
-        return None if self.bond.catalog.get_version(version) is None else self.bond._doc(version)
+        return None if self.bond.records.version(version) is None else self.bond._doc(version)
 
     def citations(self, version: VersionId) -> list[StoredCitation]:
         return self.bond.citations(version)
@@ -678,7 +721,7 @@ def _check_other(here: Bond, source: Bond) -> None:
 def _checked_import(source: Bond, v: VersionId) -> NewVersion:
     """Validate the pinned artifact's identity without relying on a parsed-content cache."""
     stored = source._version(v)
-    cited = source.catalog.citations_of(v)
+    cited = source.records.citations(v)
     data = source.blob(v)
     written = [c.as_written() for c in cited]
     if (hash_bytes(data) != stored.content_hash

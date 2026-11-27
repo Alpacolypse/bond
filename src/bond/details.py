@@ -20,19 +20,19 @@ def version(bond: Bond, version: VersionId) -> Version:
 
 def versions(bond: Bond) -> list[Version]:
     """Every version in the workspace, oldest first."""
-    return bond.catalog.all_versions()
+    return bond.index.versions()
 
 
 def filed_in(bond: Bond, version: VersionId) -> list[DocumentRef]:
     """The documents whose history holds a version, oldest first. Compare each one's head to see if it's current."""
     bond._version(version)
-    return bond.catalog.documents_holding(version)
+    return bond.index.holding(version)
 
 
 def locator_problem(bond: Bond, ref: Ref) -> str | None:
     """Why a reference names nothing here: its version isn't in the workspace, or its locator isn't valid in it.
     None if it names something."""
-    if bond.catalog.get_version(ref.version) is None:
+    if bond.records.version(ref.version) is None:
         return f"version {ref.version[:12]}… isn't in this workspace"
     return bond._locator_problem(ref)
 

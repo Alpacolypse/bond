@@ -179,7 +179,7 @@ def create_server(
         """Show a document to the person you're working with, in the chat, where they can follow any claim to
         what it rests on. Use it to present a document; read() is for reading one yourself."""
         bond = served.open(workspace)
-        found = bond.catalog.get_document(document)
+        found = bond.filing.document(document)
         if found is None:
             raise authoring.ToolError(f"there's no document named {document!r} in {workspace!r}")
         return Shown(document, bond.check_support(Ref(found.head, VersionLocator()), limit=SUPPORT_LIMIT).status)

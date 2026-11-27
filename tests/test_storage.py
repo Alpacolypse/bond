@@ -1,8 +1,8 @@
-"""The storage contract: what every Catalog and Blobs backend must do, run against each backend.
+"""The storage contract: what Bond's records, filing and index do on every Store, and what every Blobs backend must do.
 
-A backend is supported when it passes these. Most of the contract is
-concurrency: one catalog shared by many threads, writers racing on one
-document's head, and the same version stored by several writers at once.
+A store is supported when Bond's layers pass these on it (and the store passes test_store.py). Most of the
+contract is concurrency: one workspace shared by many threads, writers racing on one document's head, and the same
+version stored by several writers at once.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ import threading
 from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
 import pytest
 from types_boto3_s3 import S3Client
@@ -35,13 +36,13 @@ from bond import (
     details,
 )
 from bond.ids import citation_id, hash_bytes, version_id
-from bond.models import DocumentRef, Imported
-from bond.storage import Blobs, Catalog, CitationEdge, Conflict, Filed, NewVersion
-from bond.storage.local import LocalBlobs
+from bond.models import DocumentRef, Imported, Version
+from bond.storage import Blobs, CitationEdge, Conflict, Filed, NewVersion
+from bond.storage.local import LocalBlobs, MemoryBlobs
 from bond.storage.s3 import S3Blobs
-from bond.storage.sql import Exec, Row, SqlCatalog, SqlValue
-from bond.storage.sqlite import SQLiteCatalog
-from conftest import CATALOGS, POSTGRES, catalog_of, postgres_pool, workspaces_of
+from bond.storage.sql import Exec, Row, SqlValue
+from bond.storage.sqlite import SQLiteStore
+from conftest import POSTGRES, STORES, postgres_pool, store_of
 
 THREADS = 8
 
@@ -59,9 +60,20 @@ def filed(result: Filed | Conflict) -> Filed:
     return result
 
 
-def store(catalog: Catalog, new: NewVersion, document: str, base: VersionId | None = None) -> VersionId:
-    filed(catalog.file(new.id, document, base, new))
+def file_in(bond: Bond, new: NewVersion, document: str, base: VersionId | None, **entry: Any) -> Filed | Conflict:
+    """File new in document from base, storing its record first, as a commit does."""
+    return bond.filing.file(new.id, document, base, before=lambda: bond.records.put(new), **entry)
+
+
+def store(bond: Bond, new: NewVersion, document: str, base: VersionId | None = None) -> VersionId:
+    filed(file_in(bond, new, document, base))
     return new.id
+
+
+def heads(bond: Bond) -> list[Version]:
+    """The versions that are some document's head, oldest first."""
+    heads = {d.head for d in bond.filing.documents()}
+    return [v for v in bond.index.versions() if v.id in heads]
 
 
 def run_threads(n: int, work: Callable[[int], None]) -> None:
@@ -77,38 +89,39 @@ def run_threads(n: int, work: Callable[[int], None]) -> None:
             future.result()
 
 
-# --- Catalog -------------------------------------------------------------------------
+# --- one workspace on each store --------------------------------------------------------
 
 
-@pytest.fixture(params=CATALOGS)
-def catalog(request: pytest.FixtureRequest, tmp_path: Path) -> Iterator[Catalog]:
-    with catalog_of(request.param, tmp_path) as c:
-        yield c
+@pytest.fixture(params=STORES)
+def ws(request: pytest.FixtureRequest, tmp_path: Path) -> Iterator[Bond]:
+    """A new workspace's records, filing and index, on each kind of store."""
+    with store_of(request.param, tmp_path) as s, Bond(s, MemoryBlobs()) as b:
+        yield b
 
 
-def test_a_new_catalog_is_empty(catalog):
-    assert catalog.all_versions() == [] and catalog.all_documents() == [] and catalog.head_versions() == []
-    assert catalog.get_version(VersionId("0" * 64)) is None and catalog.get_document("note") is None
+def test_a_new_workspace_is_empty(ws):
+    assert ws.index.versions() == [] and ws.filing.documents() == [] and heads(ws) == []
+    assert ws.records.version(VersionId("0" * 64)) is None and ws.filing.document("note") is None
 
 
-def test_filing_creates_and_advances_a_document(catalog):
+def test_filing_creates_and_advances_a_document(ws):
     v1 = new_version("One.")
-    first = filed(catalog.file(v1.id, "note", None, v1))
+    first = filed(file_in(ws, v1, "note", None))
     doc = first.document
-    assert first.advanced and doc.name == "note" and doc.head == v1.id and catalog.get_document("note") == doc
+    assert first.advanced and doc.name == "note" and doc.head == v1.id and ws.filing.document("note") == doc
     v2 = new_version("Two.")
-    second = filed(catalog.file(v2.id, "note", v1.id, v2))
+    second = filed(file_in(ws, v2, "note", v1.id))
     assert second.advanced and second.document.id == doc.id and second.document.head == v2.id
-    assert [(e.seq, e.version, e.base) for e in catalog.history(doc.id)] == [(1, v1.id, None), (2, v2.id, v1.id)]
-    assert [v.id for v in catalog.all_versions()] == [v1.id, v2.id]
-    assert [v.id for v in catalog.head_versions()] == [v2.id]
+    assert [(e.seq, e.version, e.base) for e in ws.filing.history(doc.id)] == [(1, v1.id, None), (2, v2.id, v1.id)]
+    assert [v.id for v in ws.index.versions()] == [v1.id, v2.id]
+    assert [v.id for v in heads(ws)] == [v2.id]
 
 
-def test_filing_the_head_again_is_a_no_op(catalog):
+def test_filing_the_head_again_is_a_no_op(ws):
     v1 = new_version("One.")
-    store(catalog, v1, "note")
-    again = filed(catalog.file(v1.id, "note", None, v1))
-    assert not again.advanced and again.document.head == v1.id and len(catalog.history(again.document.id)) == 1
+    store(ws, v1, "note")
+    again = filed(file_in(ws, v1, "note", None))
+    assert not again.advanced and again.document.head == v1.id and len(ws.filing.history(again.document.id)) == 1
 
 
 @pytest.mark.parametrize(("document", "base", "code"), [
@@ -116,27 +129,27 @@ def test_filing_the_head_again_is_a_no_op(catalog):
     ("missing", "v1", IssueCode.UNKNOWN_DOCUMENT),
     ("note", "v0", IssueCode.STALE_BASE),
 ])
-def test_a_filing_conflict_stores_nothing(catalog, document, base, code):
+def test_a_filing_conflict_stores_nothing(ws, document, base, code):
     v0, v1 = new_version("Zero."), new_version("One.")
-    store(catalog, v0, "note")
-    store(catalog, v1, "note", v0.id)
+    store(ws, v0, "note")
+    store(ws, v1, "note", v0.id)
     late = new_version("Late.")
-    conflict = catalog.file(late.id, document, None if base is None else {"v0": v0.id, "v1": v1.id}[base], late)
+    conflict = file_in(ws, late, document, None if base is None else {"v0": v0.id, "v1": v1.id}[base])
     assert isinstance(conflict, Conflict) and conflict.code is code
-    assert catalog.get_version(late.id) is None and catalog.citations_of(late.id) == []
+    assert ws.records.version(late.id) is None and ws.records.citations(late.id) == []
 
 
-def test_one_version_in_many_documents_is_stored_once(catalog):
+def test_one_version_in_many_documents_is_stored_once(ws):
     v = new_version("Fax text.")
-    store(catalog, v, "case_002/fax")
-    store(catalog, v, "case_007/fax")
-    assert len(catalog.all_versions()) == 1 and len(catalog.citations_of(v.id)) == 1
-    assert [d.name for d in catalog.documents_holding(v.id)] == ["case_002/fax", "case_007/fax"]
+    store(ws, v, "case_002/fax")
+    store(ws, v, "case_007/fax")
+    assert len(ws.index.versions()) == 1 and len(ws.records.citations(v.id)) == 1
+    assert [d.name for d in ws.index.holding(v.id)] == ["case_002/fax", "case_007/fax"]
 
 
-def test_citations_round_trip_with_supports_inside_and_outside(catalog):
+def test_citations_round_trip_with_supports_inside_and_outside(ws):
     src = new_version("Six weeks of written notice.")
-    store(catalog, src, "src")
+    store(ws, src, "src")
     text = "Six weeks of PT. Six weeks."
     first, second = TextLocator(0, 16), TextLocator(17, 27)
     cited = [
@@ -144,41 +157,41 @@ def test_citations_round_trip_with_supports_inside_and_outside(catalog):
         Citation(CitationKind.PARAPHRASE, second, [SelfRef(first)]),
     ]
     note = new_version(text, cited)
-    store(catalog, note, "note")
-    by_claim = {c.claim: c for c in catalog.citations_of(note.id)}
+    store(ws, note, "note")
+    by_claim = {c.claim: c for c in ws.records.citations(note.id)}
     assert by_claim[first].supports == [Ref(src.id, TextLocator(0, 30))]
     assert by_claim[second].supports == [Ref(note.id, first)]  # SELF is stored under the version's own id
     # and read back as written
-    assert sorted(citation_id(c.as_written()) for c in catalog.citations_of(note.id)) == sorted(map(citation_id, cited))
-    assert [c.owner_version for c in catalog.citations_supported_by(src.id)] == [note.id]
-    assert catalog.citation_counts()[note.id].citations == 2
-    assert catalog.citation_counts()[note.id].self_supported == 1
-    assert catalog.citation_counts()[src.id].whole_source
-    assert catalog.citation_edges() == [CitationEdge(note.id, src.id, CitationKind.PARAPHRASE, 1)]
+    assert sorted(citation_id(c.as_written()) for c in ws.records.citations(note.id)) == sorted(map(citation_id, cited))
+    assert [c.owner_version for c in ws.index.supported_by(src.id)] == [note.id]
+    assert ws.index.counts()[note.id].citations == 2
+    assert ws.index.counts()[note.id].self_supported == 1
+    assert ws.index.counts()[src.id].whole_source
+    assert ws.index.edges() == [CitationEdge(note.id, src.id, CitationKind.PARAPHRASE, 1)]
 
 
-def test_retitle(catalog):
-    store(catalog, new_version("A."), "a")
-    a = catalog.get_document("a")
+def test_retitle(ws):
+    store(ws, new_version("A."), "a")
+    a = ws.filing.document("a")
     assert a is not None and a.title is None
-    titled = catalog.retitle("a", "Note A")
+    titled = ws.filing.retitle("a", "Note A")
     assert (titled.id, titled.title) == (a.id, "Note A")
-    assert catalog.retitle("a", None).title is None
+    assert ws.filing.retitle("a", None).title is None
     with pytest.raises(UnknownDocument):
-        catalog.retitle("missing", "anything")
+        ws.filing.retitle("missing", "anything")
 
 
 # --- workspaces ------------------------------------------------------------------------
 
 
-@pytest.fixture(params=CATALOGS)
-def two(request: pytest.FixtureRequest, tmp_path: Path) -> Iterator[list[SqlCatalog]]:
-    """Two workspaces, case-001 and case-002, in one database."""
-    with workspaces_of(request.param, tmp_path, "case-001", "case-002") as catalogs:
-        yield catalogs
+@pytest.fixture(params=STORES)
+def two(request: pytest.FixtureRequest, tmp_path: Path) -> Iterator[list[Bond]]:
+    """Two workspaces, case-001 and case-002, in one store."""
+    with store_of(request.param, tmp_path) as s:
+        yield [Bond(s, MemoryBlobs(), "case-001"), Bond(s, MemoryBlobs(), "case-002")]
 
 
-def test_each_catalog_is_opened_on_its_own_workspace(two):
+def test_each_bond_is_opened_on_its_own_workspace(two):
     a, b = two
     assert (a.workspace.name, b.workspace.name) == ("case-001", "case-002")
     assert a.workspace.id != b.workspace.id and a.workspace.id.startswith("ws_")
@@ -196,178 +209,180 @@ def test_nothing_in_one_workspace_is_visible_from_another(two):
     store(a, secret, "determination")
     store(a, new_version("Only in A."), "a-only")
 
-    assert [v.id for v in b.all_versions()] == [policy.id] == [v.id for v in b.head_versions()]
-    assert b.get_version(secret.id) is None and b.citations_of(secret.id) == []
-    assert b.citations_supported_by(policy.id) == []  # who cites the shared policy is case data
-    assert [c.owner_version for c in a.citations_supported_by(policy.id)] == [secret.id]
-    assert b.citation_edges() == [] and set(b.citation_counts()) == {policy.id}
-    assert [d.name for d in b.all_documents()] == ["policy"] and b.get_document("a-only") is None
-    a_policy, b_policy = a.get_document("policy"), b.get_document("policy")
+    assert [v.id for v in b.index.versions()] == [policy.id] == [v.id for v in heads(b)]
+    assert b.records.version(secret.id) is None and b.records.citations(secret.id) == []
+    assert b.index.supported_by(policy.id) == []  # who cites the shared policy is case data
+    assert [c.owner_version for c in a.index.supported_by(policy.id)] == [secret.id]
+    assert b.index.edges() == [] and set(b.index.counts()) == {policy.id}
+    assert [d.name for d in b.filing.documents()] == ["policy"] and b.filing.document("a-only") is None
+    a_policy, b_policy = a.filing.document("policy"), b.filing.document("policy")
     assert a_policy is not None and b_policy is not None and a_policy.id != b_policy.id
-    assert b.documents_holding(secret.id) == [] and b.history(a_policy.id) == []
-    assert b.outside_versions() == [] == a.outside_versions()
+    assert b.index.holding(secret.id) == [] and b.filing.history(a_policy.id) == []
+    assert b.index.outside() == [] == a.index.outside()
 
 
 def test_titles_change_in_one_workspace_only(two):
     a, b = two
     store(a, new_version("A."), "note")
     store(b, new_version("B."), "note")
-    b.retitle("note", "B's note")
-    a_note = a.get_document("note")
+    b.filing.retitle("note", "B's note")
+    a_note = a.filing.document("note")
     assert a_note is not None and a_note.title is None
-    b.retitle("note", None)
+    b.filing.retitle("note", None)
     with pytest.raises(UnknownDocument):
-        a.retitle("b-only", "anything")
+        a.filing.retitle("b-only", "anything")
 
 
-def test_a_catalog_opened_without_a_name_needs_one_workspace(tmp_path):
-    with workspaces_of("sqlite", tmp_path, "case-001", "case-002"):
+def test_a_workspace_opened_without_a_name_needs_to_be_the_only_one(tmp_path):
+    with SQLiteStore(tmp_path / "bond.db") as store:
+        Bond(store, MemoryBlobs(), "case-001")
+        Bond(store, MemoryBlobs(), "case-002")
         with pytest.raises(BondError, match="holds 2 workspaces.*open one by name"):
-            SQLiteCatalog(tmp_path / "bond.db")
+            Bond(store, MemoryBlobs())
         with pytest.raises(BondError, match="no workspace named 'case-003'"):
-            SQLiteCatalog(tmp_path / "bond.db", workspace="case-003", create=False)
-    only = SQLiteCatalog(tmp_path / "other.db")
-    assert only.workspace.name == "default"
-    only.close()
+            Bond(store, MemoryBlobs(), "case-003", create=False)
+    with SQLiteStore(tmp_path / "other.db") as other:
+        assert Bond(other, MemoryBlobs()).workspace.name == "default"
 
 
-def test_a_version_can_be_stored_without_a_document(catalog):
+def test_a_version_can_be_stored_without_a_document(ws):
     v = new_version("Evidence a summary rests on.")
-    catalog.put_version(v)
-    catalog.put_version(v)  # stored once
-    assert [x.id for x in catalog.all_versions()] == [v.id] and catalog.head_versions() == []
-    assert catalog.documents_holding(v.id) == [] and len(catalog.citations_of(v.id)) == 1
+    ws.records.put(v)
+    ws.records.put(v)  # stored once
+    assert [x.id for x in ws.index.versions()] == [v.id] and heads(ws) == []
+    assert ws.index.holding(v.id) == [] and len(ws.records.citations(v.id)) == 1
 
 
-def test_supports_may_name_versions_outside_the_workspace(catalog):
+def test_supports_may_name_versions_outside_the_workspace(ws):
     """An import brings a version without what it rests on; its supports name versions that aren't here."""
     elsewhere = new_version("Evidence that stayed behind.")
     cited = [Citation(CitationKind.PARAPHRASE, TextLocator(0, 7), [Ref(elsewhere.id, TextLocator(0, 8))])]
     summary = new_version("Summary", cited)
-    catalog.put_version(summary)
-    assert catalog.outside_versions() == [elsewhere.id]
-    assert [s.version for c in catalog.citations_of(summary.id) for s in c.supports] == [elsewhere.id]
-    catalog.put_version(elsewhere)
-    assert catalog.outside_versions() == []
+    ws.records.put(summary)
+    assert ws.index.outside() == [elsewhere.id]
+    assert [s.version for c in ws.records.citations(summary.id) for s in c.supports] == [elsewhere.id]
+    ws.records.put(elsewhere)
+    assert ws.index.outside() == []
 
 
-def test_history_records_where_an_import_came_from(catalog):
+def test_history_records_where_an_import_came_from(ws):
     v = new_version("A policy.")
     origin = Imported("ws_" + "a" * 32, "policies", v.id)
-    doc = filed(catalog.file(v.id, "policy", None, v, imported=origin)).document
-    assert [e.imported for e in catalog.history(doc.id)] == [origin]
-    assert [e.origin for e in catalog.history(doc.id)] == [None]
+    doc = filed(file_in(ws, v, "policy", None, imported=origin)).document
+    assert [e.imported for e in ws.filing.history(doc.id)] == [origin]
+    assert [e.origin for e in ws.filing.history(doc.id)] == [None]
 
 
-def test_history_records_where_an_ingested_file_came_from(catalog):
+def test_history_records_where_an_ingested_file_came_from(ws):
     v1, v2 = new_version("Faxed page one."), new_version("Faxed page two.")
-    doc = filed(catalog.file(v1.id, "fax", None, v1, origin="Cases/001/fax.pdf")).document
-    filed(catalog.file(v2.id, "fax", v1.id, v2))
-    assert [(e.origin, e.imported) for e in catalog.history(doc.id)] == [("Cases/001/fax.pdf", None), (None, None)]
+    doc = filed(file_in(ws, v1, "fax", None, origin="Cases/001/fax.pdf")).document
+    filed(file_in(ws, v2, "fax", v1.id))
+    assert [(e.origin, e.imported) for e in ws.filing.history(doc.id)] == [("Cases/001/fax.pdf", None), (None, None)]
 
 
-def test_threads_share_one_catalog(catalog):
+def test_threads_share_one_workspace(ws):
     per_thread = 25
 
     def work(t: int) -> None:
         for i in range(per_thread):
-            store(catalog, new_version(f"Thread {t}, document {i}."), f"t{t}/{i}")
+            store(ws, new_version(f"Thread {t}, document {i}."), f"t{t}/{i}")
 
     run_threads(THREADS, work)
-    docs = catalog.all_documents()
-    assert len(docs) == len(catalog.all_versions()) == THREADS * per_thread
-    assert all(len(catalog.history(d.id)) == 1 for d in docs)
+    docs = ws.filing.documents()
+    assert len(docs) == len(ws.index.versions()) == THREADS * per_thread
+    assert all(len(ws.filing.history(d.id)) == 1 for d in docs)
 
 
-def test_writers_racing_on_one_head_form_one_unbroken_history(catalog):
+def test_writers_racing_on_one_head_form_one_unbroken_history(ws):
     # Every writer reads the head, writes from it, and on a stale base reads again. The compare-and-swap
     # must let exactly one writer through from each head: the history is one chain, each entry's base the
     # entry before it, with every write in it exactly once.
     first = new_version("Start.")
-    store(catalog, first, "race")
+    store(ws, first, "race")
     per_thread = 10
 
     def head() -> DocumentRef:
-        doc = catalog.get_document("race")
+        doc = ws.filing.document("race")
         assert doc is not None
         return doc
 
     def work(t: int) -> None:
         for i in range(per_thread):
             new = new_version(f"Writer {t}, edit {i}.")
-            while isinstance(result := catalog.file(new.id, "race", head().head, new), Conflict):
+            while isinstance(result := file_in(ws, new, "race", head().head), Conflict):
                 assert result.code is IssueCode.STALE_BASE  # another writer moved it: read the head again
 
     run_threads(THREADS, work)
-    history = catalog.history(head().id)
+    history = ws.filing.history(head().id)
     assert [e.seq for e in history] == list(range(1, THREADS * per_thread + 2))
     assert all(e.base == prev.version for prev, e in zip(history, history[1:], strict=False))
     assert len({e.version for e in history}) == len(history)
-    assert len(catalog.all_versions()) == len(history)  # a refused write stored nothing
+    assert len(ws.index.versions()) == len(history)  # a refused write stored nothing
 
 
-def test_writers_storing_the_same_version_at_once_store_it_once(catalog):
+def test_writers_storing_the_same_version_at_once_store_it_once(ws):
     src = new_version("Shared evidence.")
 
     def work(t: int) -> None:
-        store(catalog, src, f"case_{t}/fax")
+        store(ws, src, f"case_{t}/fax")
 
     run_threads(THREADS, work)
-    assert len(catalog.all_versions()) == 1 and len(catalog.citations_of(src.id)) == 1
-    assert len(catalog.documents_holding(src.id)) == THREADS
+    assert len(ws.index.versions()) == 1 and len(ws.records.citations(src.id)) == 1
+    assert len(ws.index.holding(src.id)) == THREADS
 
 
-def test_writers_creating_one_document_at_once(catalog):
+def test_writers_creating_one_document_at_once(ws):
     def work(t: int) -> None:
         draft = new_version(f"Draft {t}.")
-        result = catalog.file(draft.id, "new", None, draft)
+        result = file_in(ws, draft, "new", None)
         assert isinstance(result, Filed) or result.code is IssueCode.DOCUMENT_EXISTS
 
     run_threads(THREADS, work)
-    [doc] = catalog.all_documents()
-    assert len(catalog.history(doc.id)) == 1 and len(catalog.all_versions()) == 1
+    [doc] = ws.filing.documents()
+    [entry] = ws.filing.history(doc.id)
+    # A writer that lost the race may have stored its version before losing (on a Store, a record goes in before
+    # the entry that names it): it is unfiled, held by no document, never the head.
+    assert all(ws.index.holding(v.id) == [] for v in ws.index.versions() if v.id != entry.version)
 
 
-def test_a_catalog_reopens_with_what_it_stored(tmp_path):
+def test_a_store_reopens_with_what_it_stored(tmp_path):
     v = new_version("Persist me.")
-    first = SQLiteCatalog(tmp_path / "bond.db")
-    store(first, v, "p")
-    first.close()
-    again = SQLiteCatalog(tmp_path / "bond.db")
-    doc = again.get_document("p")
+    with SQLiteStore(tmp_path / "bond.db") as first:
+        store(Bond(first, MemoryBlobs()), v, "p")
+    again = SQLiteStore(tmp_path / "bond.db")
+    doc = Bond(again, MemoryBlobs()).filing.document("p")
     assert doc is not None and doc.head == v.id
     again.close()
     with pytest.raises(BondError, match="closed"):
-        again.get_version(v.id)
+        again.get(("anything",))
 
 
-def test_a_store_from_before_the_prefix_is_refused_not_ignored(tmp_path):
+def test_a_database_from_another_bond_is_refused_not_ignored(tmp_path):
     import sqlite3
 
     db = sqlite3.connect(tmp_path / "bond.db")
-    db.executescript("CREATE TABLE versions (id TEXT); CREATE TABLE document_history (id TEXT); "
-                     "CREATE TABLE citation_supports (id TEXT);")
+    db.executescript("CREATE TABLE bond_versions (id TEXT); CREATE TABLE bond_history (id TEXT);")
     db.close()
-    with pytest.raises(BondError, match="older Bond.*re-create it"):
-        SQLiteCatalog(tmp_path / "bond.db")
+    with pytest.raises(BondError, match="Bond schema unknown.*re-create it"):
+        SQLiteStore(tmp_path / "bond.db")
 
 
 @pytest.mark.skipif(not POSTGRES, reason="BOND_TEST_POSTGRES unset")
-def test_a_postgres_catalog_lives_alongside_other_tables():
-    from bond.storage.postgres import PostgresCatalog
+def test_a_postgres_store_lives_alongside_other_tables():
+    from bond.storage.postgres import PostgresStore
 
     with postgres_pool() as pool:
         with pool.connection() as conn:
-            conn.execute("CREATE TABLE documents (id TEXT PRIMARY KEY)")  # the host's own table, same name unprefixed
+            conn.execute("CREATE TABLE keys (id TEXT PRIMARY KEY)")  # the host's own table, same name unprefixed
         # Several processes starting at once on an empty database create the tables once.
-        catalogs: list[PostgresCatalog] = []
-        run_threads(4, lambda _: catalogs.append(PostgresCatalog(pool)))
-        store(catalogs[0], new_version("One."), "note")
-        assert catalogs[1].get_document("note") is not None
+        stores: list[PostgresStore] = []
+        run_threads(4, lambda _: stores.append(PostgresStore(pool)))
+        store(Bond(stores[0], MemoryBlobs()), new_version("One."), "note")
+        assert Bond(stores[1], MemoryBlobs()).filing.document("note") is not None
         with pool.connection() as conn:
             conn.execute("UPDATE bond_schema SET version = 1")
         with pytest.raises(BondError, match="Bond schema 1, but this Bond needs"):
-            PostgresCatalog(pool)
+            PostgresStore(pool)
 
 
 class Recorder:
@@ -507,7 +522,7 @@ def test_threads_share_one_bond(bond):
 
 def test_a_case_over_s3_verifies_down_to_the_page(s3, tmp_path):
     blobs = S3Blobs(s3, "evidence")
-    with Bond(SQLiteCatalog(tmp_path / "bond.db"), blobs) as bond:
+    with SQLiteStore(tmp_path / "bond.db") as sqlite, Bond(sqlite, blobs) as bond:
         case = case_001.ingest(bond)
         summary = bond.write_document(
             "summary",

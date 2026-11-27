@@ -30,7 +30,10 @@ src/bond/
   normalize.py    quote normalization with raw-offset mapping
   ids.py          the hashes that name blobs, citations and versions
   jsonvalue.py    JSON as a type
-  storage/        the Catalog and Blobs protocols, and their SQLite, Postgres (sql.py), local and S3 backends
+  storage/        the Store and Blobs protocols (store.py, __init__.py); what Bond keeps in a store: versions
+                  (records.py), documents (filing.py), reverse lookups (index.py), workspaces (workspace.py),
+                  stored JSON (values.py);
+                  SQLite, Postgres (sql.py) and memory stores; local and S3 blobs
   workspaces.py   the Workspaces protocol: what a deployment offers an API, and Fixed
   sources.py      adding files to a workspace as sources (bond add, the app view)
   transcription.py  the text of a source with none of its own, as a document citing where it was read: the

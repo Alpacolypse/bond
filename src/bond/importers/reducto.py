@@ -80,7 +80,7 @@ def import_reducto(bond: Bond, pdf: bytes, parse: bytes, name: str) -> ImportRes
 
 def _head(bond: Bond, name: str) -> VersionId | None:
     """The head of the document with this name, or None if there is none yet."""
-    doc = bond.catalog.get_document(name)
+    doc = bond.filing.document(name)
     return None if doc is None else doc.head
 
 

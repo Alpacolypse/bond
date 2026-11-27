@@ -2,7 +2,7 @@
 
 A workspace in the home is `<home>/workspaces/<name>/`, a directory `Bond.local` opens, so deleting or exporting
 one is deleting or copying its directory. The home sits in the platform's application-data directory, outside
-the folders people keep their own files in (and outside synced ones, where a SQLite catalog can be corrupted);
+the folders people keep their own files in (and outside synced ones, where a SQLite store can be corrupted);
 BOND_HOME moves it.
 
 People name workspaces two ways. A value with a path separator in it is a directory (`./cases/001`,
@@ -37,7 +37,7 @@ from ..models import BondError
 
 ENV = "BOND_HOME"
 DECISIONS = "home.db"
-CATALOG = "bond.db"  # the file Bond.local keeps a workspace's catalog in
+CATALOG = "bond.db"  # the file Bond.local keeps a workspace's store in
 
 _SCHEMA = (
     "CREATE TABLE IF NOT EXISTS links (workspace TEXT NOT NULL, source TEXT NOT NULL, at TEXT NOT NULL, "

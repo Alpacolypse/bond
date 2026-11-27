@@ -71,12 +71,12 @@ def add_sources(bond: Bond, files: Sequence[NewSource], update: bool = False) ->
     formats = [readable(n) for n in names]
     if len(set(names)) < len(names):
         raise BondError("two of these files would have the same name; add one under another name")
-    if not update and (taken := [n for n in names if bond.catalog.get_document(n)]):
+    if not update and (taken := [n for n in names if bond.filing.document(n)]):
         raise BondError(f"{bond.workspace.name!r} already has a document named {', '.join(map(repr, taken))}; add "
                         "it under another name, or as that document's next version")
     added = []
     for f, fmt in zip(files, formats, strict=True):
-        existing = bond.catalog.get_document(f.name)
+        existing = bond.filing.document(f.name)
         result = bond.ingest(f.name, f.data, format=fmt, base=existing.head if existing else None, origin=f.origin)
         added.append(Added(f.name, result.advanced))
     return AddResult(added, no_text_note(formats))

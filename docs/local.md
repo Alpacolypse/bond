@@ -12,7 +12,7 @@ Workspaces live in a **Bond home**, one directory each (`workspaces/<name>/`, wh
 | Windows | `%LOCALAPPDATA%\Bond` |
 | Linux | `$XDG_DATA_HOME/bond` (or `~/.local/share/bond`) |
 
-`BOND_HOME`, or `--home`, moves it. Keep it outside the folders people keep their files in, and outside synced ones (iCloud Drive, OneDrive, Dropbox), where a SQLite catalog can be corrupted. Deleting or exporting a workspace is deleting or copying its directory. Links and grants are rows in the home's `home.db`.
+`BOND_HOME`, or `--home`, moves it. Keep it outside the folders people keep their files in, and outside synced ones (iCloud Drive, OneDrive, Dropbox), where a SQLite store can be corrupted. Deleting or exporting a workspace is deleting or copying its directory. Links and grants are rows in the home's `home.db`.
 
 Wherever a command takes a workspace, a value with a `/` in it is a directory (`./cases/001`), and anything else is a name in the home (`smith`).
 
@@ -43,7 +43,7 @@ A grant belongs to a server configuration, named by `--grants` (the Claude Deskt
 
 No tool the model can call adds a source, writes a transcription, creates a workspace, grants one or changes a link, and `bond view` only reads. Bond's protocol prevents an agent's mistakes: uncited claims, made-up handles, stale edits, its own text declared a source or a producer's reading.
 
-It doesn't stop an agent that has a shell running as you, which could run `bond add`, record made-up output with `bond transcribe --output`, or write to a catalog directly. That boundary is the host's. In Claude Code, deny it in `.claude/settings.json` (Linux paths shown; use your home's):
+It doesn't stop an agent that has a shell running as you, which could run `bond add`, record made-up output with `bond transcribe --output`, or write to a store directly. That boundary is the host's. In Claude Code, deny it in `.claude/settings.json` (Linux paths shown; use your home's):
 
 ```json
 {

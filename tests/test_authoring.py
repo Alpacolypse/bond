@@ -93,7 +93,7 @@ def test_issues_are_in_the_writers_terms_and_a_dry_run_stores_nothing(bond, case
     assert len(details.versions(bond)) == before
     # A dry run that finds nothing to stop the write says so, and still stores nothing.
     assert tools.write("findings", summary(tools), dry_run=True) == Checked()
-    assert len(details.versions(bond)) == before and bond.catalog.get_document("findings") is None
+    assert len(details.versions(bond)) == before and bond.filing.document("findings") is None
 
 
 def test_a_token_that_isnt_a_handle_is_refused(bond, case):

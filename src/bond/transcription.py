@@ -98,7 +98,7 @@ def record(bond: Bond, document: str, transcription: Transcription, output: byte
     except ValueError as e:
         raise TranscriptionError(str(e)) from None
     name = transcription_name(document, transcription.producer)
-    existing = bond.catalog.get_document(name)
+    existing = bond.filing.document(name)
     return bond.write_document(name, output, citations, format=transcription.output,
                                base=existing.head if existing else None,
                                policy=Policy(producers=PRODUCERS | {transcription.producer}))
@@ -114,7 +114,7 @@ def source_of(bond: Bond, document: str) -> Version:
     """The version document holds, if it can be transcribed: its format has no text of its own. Raises
     UnknownDocument or TranscriptionError."""
     head = bond.document(document).head
-    source = bond.catalog.get_version(head)
+    source = bond.records.version(head)
     if source is None:
         raise TranscriptionError(f"{document!r} holds no version here")
     if spec(source.format).has_text:

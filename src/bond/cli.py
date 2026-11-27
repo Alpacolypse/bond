@@ -168,7 +168,7 @@ def _store_arguments(command: argparse.ArgumentParser, required: bool, names: bo
     where.add_argument("--workspace", action="append",
                        help="a workspace: its name in the Bond home, or a directory (a value with a / in it) "
                             "(repeatable)")
-    where.add_argument("--postgres", metavar="DSN", help="a Postgres catalog, e.g. postgresql://user@host/db")
+    where.add_argument("--postgres", metavar="DSN", help="a Postgres store, e.g. postgresql://user@host/db")
     command.add_argument("--name", action="append" if names else "store",
                          help="with --postgres: a workspace's name (needed if it holds several)"
                               + (" (repeatable)" if names else ""))
@@ -332,7 +332,7 @@ def run_import(args: argparse.Namespace) -> int:
         target = Bond.local(Path(args.into)) if is_path(args.into) else open_local(home, args.into)
         with open_local(home, args.source) as source, target as into:
             name = args.name or args.document
-            existing = into.catalog.get_document(name)
+            existing = into.filing.document(name)
             result = into.import_document(source, args.document, name=name, depth=args.depth, limit=args.limit,
                                           base=existing.head if existing else None)
             print(f"imported {args.document!r} from {source.workspace.name!r} into {into.workspace.name!r} as "
@@ -494,13 +494,13 @@ def open_local(home: Home, value: str | os.PathLike[str], create: bool = False) 
 
 @contextmanager
 def open_postgres(args: argparse.Namespace, name: str | None) -> Generator[Bond]:
-    """A workspace in the Postgres catalog the arguments name (the only one, if name is None), with the blobs they
+    """A workspace in the Postgres store the arguments name (the only one, if name is None), with the blobs they
     name, closed after. Nothing is created."""
-    from .storage.postgres import PostgresCatalog
+    from .storage.postgres import PostgresStore
 
     pools = _require("psycopg_pool", "psycopg[binary,pool]")
     with pools.ConnectionPool(args.postgres, min_size=1, max_size=8, open=True) as pool:
-        with Bond(PostgresCatalog(pool, workspace=name, create=False), open_blobs(args)) as bond:
+        with Bond(PostgresStore(pool, create=False), open_blobs(args), name, create=False) as bond:
             yield bond
 
 

@@ -28,17 +28,17 @@ from bond import (
 from bond.authoring import Grounds, ToolError, Tools
 from bond.models import Imported
 from bond.storage.local import LocalBlobs
-from conftest import CATALOGS, FIXTURES, raw_sql, workspaces_of, written
+from conftest import FIXTURES, STORES, rewrite_record, store_of, written
 
 CRITERION = "A needed repair still not made after at least 6 weeks of written notice to the landlord."
 
 
-@pytest.fixture(params=CATALOGS)
+@pytest.fixture(params=STORES)
 def spaces(request: pytest.FixtureRequest, tmp_path: Path) -> Iterator[tuple[Bond, Bond, Bond]]:
     """policies, case-001 and case-002: three workspaces in one database, each with blobs of its own."""
     names = ("policies", "case-001", "case-002")
-    with workspaces_of(request.param, tmp_path, *names) as catalogs:
-        bonds = [Bond(c, LocalBlobs(tmp_path / name / "blobs")) for c, name in zip(catalogs, names, strict=True)]
+    with store_of(request.param, tmp_path) as store:
+        bonds = [Bond(store, LocalBlobs(tmp_path / name / "blobs"), name) for name in names]
         yield bonds[0], bonds[1], bonds[2]
 
 
@@ -169,17 +169,22 @@ def test_a_case_cites_what_it_imported_but_never_what_it_left_outside(spaces, po
         ],
             format=Format.MARKDOWN,
         )
-    assert IssueCode.UNKNOWN_VERSION in e.value.codes and case.catalog.get_document("shortcut") is None
+    assert IssueCode.UNKNOWN_VERSION in e.value.codes and case.filing.document("shortcut") is None
 
 
 def test_an_import_refuses_a_version_whose_records_were_changed(spaces, policies):
     _, case, _ = spaces
     summary = criteria_summary(policies)
-    raw_sql(policies, "UPDATE bond_citations SET kind = 'paraphrase' WHERE workspace = ? AND kind = 'quote'",
-            (policies.workspace.id,))
+    def unquote(record):
+        for c in record["citations"]:
+            if c["kind"] == "quote":
+                c["kind"] = "paraphrase"
+
+    for v in list(policies.records.ids()):
+        rewrite_record(policies, v, unquote)
     with pytest.raises(BondError, match="doesn't hash to its id"):
         case.import_document(policies, "criteria/IP-112")
-    assert case.documents() == [] and case.catalog.get_version(summary) is None
+    assert case.documents() == [] and case.records.version(summary) is None
 
 
 def test_a_document_is_imported_from_another_workspace_only(policies):
