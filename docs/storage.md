@@ -42,7 +42,7 @@ case = Bond(PostgresStore(pool), S3Blobs(boto3.client("s3"), "evidence", prefix=
 
 ## Keys
 
-Every value is JSON. `ws` is the workspace's id (`ws_` and 32 hex digits); a name in a key is its sha256, never the name.
+Every value is JSON. `ws` is the workspace's id (`ws_` and 32 hex digits); a name in a key is its sha256, never the name. So every element of a key is a word of lowercase ASCII letters, digits and `_` (an id, a hash, or a kind of key like `records`) or a seq, an integer from 0 to 10<sup>20</sup> − 1, and a store is promised nothing else: `key_path` refuses any other key. It writes a key as one string, `/` between elements and a seq as `~` and twenty digits, that sorts in key order by bytes or by code point.
 
 ```
 ("workspaces", sha256(name))         -> {id, name, created_at}

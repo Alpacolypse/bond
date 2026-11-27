@@ -15,7 +15,7 @@ from ..jsonvalue import JsonObject, JsonValue
 from ..locators import locator_from_dict
 from ..models import SELF, BondError, CitationKind, Format, Ref, StoredCitation, Version, VersionId
 from . import NewVersion
-from .store import Key, Store, now
+from .store import Key, Store, is_word, now
 from .values import decode, encode, items, mapping, text
 
 
@@ -58,6 +58,8 @@ class Records:
     def as_stored(self, v: VersionId) -> Record | None:
         """The record stored under v, as the version v whatever id it names (in stored_id), for verify to check
         against v itself."""
+        if not is_word(v):  # not an id at all (a caller's typo, say): no version is stored under it
+            return None
         data = self.store.get((*self.prefix, v))
         return None if data is None else _record(v, decode(data, "a version's record"))
 

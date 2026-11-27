@@ -9,9 +9,11 @@ read the same head, the second finds that entry there already.
 A store doesn't interpret keys or values. Bond decides what each key means and encodes each value (see
 bond.storage.records, .filing and .index), so a backend can't weaken a rule by getting it wrong: it stores, reads and lists.
 
-A Key is a tuple of strings and non-negative integers. Keys under one prefix list in key order, element by
-element: strings by code point, integers numerically. key_path encodes a key as one string whose order keeps
-integers' order, for stores that sort strings (an object store, a string column).
+A Key is a tuple of elements, each a word (lowercase ASCII letters, digits and "_": Bond's ids, hashes and names
+for kinds of key) or an integer from 0 to 10**20 - 1 (a seq). Keys under one prefix list in key order, element by
+element: words by character, integers numerically. Nothing else is a key: Bond writes no other, so a store is
+promised no other, and key_path refuses one. key_path encodes a key as one string in the same order, for stores
+that sort strings (an object store, a string column).
 """
 
 from __future__ import annotations
@@ -21,11 +23,11 @@ import threading
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Protocol, runtime_checkable
-from urllib.parse import quote, unquote
 
 Key = tuple[str | int, ...]
 
 _INT_DIGITS = 20  # enough for any non-negative 64-bit integer
+_WORD = frozenset("abcdefghijklmnopqrstuvwxyz0123456789_")
 
 
 class Store(Protocol):
@@ -56,28 +58,37 @@ class LastKey(Protocol):
 
 
 def key_path(key: Key) -> str:
-    """A key as one string, "/" between elements, whose string order is the key's order wherever order matters.
+    """A key as one string, "/" between elements, whose string order (by byte or code point alike) is the key's.
 
-    Strings are percent-encoded (with "~" too), so no element contains "/" or starts with "~"; integers are written
-    as "~" and twenty digits, so they sort numerically. key_from_path reads one back. A string element and an integer element never share a position under one prefix in Bond's
-    keys, so their relative order is never relied on.
+    Words are written as they are: every character of one sorts after "/", so a word that is a prefix of another
+    sorts first, as an element that ends first should. Integers are written as "~" and twenty digits, so they sort
+    numerically, and never read as a word. A word and an integer never share a position under one prefix in
+    Bond's keys, so their relative order is never relied on. Raises ValueError for anything that isn't a key (see
+    the module's docstring); key_from_path reads one back.
     """
     parts = []
     for element in key:
         if isinstance(element, bool) or not isinstance(element, str | int):
-            raise TypeError(f"a key element is a string or an integer, not {element!r}")
+            raise TypeError(f"a key element is a word or an integer, not {element!r}")
         if isinstance(element, int):
-            if element < 0:
-                raise ValueError(f"a key's integers are non-negative, not {element}")
+            if not 0 <= element < 10**_INT_DIGITS:
+                raise ValueError(f"a key's integers are from 0 to 10**{_INT_DIGITS} - 1, not {element}")
             parts.append("~" + str(element).zfill(_INT_DIGITS))
+        elif not is_word(element):
+            raise ValueError(f"a key's words are lowercase ASCII letters, digits and _, not {element!r}")
         else:
-            parts.append(quote(element, safe="").replace("~", "%7E"))
+            parts.append(element)
     return "/".join(parts)
+
+
+def is_word(text: str) -> bool:
+    """Whether text can be a word of a key."""
+    return bool(text) and _WORD.issuperset(text)
 
 
 def key_from_path(path: str) -> Key:
     """The key key_path wrote as path."""
-    return tuple(int(part[1:]) if part.startswith("~") else unquote(part) for part in path.split("/"))
+    return tuple(int(part[1:]) if part.startswith("~") else part for part in path.split("/"))
 
 
 class MemoryStore:

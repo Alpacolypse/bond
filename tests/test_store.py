@@ -53,18 +53,20 @@ def test_listing_is_in_key_order_with_integers_in_numeric_order(store):
     for seq in (10, 2, 1, 33):
         store.create(("ws", "entries", "doc", seq), b"")
     store.create(("ws", "entries", "doc2", 1), b"")  # a sibling whose name extends doc's
-    store.create(("ws", "entriesX", "doc", 1), b"")
+    store.create(("ws", "entries_x", "doc", 1), b"")
     assert list(store.list(("ws", "entries", "doc"))) == [("ws", "entries", "doc", n) for n in (1, 2, 10, 33)]
     assert list(store.list(("ws", "entries", "doc"), after=("ws", "entries", "doc", 2))) == [
         ("ws", "entries", "doc", 10), ("ws", "entries", "doc", 33)]
     assert list(store.list(("ws", "nothing"))) == []
 
 
-def test_strings_with_slashes_and_percent_signs_stay_one_element(store):
-    store.create(("a/b", "c%2Fd"), b"x")
-    store.create(("a", "b"), b"y")
-    assert list(store.list(("a/b",))) == [("a/b", "c%2Fd")]
-    assert list(store.list(("a",))) == [("a", "b")]
+def test_a_word_that_extends_another_lists_after_everything_under_it(store):
+    store.create(("ws", "a", "z"), b"")
+    store.create(("ws", "a_b"), b"")
+    store.create(("ws", "ab"), b"")
+    store.create(("ws", "a", "b"), b"")
+    assert list(store.list(("ws",))) == [("ws", "a", "b"), ("ws", "a", "z"), ("ws", "a_b"), ("ws", "ab")]
+    assert list(store.list(("ws", "a"))) == [("ws", "a", "b"), ("ws", "a", "z")]
 
 
 def test_the_last_key_under_a_prefix(store):
@@ -79,12 +81,20 @@ def test_the_last_key_under_a_prefix(store):
 
 def test_key_paths_order_integers_numerically_and_refuse_other_elements():
     assert key_path(("a", 2)) < key_path(("a", 10))
-    for key in [("a", 2), ("~7", "a/b", "%7E", 0), ("ws_1", "entries", "doc_2", 10**19)]:
+    for key in [("a", 2), ("ws_1", "entries", "doc_2", 10**20 - 1), ("workspaces", "0f" * 32)]:
         assert key_from_path(key_path(key)) == key
-    with pytest.raises(ValueError):
-        key_path(("a", -1))
+    for bad in [("a", -1), ("a", 10**20), ("",), ("A",), ("a/b",), ("~7",), ("é",), ("a-b",)]:
+        with pytest.raises(ValueError):
+            key_path(bad)
     with pytest.raises(TypeError):
         key_path(("a", True))
+
+
+def test_key_paths_sort_as_keys_do():
+    keys = [("a",), ("a", "b"), ("a", "b", 1), ("a", "b", 9), ("a", "b", 10), ("a", "c"), ("a0",), ("a_",), ("aa",),
+            ("b",)]
+    assert sorted(keys, key=key_path) == keys
+    assert sorted(keys, key=lambda k: key_path(k).encode()) == keys
 
 
 def test_the_clock_never_repeats():
@@ -218,3 +228,11 @@ def test_a_search_reads_the_store_a_number_of_times_linear_in_the_documents(n):
     store.calls = 0
     assert len(bond.search("Note 7.")) == 1
     assert store.calls <= 6 * n + 20, store.calls
+
+
+def test_a_version_id_that_isnt_one_is_unknown_not_a_key_error(bond):
+    from bond import UnknownVersion
+
+    with pytest.raises(UnknownVersion):
+        bond.verify(VersionId("Not/an-ID"))
+    assert bond.records.version(VersionId("Not/an-ID")) is None
