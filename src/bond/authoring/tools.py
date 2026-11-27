@@ -385,7 +385,9 @@ def read(bond: Bond, document: str) -> Reading:
     """
     version = details.version(bond, _head(bond, document))
     if not spec(version.format).has_text:
-        transcribing = sorted({d for t in bond.transcriptions_of(version.id) for d in t.documents})
+        # Documents whose head transcribes this version: one that held such a transcription once may hold one of
+        # another version of the source now.
+        transcribing = sorted({d for t in bond.transcriptions_of(version.id) for d in t.current})
         if transcribing:
             where = f"; documents that transcribe it: {', '.join(map(repr, transcribing))}"
         else:

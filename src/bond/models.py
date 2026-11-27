@@ -355,14 +355,19 @@ class Freshness:
 
 @dataclass(frozen=True)
 class TranscriptionOf:
-    """A version that transcribes another: its producer, and the documents it is filed in."""
+    """A version that transcribes another: its producer, the documents it is filed in, and those it is the head of.
+
+    A document that held it may hold another transcription now (of another version of the source, say), so read
+    a document named in current, or the version itself, to read this transcription."""
 
     version: VersionId
     producer: str | None  # the transcriber its citations name
-    documents: list[str]
+    documents: list[str]  # every document whose history holds it
+    current: list[str]  # the documents it is the head of now
 
     def to_dict(self) -> JsonObject:
-        return {"version": self.version, "producer": self.producer, "documents": self.documents}
+        return {"version": self.version, "producer": self.producer, "documents": self.documents,
+                "current": self.current}
 
 
 @dataclass(frozen=True)

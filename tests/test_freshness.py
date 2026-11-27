@@ -209,3 +209,43 @@ def test_what_an_import_rests_on_is_imported_too(bond):
                             [Citation(CitationKind.QUOTE, TextLocator(0, 9), [hit.ref])], format=Format.MARKDOWN)
     bond.import_document(policies, "summary", depth=None)
     assert bond.freshness(Ref(policy, VersionLocator())).imported
+
+
+def test_a_transcription_cites_the_version_its_producer_read_though_the_source_moved_meanwhile(bond):
+    v1 = bond.ingest("fax", (FIXTURES / "fax_case_001.pdf").read_bytes(), format=Format.PDF).version
+
+    class MovingTextLayer:  # the text layer, while someone files a new version of the fax
+        producer, reads, output, citations = (TEXT_LAYER.producer, TEXT_LAYER.reads, TEXT_LAYER.output,
+                                              TEXT_LAYER.citations)
+
+        def transcribe(self, source: bytes, format: Format) -> bytes:
+            bond.ingest("fax", (FIXTURES / "fax_case_002.pdf").read_bytes(), format=Format.PDF, base=v1)
+            return TEXT_LAYER.transcribe(source, format)
+
+    t = transcribe(bond, "fax", MovingTextLayer()).version
+    assert {s.version for c in bond.citations(t) for s in c.supports} == {v1}
+    assert [x.version for x in bond.transcriptions_of(v1)] == [t]
+
+
+def test_recording_output_for_a_version_the_document_never_held_is_refused(bond):
+    from bond.transcription import TranscriptionError, record
+
+    v = bond.ingest("other", b"Not the fax.", format=Format.MARKDOWN).version
+    bond.ingest("fax", (FIXTURES / "fax_case_001.pdf").read_bytes(), format=Format.PDF)
+    with pytest.raises(TranscriptionError, match="never held"):
+        record(bond, "fax", TEXT_LAYER, b"{}", source=v)
+
+
+def test_reading_a_pdf_names_only_documents_whose_head_transcribes_it(bond):
+    from bond.authoring import ToolError
+
+    pdf1 = (FIXTURES / "fax_case_001.pdf").read_bytes()
+    v1 = bond.ingest("fax", pdf1, format=Format.PDF).version
+    transcribe(bond, "fax", TEXT_LAYER)
+    v2 = bond.ingest("fax", (FIXTURES / "fax_case_002.pdf").read_bytes(), format=Format.PDF, base=v1).version
+    transcribe(bond, "fax", TEXT_LAYER)  # fax.pypdf now transcribes v2
+    bond.ingest("fax", pdf1, format=Format.PDF, base=v2)  # and the fax goes back to v1
+    [t] = bond.transcriptions_of(v1)
+    assert t.documents == ["fax.pypdf"] and t.current == []
+    with pytest.raises(ToolError, match="no document transcribes its current version"):
+        Tools(bond).read("fax")

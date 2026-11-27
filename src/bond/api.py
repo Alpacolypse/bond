@@ -716,8 +716,12 @@ class Bond:
         for c in self.cited_by(Ref(version, VersionLocator())):
             if c.kind is CitationKind.TRANSCRIPTION:
                 found.setdefault(c.owner_version, c.attrs.get("transcriber"))
-        return [TranscriptionOf(v, producer, [d.name for d in self.index.holding(v)])
-                for v, producer in found.items()]
+        transcriptions = []
+        for v, producer in found.items():
+            holding = self.index.holding(v)
+            transcriptions.append(TranscriptionOf(v, producer, [d.name for d in holding],
+                                                  [d.name for d in holding if d.head == v]))
+        return transcriptions
 
     @_one_view
     def freshness(self, ref: Ref, document: str | None = None, as_of: str | None = None) -> Freshness:
