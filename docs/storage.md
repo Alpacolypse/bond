@@ -51,6 +51,7 @@ Every value is JSON. `ws` is the workspace's id (`ws_` and 32 hex digits); a nam
 (ws, "names", sha256(name))          -> {id, name, created_at}           a document's id, claimed once
 (ws, "entries", document_id, seq)    -> {version, base, at, imported, origin}
 (ws, "titles", document_id, seq)     -> {title, at, after}               after: the entry seq it followed
+(ws, "imported", version)            -> {}                               an import brought it here, filed or not
 ```
 
 A claimed name with no entries yet is not a document (a writer stopped between the two). No derived data is stored: parsed documents are held in memory only (a bounded cache per `Bond`), and the index is rebuilt from the keys.

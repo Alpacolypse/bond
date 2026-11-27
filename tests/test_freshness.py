@@ -17,6 +17,7 @@ from bond import (
     TextLocator,
     VersionLocator,
     WriteError,
+    details,
 )
 from bond.authoring import AGENT_POLICY, Tools
 from bond.importers.text_layer import TEXT_LAYER
@@ -166,3 +167,45 @@ def test_reading_a_pdf_whose_transcriptions_are_of_an_earlier_version_says_so(bo
     # And a region of the old page has no text to follow into the new one.
     [d] = bond.freshness(Ref(v1, PdfLocator(0, (0.1, 0.1, 0.5, 0.2)))).documents
     assert d.span is not None and d.span.status is SpanStatus.UNKNOWN
+
+
+def test_a_revert_between_reading_holders_and_history_doesnt_break_freshness(bond, monkeypatch):
+    v1 = bond.ingest("notes", NOTE.encode(), format=Format.MARKDOWN).version
+    v2 = bond.ingest("notes", b"Later.", format=Format.MARKDOWN, base=v1).version
+    history = bond.filing.history
+    reverted = []
+
+    def revert_first(doc, after=0):  # another writer puts v1 back after the holders were read
+        if not reverted:
+            reverted.append(bond.ingest("notes", NOTE.encode(), format=Format.MARKDOWN, base=v2))
+        return history(doc, after)
+
+    monkeypatch.setattr(bond.filing, "history", revert_first)
+    [d] = bond.freshness(Ref(v1, span(NOTE, "Six weeks"))).documents
+    assert d.current and d.head == v1
+
+
+def test_a_json_value_is_followed_by_its_pointer_not_its_position(bond):
+    v1 = bond.ingest("case.json", b'{"notice": "six weeks"}', format=Format.JSON).version
+    bond.ingest("case.json", b'{"delay": "six weeks", "notice": "two weeks"}', format=Format.JSON, base=v1)
+    [d] = bond.freshness(details.locate_pointer(bond, v1, "/notice")).documents
+    assert d.span is not None and d.span.status is SpanStatus.MOVED  # the same text, but in another field
+    assert d.span.at is not None and details.pointer(bond, d.span.at) == "/delay"
+
+
+def test_a_json_value_unchanged_under_its_pointer_is_unchanged(bond):
+    v1 = bond.ingest("case.json", b'{"notice_weeks": 6}', format=Format.JSON).version
+    v2 = bond.ingest("case.json", b'{"age": 40, "notice_weeks": 6}', format=Format.JSON, base=v1).version
+    [d] = bond.freshness(details.locate_pointer(bond, v1, "/notice_weeks")).documents
+    assert d.span is not None and d.span.status is SpanStatus.UNCHANGED
+    assert d.span.at == details.locate_pointer(bond, v2, "/notice_weeks")
+
+
+def test_what_an_import_rests_on_is_imported_too(bond):
+    policies = Bond(bond.store, bond.blobs, "policies")
+    policy = policies.ingest("policy", NOTE.encode(), format=Format.MARKDOWN).version
+    [hit] = policies.search("Six weeks", documents=["policy"])
+    policies.write_document("summary", "Six weeks",
+                            [Citation(CitationKind.QUOTE, TextLocator(0, 9), [hit.ref])], format=Format.MARKDOWN)
+    bond.import_document(policies, "summary", depth=None)
+    assert bond.freshness(Ref(policy, VersionLocator())).imported

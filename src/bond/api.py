@@ -22,7 +22,7 @@ from typing import Concatenate
 from . import kinds
 from .formats import from_suffix, parse, sniff, spec
 from .ids import citation_id, hash_bytes, version_id
-from .locators import Locator, VersionLocator, contains, overlaps
+from .locators import JsonLocator, Locator, VersionLocator, contains, overlaps
 from .models import (
     BondError,
     Citation,
@@ -56,7 +56,7 @@ from .models import (
     WriteError,
     WriteResult,
 )
-from .parsers import Malformed, ParsedDoc
+from .parsers import JsonDoc, Malformed, ParsedDoc
 from .plans import FilingChange, PlannedVersion, WritePlan, checked
 from .policies import STRICT, Policy
 from .storage import Blobs, Conflict, NewVersion, filing_problem
@@ -418,6 +418,8 @@ class Bond:
         stored = False
         for pv in plan.versions:
             self.blobs.put(pv.new.content_hash, pv.new.data)  # before any record names it
+            if pv.imported:
+                self.records.mark_imported(pv.new.id)
             if plan.filing is not None and pv.new.id == plan.filing.version:
                 filed_new = pv.new  # stored with its filing, only if that goes through
             else:
@@ -705,6 +707,7 @@ class Bond:
             if any(s.version == ref.version and overlaps(s.locator, ref.locator) for s in c.supports)
         ]
 
+    @_one_view
     def transcriptions_of(self, version: VersionId) -> list[TranscriptionOf]:
         """Versions whose TRANSCRIPTION citations rest on version: its transcriptions, found by what they cite,
         never by their names. Each with its producer and where it is filed. Raises UnknownVersion."""
@@ -716,6 +719,7 @@ class Bond:
         return [TranscriptionOf(v, producer, [d.name for d in self.index.holding(v)])
                 for v, producer in found.items()]
 
+    @_one_view
     def freshness(self, ref: Ref, document: str | None = None, as_of: str | None = None) -> Freshness:
         """Whether ref's version is still current in each document that holds it (or only in document), computed
         now, never stored. For a version a document has moved past: its head, when it moved, and, for a span
@@ -725,40 +729,61 @@ class Bond:
 
         A source can be superseded a moment after any check, so this is a question to ask, not a guarantee.
         Bond never moves a citation to a newer version: a span's fate is a suggestion of where to look.
+
+        Times are approximate. An entry's time is taken just before it is created, and writers' clocks differ, so
+        within one document the order of entries is exact (it is their seq), but across documents, and against
+        as_of, times can be off by as long as a write takes, or by clock skew: as_of near another write's time
+        can't say which came first.
         """
         self._check_ref(ref)
         v = ref.version
         holding = [d for d in self.index.holding(v) if document is None or d.name == document]
         found: list[DocumentFreshness] = []
-        imported = False
+        imported = self.records.imported(v)
         for d in holding:
+            # The head, when v was last held and what followed, all from one read of the history, so a write
+            # meanwhile (a revert to v, say) can't make them disagree.
             history = self.filing.history(d.id)
-            imported |= any(e.version == v and e.imported is not None for e in history)
-            current = d.head == v
-            superseded_at = None
-            if not current:
-                last = max(i for i, e in enumerate(history) if e.version == v)
-                superseded_at = history[last + 1].at
+            held = [i for i, e in enumerate(history) if e.version == v]
+            if not held:
+                continue
+            imported |= any(history[i].imported is not None for i in held)
+            head = history[-1].version
+            current = head == v
+            superseded_at = None if current else history[held[-1] + 1].at
             current_as_of = None
             if as_of is not None:
                 then = [e for e in history if e.at <= as_of]
                 current_as_of = bool(then) and then[-1].version == v
-            span = None if current or isinstance(ref.locator, VersionLocator) else self._span_fate(ref, d.head)
-            found.append(DocumentFreshness(d.name, current, d.head, superseded_at, current_as_of, span))
+            span = None if current or isinstance(ref.locator, VersionLocator) else self._span_fate(ref, head)
+            found.append(DocumentFreshness(d.name, current, head, superseded_at, current_as_of, span))
         return Freshness(ref, tuple(found), imported)
 
     def _span_fate(self, ref: Ref, head: VersionId) -> SpanFate:
-        """What became of a span's text in head: there at the same place, elsewhere, or not at all."""
-        old = self._doc(ref.version).text(ref.locator) if spec(self._version(ref.version).format).has_text else None
-        if not old or not old.strip() or not spec(self._version(head).format).has_text:
+        """What became of a span's text in head: there at the same place, elsewhere, or not at all.
+
+        The same place is the same locator, except in JSON, where a position names a member only within its
+        version: there it is the value at the same JSON Pointer. Elsewhere is the first place the text is found,
+        a candidate to look at, not the same field."""
+        old_version = self._version(ref.version)
+        old = self._doc(ref.version).text(ref.locator) if spec(old_version.format).has_text else None
+        head_version = self._version(head)
+        if not old or not old.strip() or not spec(head_version.format).has_text:
             return SpanFate(SpanStatus.UNKNOWN, None)
         doc = self._doc(head)
-        if doc.check(ref.locator) is None and doc.text(ref.locator) == old:
-            return SpanFate(SpanStatus.UNCHANGED, Ref(head, ref.locator))
+        same: Locator | None = ref.locator
+        if isinstance(ref.locator, JsonLocator):
+            old_doc, new_doc = self._doc(ref.version), doc
+            same = None
+            if isinstance(old_doc, JsonDoc) and isinstance(new_doc, JsonDoc):
+                same = new_doc.locate(old_doc.pointer(ref.locator), ref.locator.span)
+        if same is not None and doc.check(same) is None and doc.text(same) == old:
+            return SpanFate(SpanStatus.UNCHANGED, Ref(head, same))
         if matches := doc.search(old):
             return SpanFate(SpanStatus.MOVED, Ref(head, matches[0].locator))
         return SpanFate(SpanStatus.GONE, None)
 
+    @_one_view
     def _superseded(self, citations: Sequence[Citation]) -> list[Issue]:
         """A CITES_SUPERSEDED issue for each support, in a version stored here and valid in it, that no document
         holding it has as its head any more."""
