@@ -32,12 +32,12 @@ bond.write_document("note", edited, [Citation(CitationKind.PARAPHRASE, TextLocat
 | `ingest(document, source, *, format=None, base=None, title=None, origin=None)` | Store a file that is a source throughout, from its bytes or a path, and file it: shorthand for writing it with one whole-version `source` citation. The format comes from a path's suffix or is sniffed from the bytes if not given. The same bytes are always the same version, wherever they are filed. `origin`, where the file came from (a path or URL), is recorded on the history entry that files it: filing, not identity, so it changes no id and `verify` never reads it. Ingesting the same bytes again where they already are adds no entry, so records no new origin. |
 | `write_document(document, content, citations, *, format=None, base=None, policy=STRICT, title=None)` | Write a cited version (bytes, or text stored as UTF-8) and file it in `document`, or raise `WriteError` with every issue at once. The format is sniffed if not given (Markdown or JSON; name CSV and TSV). |
 | `check_write(document, content, citations, *, format=None, base=None, policy=STRICT, title=None)` | Every issue `write_document` would refuse the same write for, filing included, as a list (empty if it would succeed); nothing is stored. For callers that expect refusals, like an agent's tools. |
-| `search(phrase, *, documents=None, within=None, limit=50)` | Find a phrase in documents' current versions, or inside one reference (not both), and pin each match to an exact locator. Matching is case-insensitive and forgives whitespace, quote characters, ligatures and hyphenated line breaks. Each hit carries its direct `declarations` and overlapping `kinds`. |
+| `search(phrase, *, documents=None, within=None, limit=50)` | Find a phrase in this workspace's documents' current versions, or inside one reference (not both, and the reference may be in a linked workspace), and pin each match to an exact locator. Matching is case-insensitive and forgives whitespace, quote characters, ligatures and hyphenated line breaks. Each hit carries its direct `declarations` and overlapping `kinds`. |
 | `declarations(ref)` | Direct declarations, one hop: `ref`, overlapping `citations` with their original subject spans and supports, and exact `undeclared` gaps (the uncovered words of a version written under `ALLOW_GAPS`, for one). No ancestry judgment. |
 | `check_support(ref, *, max_depth=None, limit=1000)` | Assess all selected declarations' ancestry to declared sources. Returns a `SupportReport`: enum `status`, selected `regions` with individual outcomes, `issues` with reasons and explanatory paths. Computed on demand, never stored. See [Support](concepts.md#support). |
 | `citations(version)` | The citations a version was written with. |
-| `trace(ref, max_depth=None, limit=None)` | Follow provenance from a reference down to its sources, as a DAG: each distinct reference is one node, and each edge is a citation. `limit` keeps the nearest nodes, and `complete` says whether limits omitted any traversal. Versions outside the workspace are reported separately, as its `frontier`. |
-| `cited_by(ref)` | The reverse of one hop: citations, from any version, with a support overlapping a reference. |
+| `trace(ref, max_depth=None, limit=None)` | Follow provenance from a reference down to its sources, as a DAG: each distinct reference is one node, and each edge is a citation. `limit` keeps the nearest nodes, and `complete` says whether limits omitted any traversal. Nodes may be in linked workspaces; unreachable versions are reported separately, as `unreachable`. |
+| `cited_by(ref)` | The reverse of one hop: citations, from any version in this workspace, with a support overlapping a reference (which may be in a linked workspace). |
 | `freshness(ref, document=None, as_of=None)` | Whether a reference's version is still the head of each document that holds it (or only `document`), computed now, never stored. For each that moved past it: its head, when it moved (`superseded_at`), and for a span, whether its text is in the head (`unchanged`, `moved`, `gone` or `unknown`, with where). `as_of` also asks whether it was the head then; entry times are approximate (taken just before each entry is created, on the writer's clock), so an `as_of` near another write can't order the two. `superseded` is true when no document holds it as its head any more. A suggestion of where to look: Bond never moves a citation. |
 | `verify(version, policy=STRICT)` | Check a version and every version beneath it: recompute their hashes and ids, and run the write checks again on each as it was written. Returns the issues found, each naming its version (none if intact). |
 | `blob(version)`, `text(ref)` | A version's raw bytes; the text a reference addresses (`Ref(v, VersionLocator())` for all of it). A version whose stored bytes are missing or malformed raises `CorruptVersion`; `verify` reports it instead. |
@@ -61,35 +61,35 @@ A write files its version in a document by name, which must not be blank (`inval
 - Reverting is writing the old content and citations again: they are the same version.
 - `title` labels a document for people to read it by; like the name, it changes no id.
 
-## Workspaces and imports
+## Workspaces and links
 
-Everything above happens inside one workspace: search finds its documents, and a write can only cite versions in it. Material from elsewhere comes in by import:
+Everything above happens inside one workspace: a write stores and files in it, and search finds its documents. A workspace can also link to others, as its deployment decides: its citations can then rest on their versions where they are, with nothing copied. A case links to a shared policy library and quotes it:
 
 ```python
-policies = Bond.local("./policies")      # shared: the office's intake policies
-case = Bond.local("./cases/case-001")    # one case; its name is its directory's
+policies = Bond.local("./policies")                        # shared: the office's intake policies
+case = Bond.local("./cases/case-001", links=[policies])    # one case; its name is its directory's
 
-case.import_document(policies, "criteria/IP-112")          # its id and citations preserved; what it rests on stays outside
-case.frontier()                                            # versions it rests on that stayed in policies
-case.import_version(policies, case.frontier()[0])          # bring one in later; nothing else changes
+[hit] = policies.search("at least 6 weeks", documents=["policy/IP-112"])
+case.write_document("note", "at least 6 weeks", [Citation(CitationKind.QUOTE, TextLocator(0, 16), [hit.ref])])
+case.trace(Ref(case.document("note").head, VersionLocator()))   # from the case into policies, down to its source
 ```
 
 | Function | Does |
 |---|---|
-| `import_document(source, document, *, name=None, base=None, depth=0, limit=None)` | Copy a document's head with its identity, bytes, and citations preserved, and file it under `name` (the same, by default), from `base` as in `write_document`. `depth` counts dependency hops (`None` for all); `limit` bounds distinct versions visited. Dependencies not copied remain explicit outside-workspace references. History records the original workspace and version. Every copied artifact is checked against its identity. |
-| `import_version(source, version, *, depth=0, limit=None)` | Copy a version an earlier import left outside, and what it rests on as `import_document` does, without filing it. `advanced` says whether anything was copied. |
-| `frontier()` | Versions something here rests on that aren't here. |
+| `Bond(..., links=...)`, `Bond.local(..., links=...)`, `set_links(links)` | The workspaces this one links to: a list of opened workspaces, or a function giving them, asked on every read, for a deployment whose links change while it runs. |
+| `links()` | The workspaces this one links to directly, as its deployment says now. |
+| `reachable()` | Every workspace this one can read: those it links to, those they link to, and so on, each once. A link that loops back is followed no further. |
 | `workspace` | This workspace's `id` and `name`. |
 
-A support into a version outside the workspace is a valid state, and only an import makes one: a write still refuses any support that isn't here. `trace` stops there and lists such versions in `Trace.frontier`. `verify` reports each once as `outside_workspace` and checks everything else, skipping only what needs the missing text (a quote's match), so an empty result still means everything beneath was checked.
+A link gives read access only. Reading a version (`text`, `blob`, `citations`), checking a write's supports, `declarations`, `check_support`, `trace`, `freshness` and `verify` all look in the workspace first, then in what it can reach; `search` and `documents` stay in this workspace (search a linked workspace on its own `Bond`, or with the agent tools, which search both), and `cited_by` answers what in this workspace cites a span, so a library never learns which cases cite it. `bond.details.owner(bond, version)` says which workspace a version is read from.
 
-Importing preserves a policy's identity: every case gets the same version, so a host that can open many cases can ask each one `cited_by` the same span of it, which is how to find every determination resting on a paragraph that changed. Bond doesn't run that query across workspaces itself; the host does, over the workspaces it may open. A workspace never learns who imported from it.
+A version no reachable workspace holds (its link was removed, say) is unreachable: a valid state, never a broken one, since its id is still committed to. `trace` stops there and lists it in `Trace.unreachable`; a support check reports it as `unreachable`, so the result is `UNKNOWN`; `verify` reports it once as `unreachable` and checks everything else, skipping only what needs its text (a quote's match). Linking again makes it reachable, and nothing else changes. A write refuses a support no reachable workspace holds.
 
-Imports never turn derived or unsourced content into a source. A host that has reviewed an external artifact and wants to treat it as a source here ingests its bytes: `case.ingest("accepted-criteria", policies.blob(version))`. With a depth or version budget, inspect the frontier rather than treating a partial import as complete. An import can leave copied evidence in the destination if a later filing conflict or dependency error occurs; it does not rewrite existing evidence.
+A version's id is the same wherever it is read from, so a host that can open many cases can ask each one `cited_by` the same span of a policy, which is how to find every determination resting on a paragraph that changed. Bond doesn't run that query across workspaces itself; the host does, over the workspaces it may open. A policy's newer version shows up from the case too: `newer` on a hit or a trace names the policy's head now.
 
-From the command line: `bond import --from ./policies --into ./cases/case-001 policy/IP-112` (`--as` files it under another name; `--depth`, a number of hops or `all`, and `--limit` bound dependencies; identity and citations are always preserved).
+Bond keeps no record of links: they are the deployment's decision (`bond.local` keeps them in its home, refuses a link that would loop, and reads them at each call). Keep links pointing one way, from cases to shared workspaces, so nothing outside a case rests on it and a case can be deleted alone.
 
-[examples/workspaces.py](../examples/workspaces.py) builds a policies workspace and a workspace per case.
+[examples/workspaces.py](../examples/workspaces.py) builds a policies workspace and a workspace per case that links to it.
 
 ## Plans: deciding a write apart from doing it
 
@@ -100,12 +100,12 @@ result = bond.commit(plan)                       # stores it and files it; stale
 
 | Method | What it does |
 |---|---|
-| `plan_write(...)`, `plan_ingest(...)`, `plan_import(...)`, `plan_import_version(...)` | Take what `write_document`, `ingest`, `import_document` and `import_version` take, and return a `WritePlan` (`bond.plans`): the versions to store and where to file one. Checked against the workspace as it is; nothing is stored. Those four methods are `commit` of these. |
-| `commit(plan)` | Store a plan's versions (blobs, then records) and file one (its history entry, then its title). Refused with `stale_base` if the document moved since the plan was made, having filed nothing. Committing again is harmless. |
+| `plan_write(...)`, `plan_ingest(...)` | Take what `write_document` and `ingest` take, and return a `WritePlan` (`bond.plans`): the version to store (none if it is stored already) and where to file it. Checked against the workspace and its links as they are; nothing is stored. Those two methods are `commit` of these. |
+| `commit(plan)` | Store a plan's version (blob, then record) and file it (its history entry, then its title). Refused with `stale_base` if the document moved since the plan was made, having filed nothing. Committing again is harmless. |
 | `stage(plan)` | Put a plan's bytes in the blobs, and return it as JSON (bytes named by hash), to keep where a host keeps its steps. |
 | `load_plan(text)` | A staged plan, with its bytes read back. It is checked again when committed, so a plan from outside can't store what a write couldn't. |
 
-A plan stays good: versions are never removed, so what it checked stays true, except the document it files in, which `commit` checks again atomically. So a host can plan in one step (an agent's tool) and commit in another (the loop that runs it), or commit again after a crash.
+A plan stays good: versions are never removed, so what it checked stays true, except the document it files in, which `commit` checks again atomically (and a support in a linked workspace, if the link is removed before a loaded plan is committed: it is checked again then). So a host can plan in one step (an agent's tool) and commit in another (the loop that runs it), or commit again after a crash.
 
 ## Formats
 

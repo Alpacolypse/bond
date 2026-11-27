@@ -193,7 +193,7 @@ function WholeLayout({
       <GraphView graph={graph} drawerWidth={drawerWidth} layout={layout} />
       <LayoutSwitch layout={layout} onChange={setLayout} />
       <Brand workspace={workspace} mock={mock} actions={actions}>
-        {plural(graph.nodes.filter((n) => !n.outside).length, "document")}
+        {plural(graph.nodes.filter((n) => n.workspace === workspace).length, "document")}
       </Brand>
       <Legend />
       <Drawer width={drawerWidth} onWidthChange={setDrawerWidth} />

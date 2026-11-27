@@ -1,4 +1,4 @@
-"""Write plans: a write decided by plan_write (and plan_ingest, plan_import), done by commit. See bond.plans."""
+"""Write plans: a write decided by plan_write (and plan_ingest), done by commit. See bond.plans."""
 
 from __future__ import annotations
 
@@ -7,7 +7,18 @@ from dataclasses import replace
 
 import pytest
 
-from bond import Bond, BondError, Citation, CitationKind, Format, IssueCode, TextLocator, VersionLocator, WriteError
+from bond import (
+    Bond,
+    BondError,
+    Citation,
+    CitationKind,
+    Format,
+    IssueCode,
+    Ref,
+    TextLocator,
+    VersionLocator,
+    WriteError,
+)
 from bond.policies import ALLOW_GAPS
 from bond.storage.local import LocalBlobs
 
@@ -73,7 +84,7 @@ def test_a_loaded_plan_that_doesnt_hash_to_its_ids_is_refused(bond):
     cited = [Citation(CitationKind.QUOTE, TextLocator(0, 9), [bond.search("Six weeks", documents=["src"])[0].ref])]
     plan = bond.plan_write("note", "Six weeks", cited, format=Format.MARKDOWN)
     edited = json.loads(bond.stage(plan))
-    edited["versions"][0]["citations"][0]["kind"] = "paraphrase"  # what the id doesn't commit to
+    edited["new"]["citations"][0]["kind"] = "paraphrase"  # what the id doesn't commit to
     with pytest.raises(BondError, match="doesn't hash to its id"):
         bond.commit(bond.load_plan(json.dumps(edited)))
     assert [d.name for d in bond.documents()] == ["src"] and source
@@ -95,20 +106,23 @@ def test_a_plan_commits_only_in_its_workspace(bond):
 def test_ingesting_what_is_stored_plans_only_its_filing(bond):
     v = bond.ingest("a", b"Same bytes.", format=Format.MARKDOWN).version
     plan = bond.plan_ingest("b", b"Same bytes.", format=Format.MARKDOWN)
-    assert plan.versions == () and plan.version == v
+    assert plan.new is None and plan.version == v
     assert bond.commit(plan).advanced and [d.name for d in bond.documents()] == ["a", "b"]
 
 
-def test_planning_an_import_stores_nothing_and_a_refused_filing_is_refused_up_front(bond):
+def test_a_plan_may_cite_a_linked_workspace_and_a_loaded_one_is_checked_against_its_links_again(bond):
     policies = Bond(bond.store, bond.blobs, "policies")
-    policy = policies.ingest("policy", b"Six weeks of written notice.", format=Format.MARKDOWN).version
-    plan = bond.plan_import(policies, "policy")
-    assert [pv.new.id for pv in plan.versions] == [policy] and bond.records.version(policy) is None
-    assert bond.commit(plan).advanced and bond.document("policy").head == policy
-    bond.write_document("other", TEXT, WHOLE, format=Format.MARKDOWN)
+    text = b"Six weeks of written notice."
+    policy = policies.ingest("policy", text, format=Format.MARKDOWN).version
+    bond.set_links([policies])
+    quoted = [Citation(CitationKind.QUOTE, TextLocator(0, len(text)), [Ref(policy, TextLocator(0, len(text)))])]
+    staged = bond.stage(bond.plan_write("summary", text, quoted, format=Format.MARKDOWN))
+    bond.set_links([])
     with pytest.raises(WriteError) as e:
-        bond.plan_import(policies, "policy", name="other")
-    assert e.value.codes == [IssueCode.DOCUMENT_EXISTS]
+        bond.commit(bond.load_plan(staged))
+    assert IssueCode.UNKNOWN_VERSION in e.value.codes
+    bond.set_links([policies])
+    assert bond.commit(bond.load_plan(staged)).advanced and bond.records.version(policy) is None
 
 
 def test_a_loaded_plan_that_files_a_version_it_doesnt_hold_is_refused(bond):
@@ -119,14 +133,6 @@ def test_a_loaded_plan_that_files_a_version_it_doesnt_hold_is_refused(bond):
     with pytest.raises(BondError, match="doesn't hold and isn't stored here"):
         bond.commit(bond.load_plan(json.dumps(edited)))
     assert [d.name for d in bond.documents()] == ["a"]
-
-
-def test_a_loaded_plan_that_holds_a_version_twice_is_refused(bond):
-    plan = bond.plan_write("note", TEXT, WHOLE, format=Format.MARKDOWN)
-    edited = json.loads(bond.stage(plan))
-    edited["versions"] *= 2
-    with pytest.raises(BondError, match="more than once"):
-        bond.commit(bond.load_plan(json.dumps(edited)))
 
 
 def test_committing_a_plan_again_keeps_a_title_given_since(bond):
@@ -148,13 +154,3 @@ def test_relabelling_the_head_applies_its_title(bond):
     bond.filing.retitle("note", "B")
     bond.write_document("note", TEXT, WHOLE, format=Format.MARKDOWN, base=v, title="C")
     assert bond.document("note").title == "C"
-
-
-def test_an_import_plan_names_its_version_when_it_is_here_already(bond):
-    policies = Bond(bond.store, bond.blobs, "policies")
-    v = policies.ingest("policy", b"Six weeks of written notice.", format=Format.MARKDOWN).version
-    bond.import_document(policies, "policy")
-    plan = bond.plan_import_version(policies, v)
-    assert plan.versions == () and plan.version == v
-    assert bond.commit(plan).version == v
-    assert bond.load_plan(bond.stage(plan)).version == v

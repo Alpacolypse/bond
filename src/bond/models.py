@@ -142,7 +142,7 @@ class DocumentRef:
 class Workspace:
     """A self-contained set of documents and their provenance: what an agent is opened on.
 
-    Citations only point at versions in the same workspace; material from another one comes in by import.
+    Citations point at versions in the workspace, or in the workspaces it links to (a deployment's decision).
     The id is Bond's; the name is a label, unique among the workspaces of one store.
     """
 
@@ -155,18 +155,6 @@ class Workspace:
 
 
 @dataclass(frozen=True)
-class Imported:
-    """Where a history entry's version came from, when it was imported from another workspace."""
-
-    workspace: str  # the other workspace's id
-    workspace_name: str  # its name when the import happened
-    version: VersionId  # the version there, which keeps its id here
-
-    def to_dict(self) -> JsonObject:
-        return {"workspace": self.workspace, "workspace_name": self.workspace_name, "version": self.version}
-
-
-@dataclass(frozen=True)
 class HistoryEntry:
     """One step of a document's history: from this entry on, the document pointed at version."""
 
@@ -174,12 +162,10 @@ class HistoryEntry:
     version: VersionId
     base: VersionId | None  # the head the writer started from; None for a document's first entry
     at: str
-    imported: Imported | None = None  # set when the entry came in by import from another workspace
     origin: str | None = None  # where an ingested file came from (a path or URL), as its ingester said; filing only
 
     def to_dict(self) -> JsonObject:
-        return {"seq": self.seq, "version": self.version, "base": self.base, "at": self.at,
-                "imported": self.imported.to_dict() if self.imported else None, "origin": self.origin}
+        return {"seq": self.seq, "version": self.version, "base": self.base, "at": self.at, "origin": self.origin}
 
 
 class SupportStatus(StrEnum):
@@ -198,7 +184,7 @@ class SupportStatus(StrEnum):
 class SupportReason(StrEnum):
     UNDECLARED = "undeclared"
     UNSOURCED = "unsourced"
-    MISSING_VERSION = "missing_version"
+    UNREACHABLE = "unreachable"  # a version neither in the workspace nor in one it links to
     LIMIT = "limit"
     DEPTH_LIMIT = "depth_limit"
     CYCLE = "cycle"
@@ -265,7 +251,8 @@ class SupportReport:
 @dataclass(frozen=True)
 class Hit:
     ref: Ref  # the matched text itself
-    documents: list[str]  # names of the documents whose history holds the version
+    workspace: str  # the name of the workspace the version is filed in: this one, or one it links to
+    documents: list[str]  # names of the documents there whose history holds the version
     format: Format
     snippet: str
     context: Context  # display aids: line and headings, keys, or row and column
@@ -280,8 +267,8 @@ class Hit:
         return frozenset(c.kind for c in self.declarations.citations)
 
     def to_dict(self) -> JsonObject:
-        return {"ref": self.ref.to_dict(), "documents": self.documents, "format": self.format.value,
-                "snippet": self.snippet, "context": self.context.to_dict(),
+        return {"ref": self.ref.to_dict(), "workspace": self.workspace, "documents": self.documents,
+                "format": self.format.value, "snippet": self.snippet, "context": self.context.to_dict(),
                 "kinds": sorted(k.value for k in self.kinds), "declarations": self.declarations.to_dict(),
                 "newer": dict(self.newer)}
 
@@ -336,12 +323,11 @@ class Freshness:
     """Whether a span's version is still current where it is filed: computed when asked, never stored.
 
     Freshness is relative to a document: one version can be one document's head and superseded in another.
-    A version filed nowhere here (one an import brought without filing) has no documents to be current in.
+    Documents are those of the workspace that holds the version, which may be one this workspace links to.
     """
 
     ref: Ref
     documents: tuple[DocumentFreshness, ...]
-    imported: bool  # brought from another workspace: whether it is current there isn't known here
 
     @property
     def superseded(self) -> bool:
@@ -350,7 +336,7 @@ class Freshness:
 
     def to_dict(self) -> JsonObject:
         return {"ref": self.ref.to_dict(), "documents": [d.to_dict() for d in self.documents],
-                "imported": self.imported, "superseded": self.superseded}
+                "superseded": self.superseded}
 
 
 @dataclass(frozen=True)
@@ -385,13 +371,14 @@ class Trace:
     root: Ref
     nodes: list[Ref]  # nearest first
     edges: list[TraceEdge]
-    complete: bool  # False if node/depth limits omitted traversal; the frontier is reported separately
-    frontier: frozenset[VersionId] = frozenset()  # versions of nodes that aren't in this workspace
+    complete: bool  # False if node/depth limits omitted traversal; unreachable versions are reported separately
+    # Versions of nodes in neither this workspace nor any it links to: nothing more is known of them here.
+    unreachable: frozenset[VersionId] = frozenset()
     # Versions of nodes that documents here have moved past: version -> {document: its head now}.
     newer: dict[VersionId, dict[str, VersionId]] = field(default_factory=dict)
 
     def edges_at(self, node: Ref) -> list[TraceEdge]:
-        """The edges out of one node: none for an uncited node, one past max_depth, or one outside the workspace."""
+        """The edges out of one node: none for an uncited node, one past max_depth, or an unreachable one."""
         return [e for e in self.edges if e.node == node]
 
 
@@ -428,9 +415,9 @@ class IssueCode(Enum):
     INVALID_CONTENT = "invalid_content"  # content is not well-formed in its format
     BAD_LOCATOR = "bad_locator"  # malformed, or outside its document
     UNKNOWN_VERSION = "unknown_version"  # support points at a version that doesn't exist
-    # Only from verify: a version rests on one that isn't in this workspace, so that part can't be checked here.
-    # Not a failure: the id still commits to it, and importing it (import_version) lets verify check it.
-    OUTSIDE_WORKSPACE = "outside_workspace"
+    # Only from verify: a version rests on one in neither this workspace nor any it links to (a link was removed,
+    # say), so that part can't be checked here. Not a failure: the id still commits to it.
+    UNREACHABLE = "unreachable"
     INVALID_CITATION = "invalid_citation"  # kind validator rejected it; message says why
     QUOTE_MISMATCH = "quote_mismatch"  # QUOTE claim text differs from its support
     CIRCULAR_SUPPORT = "circular_support"  # citations in the document support each other in a loop

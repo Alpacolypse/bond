@@ -10,7 +10,7 @@ and a CSV written with citations at every granularity. Every document has a
 single version.
 
 Run with: uv run python examples/seed.py --home .bond-demo [--force]; the demo is a Bond home, a workspace
-per case and one for the policies they import from.
+per case and one for the policies they link to and cite.
 """
 
 from __future__ import annotations
@@ -246,12 +246,16 @@ def import_fax(bond: Bond, docs: dict[str, VersionId], case: str, ocr: Path) -> 
 
 
 def seed(bond: Bond, case: str = "001", policies: Bond | None = None) -> dict[str, VersionId]:
-    """Build one case only. Shared policies enter by import when a policies store is supplied."""
+    """Build one case only. With a policies workspace, the case links to it and cites its policy where it is;
+    without one, the case holds the policy itself."""
     if case not in ("001", "003"):
         raise ValueError(f"unknown demo case {case!r}")
-    policy = (bond.import_document(policies, "policy_ip112") if policies is not None
-              else bond.ingest("policy_ip112", FIXTURES / "policy_ip112.md"))
-    docs = {"policy_112": policy.version}
+    if policies is not None:
+        bond.set_links([policies])
+        policy = policies.document("policy_ip112").head
+    else:
+        policy = bond.ingest("policy_ip112", FIXTURES / "policy_ip112.md").version
+    docs = {"policy_112": policy}
     import_fax(bond, docs, case, FIXTURES / f"fax_case_{case}.reducto.json")
     if case == "001":
         seed_expenses(bond, docs)
@@ -324,7 +328,7 @@ def prepare(root: Path, force: bool) -> None:
 
 
 def build(root: Path) -> None:
-    """A Bond home at root: a workspace per case, and a policies workspace each case links to and imports from."""
+    """A Bond home at root: a workspace per case, and a policies workspace each case links to and cites."""
     home = Home(root)
     with Bond.local(home.path("policies")) as policies:
         policy = policies.ingest("policy_ip112", FIXTURES / "policy_ip112.md")

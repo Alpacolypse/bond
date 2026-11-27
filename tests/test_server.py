@@ -37,7 +37,8 @@ def test_versions(bond, client, docs):
     assert [v["version"] for v in vs] == [docs[k] for k in ("pdf", "fax", "policy", "summary")]
     pdf = details.version(bond, docs["pdf"])
     assert vs[0] == {
-        "version": docs["pdf"], "content_hash": pdf.content_hash, "name": "fax_case_001", "title": None,
+        "version": docs["pdf"], "workspace": "default", "content_hash": pdf.content_hash, "name": "fax_case_001",
+        "title": None,
         "documents": ["fax_case_001"], "format": "pdf", "created_at": pdf.created_at, "version_index": 1,
         "version_count": 1, "latest": True,
     }
@@ -223,7 +224,7 @@ def test_documents_are_listed_by_name_filtered_and_paged(bond, client, docs):
 def test_overview_and_the_whole_graph_limit(bond, docs):
     with TestClient(create_app(offered(bond), static_dir=None, graph_limit=3)) as c:
         assert c.get("/api/overview").json() == {"workspace": bond.workspace.to_dict(), "version_count": 4,
-                                                 "document_count": 4, "outside_count": 0, "graph_limit": 3}
+                                                 "document_count": 4, "unreachable_count": 0, "graph_limit": 3}
         r = c.get("/api/graph")
         assert r.status_code == 400 and "/api/neighborhood" in r.json()["detail"]
     with TestClient(create_app(offered(bond), static_dir=None, graph_limit=4)) as c:
@@ -267,37 +268,43 @@ def test_the_packaged_ui_is_served_when_built(bond):
         assert r.status_code == 200 and '<div id="root">' in r.text
 
 
-def test_a_workspace_shows_what_it_imported_and_what_stayed_outside(tmp_path):
+def test_a_workspace_shows_what_it_cites_in_linked_workspaces_and_what_is_unreachable(tmp_path):
     with Bond.local(tmp_path / "policies") as policies, Bond.local(tmp_path / "case-001") as case:
         policy = policies.ingest("policy", b"Six weeks of written notice.\n", format=Format.MARKDOWN).version
         text = "Six weeks"
-        summary = policies.write_document(
-            "criteria",
+        case.set_links([policies])
+        note = case.write_document(
+            "note",
             text.encode(),
             [
             Citation(CitationKind.QUOTE, TextLocator(0, len(text)), [Ref(policy, TextLocator(0, len(text)))]),
         ],
             format=Format.MARKDOWN,
         ).version
-        case.import_document(policies, "criteria")
         with TestClient(create_app(offered(case), static_dir=None)) as c:
             overview = c.get("/api/overview").json()
             graph = c.get("/api/graph").json()
-            hood = c.get(f"/api/neighborhood?version={summary}").json()
-            [cited] = c.get(f"/api/versions/{summary}/citations").json()
-            trace = c.get(f"/api/trace?version={summary}").json()
+            hood = c.get(f"/api/neighborhood?version={note}").json()
+            [cited] = c.get(f"/api/versions/{note}/citations").json()
+            trace = c.get(f"/api/trace?version={note}").json()
             [listed] = c.get("/api/documents").json()["documents"]
+            opened = c.get(f"/api/versions/{policy}").json()
+            case.set_links([])  # the link is removed
+            unlinked = c.get("/api/overview").json()
+            gone = c.get("/api/graph").json()
             missing = c.get(f"/api/versions/{policy}")
-    assert overview["workspace"]["name"] == "case-001" and overview["outside_count"] == 1
-    assert {(n["version"], n["outside"]) for n in graph["nodes"]} == {(summary, False), (policy, True)}
-    [outside] = [n for n in graph["nodes"] if n["outside"]]
-    assert outside["format"] is None and outside["documents"] == [] and outside["name"] == policy[:12]
-    assert [(e["from"], e["to"]) for e in graph["edges"]] == [(summary, policy)]
-    assert {n["version"] for n in hood["nodes"]} == {summary, policy}
-    assert cited["supports"][0] | {"locator": None} == {
-        "version": policy, "locator": None, "name": policy[:12], "format": None, "text": None, "outside": True}
-    assert [n["outside"] for n in trace["nodes"]] == [False, True]
-    assert listed["imported_from"] == "policies"
+    assert overview["workspace"]["name"] == "case-001" and overview["unreachable_count"] == 0
+    assert {(n["version"], n["workspace"], n["unreachable"]) for n in graph["nodes"]} == {
+        (note, "case-001", False), (policy, "policies", False)}
+    assert [(e["from"], e["to"]) for e in graph["edges"]] == [(note, policy)]
+    assert {n["version"] for n in hood["nodes"]} == {note, policy}
+    assert cited["supports"][0]["name"] == "policy" and not cited["supports"][0]["unreachable"]
+    assert [n["unreachable"] for n in trace["nodes"]] == [False, False]
+    assert listed["name"] == "note" and "imported_from" not in listed
+    assert opened["workspace"] == "policies" and opened["name"] == "policy"
+    assert unlinked["unreachable_count"] == 1
+    [unreachable] = [n for n in gone["nodes"] if n["unreachable"]]
+    assert unreachable["format"] is None and unreachable["workspace"] is None and unreachable["name"] == policy[:12]
     assert missing.status_code == 404
 
 

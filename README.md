@@ -41,7 +41,7 @@ uv run bond add case-001 fixtures/policy_ip112.md fixtures/expenses_case_001.csv
 claude mcp add bond -- uv run --directory "$PWD" --extra mcp bond mcp --workspace case-001
 ```
 
-The agent gets the authoring tools (`documents`, `read`, `search`, `trace`, `draft`, `write`, `edit`, and `import_document` for linked workspaces) and instructions on how to cite. It can reach only the workspaces its server was given, and it can't add sources: only you can, with `bond add`. `bond mcp` speaks MCP over stdio, so any MCP client works the same way. Before you give an agent a shell, read [Running Bond locally](docs/local.md#only-people-add-sources).
+The agent gets the authoring tools (`documents`, `read`, `search`, `trace`, `draft`, `write` and `edit`) and instructions on how to cite. It can reach only the workspaces its server was given, and it can't add sources: only you can, with `bond add`. `bond mcp` speaks MCP over stdio, so any MCP client works the same way. Before you give an agent a shell, read [Running Bond locally](docs/local.md#only-people-add-sources).
 
 ### Use it from Python
 
@@ -88,7 +88,7 @@ Bond checks structure, not meaning. It validates that every reference points at 
 - **Document**: a name, like a file path, with an append-only history of versions. Documents are filing, never provenance.
 - **Citation**: this span of a version rests on these spans of other versions, in this way (`quote`, `paraphrase`, `transcription`, …); or it declares a `source`; or it declares itself `unsourced`.
 - **Locator**: the address of a span in its version's format: a character range, a JSON value, a table cell, or a region of a PDF page.
-- **Workspace**: a closed world of documents, such as one case. Writes cite only what is in it; material from another workspace comes in by import.
+- **Workspace**: a world of documents, such as one case. Writes cite what is in it, or in the workspaces it links to (a shared policy library, say), where they are.
 
 [docs/concepts.md](docs/concepts.md) defines each precisely, with citation kinds, locators, policies, identity, trace and support.
 
@@ -107,7 +107,7 @@ Storage is pluggable: any store that can create a key once (SQLite, Postgres or 
 | Doc | Covers |
 |---|---|
 | [Concepts](docs/concepts.md) | Versions, citations, kinds, locators, policies, identity, trace, support, invariants |
-| [Python API](docs/python-api.md) | `Bond`'s methods, workspaces and imports, formats, transcriptions of PDFs |
+| [Python API](docs/python-api.md) | `Bond`'s methods, workspaces and links, formats, transcriptions of PDFs |
 | [Agents](docs/agents.md) | The authoring tools, inline citation markup, handles, the MCP server and its app view |
 | [Running Bond locally](docs/local.md) | The Bond home, the `bond` CLI, grants, the viewer, the Claude Desktop extension |
 | [Storage and data handling](docs/storage.md) | Backends, schema, concurrency, and exactly where document content can end up |

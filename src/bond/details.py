@@ -14,26 +14,38 @@ from .parsers import JsonDoc
 
 
 def version(bond: Bond, version: VersionId) -> Version:
-    """A stored version's record (its format, content hash and creation time); raises UnknownVersion if none."""
+    """A version's record (its format, content hash and creation time), here or in a workspace this one links to;
+    raises UnknownVersion if none."""
     return bond._version(version)
 
 
 def versions(bond: Bond) -> list[Version]:
-    """Every version in the workspace, oldest first."""
+    """Every version stored in the workspace itself, oldest first."""
     return bond.index.versions()
 
 
+def owner(bond: Bond, version: VersionId) -> Bond | None:
+    """The workspace a version is read from: bond itself, or the nearest it links to (directly or not) that holds
+    it; None if none does."""
+    return bond._owner(version)
+
+
+def held_by(bond: Bond, version: VersionId) -> Bond:
+    """The workspace a version is read from (see owner); raises UnknownVersion if none reachable holds it."""
+    return bond._held(version)
+
+
 def filed_in(bond: Bond, version: VersionId) -> list[DocumentRef]:
-    """The documents whose history holds a version, oldest first. Compare each one's head to see if it's current."""
-    bond._version(version)
-    return bond.index.holding(version)
+    """The documents whose history holds a version, oldest first, in the workspace it is read from (see owner).
+    Compare each one's head to see if it's current."""
+    return bond._held(version).index.holding(version)
 
 
 def locator_problem(bond: Bond, ref: Ref) -> str | None:
-    """Why a reference names nothing here: its version isn't in the workspace, or its locator isn't valid in it.
-    None if it names something."""
-    if bond.records.version(ref.version) is None:
-        return f"version {ref.version[:12]}… isn't in this workspace"
+    """Why a reference names nothing here: its version is in neither the workspace nor any it links to, or its
+    locator isn't valid in it. None if it names something."""
+    if bond._owner(ref.version) is None:
+        return f"version {ref.version[:12]}… isn't in this workspace or any it links to"
     return bond._locator_problem(ref)
 
 

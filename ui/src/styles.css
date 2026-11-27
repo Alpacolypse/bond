@@ -639,10 +639,10 @@ button {
 .pop-link:hover {
   background: var(--hover);
 }
-.pop-outside {
+.pop-unreachable {
   cursor: default;
 }
-.pop-outside:hover {
+.pop-unreachable:hover {
   background: none;
 }
 .pop-target {

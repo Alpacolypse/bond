@@ -35,7 +35,7 @@ in the browser from a snapshot of the case 001 example, including its claims CSV
 - **Workspace**: the picker beside Bond switches between the stores offered by the server. Each store has
   its own graph, documents, and citations. Switching closes the drawer and resets navigation and cached reads;
   the selected workspace stays in the URL for reloads and browser back/forward. The demo has `case-001`,
-  `case-003`, and `policies`; each client lives in their own case, with the shared policy imported locally.
+  `case-003`, and `policies`; each client lives in their own case, which links to the shared policy and cites it there.
 
 - **Graph**: fills the window. One node per document, labelled by its title (the `title=` of a write), or its name
   if it has none; color is format, a thin outer ring marks an

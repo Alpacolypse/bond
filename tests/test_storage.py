@@ -36,7 +36,7 @@ from bond import (
     details,
 )
 from bond.ids import citation_id, hash_bytes, version_id
-from bond.models import DocumentRef, Imported, Version
+from bond.models import DocumentRef, Version
 from bond.storage import Blobs, CitationEdge, Conflict, Filed, NewVersion
 from bond.storage.local import LocalBlobs, MemoryBlobs
 from bond.storage.s3 import S3Blobs
@@ -265,19 +265,11 @@ def test_supports_may_name_versions_outside_the_workspace(ws):
     assert ws.index.outside() == []
 
 
-def test_history_records_where_an_import_came_from(ws):
-    v = new_version("A policy.")
-    origin = Imported("ws_" + "a" * 32, "policies", v.id)
-    doc = filed(file_in(ws, v, "policy", None, imported=origin)).document
-    assert [e.imported for e in ws.filing.history(doc.id)] == [origin]
-    assert [e.origin for e in ws.filing.history(doc.id)] == [None]
-
-
 def test_history_records_where_an_ingested_file_came_from(ws):
     v1, v2 = new_version("Faxed page one."), new_version("Faxed page two.")
     doc = filed(file_in(ws, v1, "fax", None, origin="Cases/001/fax.pdf")).document
     filed(file_in(ws, v2, "fax", v1.id))
-    assert [(e.origin, e.imported) for e in ws.filing.history(doc.id)] == [("Cases/001/fax.pdf", None), (None, None)]
+    assert [e.origin for e in ws.filing.history(doc.id)] == ["Cases/001/fax.pdf", None]
 
 
 def test_threads_share_one_workspace(ws):

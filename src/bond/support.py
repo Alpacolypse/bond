@@ -26,11 +26,11 @@ class Graph(Protocol):
     """What a support check reads: a workspace's versions, parsed, and the citations they were written with."""
 
     def parsed(self, version: VersionId) -> ParsedDoc | None:
-        """A version, parsed; None if it isn't in the workspace."""
+        """A version, parsed; None if it is in neither the workspace nor any it links to."""
         ...
 
     def citations(self, version: VersionId) -> list[StoredCitation]:
-        """The citations a version in the workspace was written with."""
+        """The citations a version the workspace can read was written with."""
         ...
 
 
@@ -137,7 +137,7 @@ def check_support(graph: Graph, root: Ref, max_depth: int | None, limit: int) ->
         doc = graph.parsed(ref.version)
         if doc is None:
             node.fixed = S.UNKNOWN
-            issue(ref, R.MISSING_VERSION, ref)
+            issue(ref, R.UNREACHABLE, ref)
             continue
         if doc.check(ref.locator) is not None:
             node.fixed = S.UNSUPPORTED

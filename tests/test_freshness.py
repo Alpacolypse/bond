@@ -77,12 +77,14 @@ def test_whether_a_version_was_current_at_a_time(bond):
     assert later.current_as_of is False
 
 
-def test_an_imported_version_says_so(bond):
+def test_a_linked_version_is_fresh_or_not_in_the_workspace_that_holds_it(bond):
     policies = Bond(bond.store, bond.blobs, "policies")
-    policies.ingest("policy", NOTE.encode(), format=Format.MARKDOWN)
-    v = bond.import_document(policies, "policy").version
-    assert bond.freshness(Ref(v, VersionLocator())).imported
-    assert not policies.freshness(Ref(v, VersionLocator())).imported
+    v1 = policies.ingest("policy", NOTE.encode(), format=Format.MARKDOWN).version
+    bond.set_links([policies])
+    assert not bond.freshness(Ref(v1, VersionLocator())).superseded
+    v2 = policies.ingest("policy", b"Eight weeks of rest.", format=Format.MARKDOWN, base=v1).version
+    [d] = bond.freshness(Ref(v1, VersionLocator())).documents
+    assert (d.document, d.current, d.head) == ("policy", False, v2)
 
 
 def test_search_within_an_older_version_names_what_is_newer(bond):
@@ -199,16 +201,6 @@ def test_a_json_value_unchanged_under_its_pointer_is_unchanged(bond):
     [d] = bond.freshness(details.locate_pointer(bond, v1, "/notice_weeks")).documents
     assert d.span is not None and d.span.status is SpanStatus.UNCHANGED
     assert d.span.at == details.locate_pointer(bond, v2, "/notice_weeks")
-
-
-def test_what_an_import_rests_on_is_imported_too(bond):
-    policies = Bond(bond.store, bond.blobs, "policies")
-    policy = policies.ingest("policy", NOTE.encode(), format=Format.MARKDOWN).version
-    [hit] = policies.search("Six weeks", documents=["policy"])
-    policies.write_document("summary", "Six weeks",
-                            [Citation(CitationKind.QUOTE, TextLocator(0, 9), [hit.ref])], format=Format.MARKDOWN)
-    bond.import_document(policies, "summary", depth=None)
-    assert bond.freshness(Ref(policy, VersionLocator())).imported
 
 
 def test_a_transcription_cites_the_version_its_producer_read_though_the_source_moved_meanwhile(bond):

@@ -93,14 +93,14 @@ function Supports({ citation: c, go }: { citation: Citation; go: Go }) {
     );
   }
   return c.supports.map((s, i) =>
-    s.outside ? (
-      <div key={i} className="pop-link pop-outside">
+    s.unreachable ? (
+      <div key={i} className="pop-link pop-unreachable">
         <span className="pop-target">
           <FormatDot format={null} />
           <b>{nav.name(s.version)}</b>
-          <span className="pop-where">outside this workspace</span>
+          <span className="pop-where">unreachable</span>
         </span>
-        <span className="pop-quote">It stayed in the workspace this was imported from.</span>
+        <span className="pop-quote">No workspace this one links to holds it now.</span>
       </div>
     ) : (
       <button key={i} className="pop-link" onClick={() => go(s.version, s.locator)}>

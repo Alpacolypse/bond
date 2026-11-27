@@ -1,7 +1,7 @@
 """The index: reverse lookups over a workspace's records and filing, derived, never stored.
 
-What cites a version, which documents hold it, what lies outside the workspace, and the viewer's counts and edges
-are all functions of records and history entries. MemoryIndex keeps them in memory and catches up before each
+What cites a version, which documents hold it, what is cited here but stored elsewhere, and the viewer's counts and
+edges are all functions of records and history entries. MemoryIndex keeps them in memory and catches up before each
 query, so writes by other processes on the same store are seen at the next one. Nothing that decides whether a
 write is accepted, or what a version cites, reads the index: a lagging one can only under-report.
 """
@@ -107,7 +107,7 @@ class MemoryIndex:
         return list(self._supporting.get(v, ()))
 
     def outside(self) -> list[VersionId]:
-        """Versions supports here point at that aren't here: the frontier imports left."""
+        """Versions supports here point at that aren't stored here: in workspaces this one links to, or unreachable."""
         records = self._records()
         here = {r.version.id for r in records}
         found: dict[VersionId, None] = {}

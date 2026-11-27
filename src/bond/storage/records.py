@@ -74,15 +74,6 @@ class Records:
         record = self.get(v)
         return [] if record is None else list(record.citations)
 
-    def mark_imported(self, v: VersionId) -> None:
-        """Record that v was brought here by an import, filed or not (what an import rests on is copied unfiled).
-        Kept apart from the record, which is the same in every workspace."""
-        self.store.create((self.workspace, "imported", v), b"{}")
-
-    def imported(self, v: VersionId) -> bool:
-        """Whether an import brought v here."""
-        return self.store.get((self.workspace, "imported", v)) is not None
-
     def ids(self) -> Iterator[VersionId]:
         """Every version stored, in no particular order."""
         for key in self.store.list(self.prefix):

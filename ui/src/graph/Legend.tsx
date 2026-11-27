@@ -1,7 +1,7 @@
 import { FORMATS } from "../api/types";
-import { FORMAT_COLOR, OUTSIDE_COLOR } from "../theme";
+import { FORMAT_COLOR, UNREACHABLE_COLOR } from "../theme";
 
-/** The graph's key: format colours, the ingested-source ring, versions outside the workspace, and which way
+/** The graph's key: format colours, the ingested-source ring, unreachable versions, and which way
  * arrows point. */
 export function Legend() {
   return (
@@ -23,9 +23,9 @@ export function Legend() {
       </span>
       <span className="legend-row">
         <svg width="14" height="14" aria-hidden>
-          <circle cx="7" cy="7" r="4.5" fill="none" stroke={OUTSIDE_COLOR} strokeWidth="1.2" strokeDasharray="2.5 2" />
+          <circle cx="7" cy="7" r="4.5" fill="none" stroke={UNREACHABLE_COLOR} strokeWidth="1.2" strokeDasharray="2.5 2" />
         </svg>
-        outside this workspace
+        unreachable
       </span>
       <span className="legend-row">
         <svg width="22" height="14" aria-hidden>

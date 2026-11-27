@@ -23,11 +23,10 @@ Wherever a command takes a workspace, a value with a `/` in it is a directory (`
 | `bond new NAME` | Create a workspace in the home. |
 | `bond add WORKSPACE FILE... [--as NAME] [--update]` | Add files as sources. Each is copied in, so the original can change or go without changing Bond; its document is named after the file, and its history records where it came from (`HistoryEntry.origin`, the file's absolute path). A name already taken is refused unless `--as` gives another or `--update` adds the file as that document's next version; a file the same as the current version adds nothing. Every file is checked first (it exists, Bond reads its format, names don't collide), so a refusal adds none of them. |
 | `bond transcribe WORKSPACE DOCUMENT [--with PRODUCER] [--output FILE [--of VERSION]]` | Write the transcription of a source with no text of its own (a PDF) as `DOCUMENT.PRODUCER`. By default Bond runs a producer that reads the source's format: for a PDF, `pypdf` reads its own text layer, and a scan or fax, which has none, is refused. `--with reducto --output parse.json` records a parse Reducto returned to you instead: Bond runs no vendor. Add `--of VERSION` when the document may have moved on since you sent its bytes, so the parse cites the version it read. Transcribing the same source again changes nothing. See [Transcriptions](python-api.md#transcriptions). |
-| `bond import DOCUMENT --from WORKSPACE --into WORKSPACE [--as NAME] [--depth N\|all] [--limit N]` | Bring a document from one workspace into another, with its identity and citations. See [Workspaces and imports](python-api.md#workspaces-and-imports). |
-| `bond link WORKSPACE --from OTHER [--remove]` | Let documents be imported from `OTHER` into `WORKSPACE`. A link gives no access to work in `OTHER`. |
+| `bond link WORKSPACE --to OTHER [--remove]` | Let `WORKSPACE`'s documents cite `OTHER`'s where they are (a case citing a policy library), and what `OTHER` links to in turn. A link gives read access only: an agent in `WORKSPACE` can read, search and cite `OTHER`, never write there. A link that would loop (`OTHER` already reaches `WORKSPACE`) is refused. Removing one leaves what already cites `OTHER` unreachable from `WORKSPACE`, until it is linked again. See [Workspaces and links](python-api.md#workspaces-and-links). |
 | `bond grant WORKSPACE --to NAME [--remove]` | Let the agent of the server configuration `NAME` (`bond mcp --grants NAME`) work in `WORKSPACE`, or stop it: for hosts with no view to grant from. |
-| `bond workspaces` | List the workspaces in the home, with what each imports from and who it's granted to. |
-| `bond mcp --workspace A [--workspace B ...]` | Serve the agent those workspaces, each with the ones it links to as import sources. A name must already be in the home; a directory with no workspace becomes a new one. See [Over MCP](agents.md#over-mcp). |
+| `bond workspaces` | List the workspaces in the home, with what each links to and who it's granted to. |
+| `bond mcp --workspace A [--workspace B ...]` | Serve the agent those workspaces, each linked to what it links to in the home. A name must already be in the home; a directory with no workspace becomes a new one. See [Over MCP](agents.md#over-mcp). |
 | `bond mcp --grants NAME` | Serve the workspaces a person granted the configuration `NAME` (grant mode, below). |
 | `bond view` | Browse workspaces in the viewer (below). |
 
@@ -75,7 +74,7 @@ It opens workspaces as they are and never creates one: each `--workspace` given,
 
 It listens on 127.0.0.1 unless you pass `--host`. **It has no authentication**, so anyone who can reach it can read every offered workspace.
 
-A workspace of up to 300 versions (`--graph-limit`) is drawn whole. A bigger one is browsed: filter the document list, open a document, and the graph shows the versions within two citation hops of it, both what it rests on and what rests on it (every version next to it, and at most 25 more from each further out, so a policy every case cites doesn't swamp the view). Navigating to a version outside the graph re-centres it there. `?browse` browses any workspace this way. Documents say which workspace they were imported from, and versions an import left outside the workspace are drawn as dashed outlines that can't be opened.
+A workspace of up to 300 versions (`--graph-limit`) is drawn whole. A bigger one is browsed: filter the document list, open a document, and the graph shows the versions within two citation hops of it, both what it rests on and what rests on it (every version next to it, and at most 25 more from each further out, so a policy every case cites doesn't swamp the view). Navigating to a version outside the graph re-centres it there. `?browse` browses any workspace this way. Versions in a linked workspace open like the workspace's own, and unreachable ones (cited, but held by no workspace it links to now) are drawn as dashed outlines that can't be opened.
 
 ### The demo home
 
@@ -85,7 +84,7 @@ uv run python examples/seed.py --home .bond-demo     # case-001, case-003 and po
 uv run bond view --home .bond-demo
 ```
 
-Use the workspace picker to switch between `case-001` (Jordan Avery), `case-003` (Samuel Okafor) and `policies`; all of it is synthetic. Each case imports the same policy version into its own workspace, and no case contains the other client's documents. To view one case alone, add `--workspace case-001`. `--force` replaces a demo home from an earlier run, and nothing else.
+Use the workspace picker to switch between `case-001` (Jordan Avery), `case-003` (Samuel Okafor) and `policies`; all of it is synthetic. Each case links to `policies` and cites the same policy version there, and no case contains the other client's documents; following a citation of the policy opens it in `policies`. To view one case alone, add `--workspace case-001`. `--force` replaces a demo home from an earlier run, and nothing else.
 
 For tables, select `case-001` and open `expense_history_case_001`, a note that cites the client's expense log (`expenses_case_001`, a CSV) by column, row, cell and part of a cell; click a claim to land on what it cites in the table. Then open `expense_rollup_case_001`, a CSV written with citations at every granularity: its header row and line-number column are the writer's own, its cells quote the export's cells, its notes quote and paraphrase parts of the export's notes, and its total rests on the amounts above it in the same table.
 

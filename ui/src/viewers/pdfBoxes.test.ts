@@ -10,7 +10,7 @@ const support = (version: string, locator: Support["locator"]): Support => ({
   format: "pdf",
   locator,
   text: null,
-  outside: false,
+  unreachable: false,
 });
 
 describe("citedBoxes", () => {

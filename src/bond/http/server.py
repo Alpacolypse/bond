@@ -54,9 +54,10 @@ def create_app(
 
     workspaces is read on every request, so what it offers may change while the app runs; whoever made it owns
     every Bond in it, and closes them once the app has stopped. Every data request selects a workspace by the name
-    it is offered under (?workspace=), defaulting to the first offered. Links aren't served: the viewer reads one
-    workspace at a time. /api/graph refuses a store of more than graph_limit versions; the UI browses such a store
-    with /api/documents and /api/neighborhood instead.
+    it is offered under (?workspace=), defaulting to the first offered. Versions in the workspaces a workspace
+    links to are read through it, so the viewer can follow a citation into a policy library. /api/graph refuses
+    a store of more than graph_limit versions; the UI browses such a store with /api/documents and
+    /api/neighborhood instead.
     """
     app = FastAPI(title="Bond viewer API")
     app.state.workspaces = workspaces

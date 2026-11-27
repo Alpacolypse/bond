@@ -122,29 +122,44 @@ def test_add_says_a_pdf_cant_be_cited_until_transcribed(home, tmp_path, capsys):
 
 def test_links_are_kept_in_the_home_and_need_both_workspaces(home, capsys):
     run(home, "new", "smith"), run(home, "new", "criteria")
-    assert run(home, "link", "smith", "--from", "nowhere") == 1
+    assert run(home, "link", "smith", "--to", "nowhere") == 1
     assert "no workspace named 'nowhere'" in capsys.readouterr().err
-    assert run(home, "link", "smith", "--from", "smith") == 1
-    assert run(home, "link", "smith", "--from", "criteria") == 0
-    assert run(home, "link", "smith", "--from", "criteria") == 0  # again: already linked
+    assert run(home, "link", "smith", "--to", "smith") == 1
+    assert run(home, "link", "smith", "--to", "criteria") == 0
+    assert run(home, "link", "smith", "--to", "criteria") == 0  # again: already linked
     assert home.links("smith") == ["criteria"] and home.links("criteria") == []
     assert Home(home.root).links("smith") == ["criteria"] and (home.root / DECISIONS).is_file()  # kept on disk
     capsys.readouterr()
     assert run(home, "workspaces") == 0
-    assert capsys.readouterr().out == "criteria\nsmith  (imports from: criteria)\n"
-    assert run(home, "link", "smith", "--from", "criteria", "--remove") == 0
+    assert capsys.readouterr().out == "criteria\nsmith  (links to: criteria)\n"
+    assert run(home, "link", "smith", "--to", "criteria", "--remove") == 0
     assert home.links("smith") == []
+
+
+def test_links_never_loop(home, capsys):
+    for name in ("smith", "criteria", "public"):
+        run(home, "new", name)
+    run(home, "link", "smith", "--to", "criteria")
+    run(home, "link", "criteria", "--to", "public")
+    assert home.reaches("smith", "public") and not home.reaches("public", "smith")
+    capsys.readouterr()
+    assert run(home, "link", "public", "--to", "smith") == 1
+    assert "'smith' already links to 'public', directly or through others; links can't loop" in capsys.readouterr().err
+    assert home.links("public") == []
 
 
 def test_mcp_serves_workspaces_by_name_with_what_they_link_to(home, tmp_path):
     for name in ("smith", "jones", "criteria"):
         run(home, "new", name)
     run(home, "add", "criteria", str(files(tmp_path, mp112_md="Six weeks of written notice.\n")["mp112.md"]))
-    run(home, "link", "smith", "--from", "criteria")
+    run(home, "link", "smith", "--to", "criteria")
     with mcp_workspaces(parse(["mcp", "--workspace", "smith", "--workspace", "jones", "--home", str(home.root)])) as served:
         assert served.names() == ["smith", "jones"]
-        assert list(served.links("smith")) == ["criteria"] and dict(served.links("jones")) == {}
-        assert [d.name for d in served.links("smith")["criteria"].documents()] == ["mp112.md"]
+        [criteria] = served.open("smith").links()
+        assert criteria.workspace.name == "criteria" and served.open("jones").links() == []
+        assert [d.name for d in criteria.documents()] == ["mp112.md"]
+        run(home, "link", "jones", "--to", "criteria")  # a link made while serving counts from the next call
+        assert [b.workspace.name for b in served.open("jones").links()] == ["criteria"]
 
 
 def test_mcp_never_creates_a_workspace_by_name(home, capsys):
@@ -155,8 +170,8 @@ def test_mcp_never_creates_a_workspace_by_name(home, capsys):
 
 def test_mcp_opens_a_workspace_once_however_often_it_is_named(home, tmp_path):
     run(home, "new", "smith")
-    with mcp_workspaces(parse(["mcp", "--workspace", "smith", "--import-from", str(home.path("smith")), "--home", str(home.root)])) as served:
-        assert dict(served.links("smith")) == {}  # not a source of itself
+    with mcp_workspaces(parse(["mcp", "--workspace", "smith", "--link", str(home.path("smith")), "--home", str(home.root)])) as served:
+        assert served.open("smith").links() == []  # never linked to itself
     with pytest.raises(BondError, match="two workspaces given are named 'smith'"):
         with mcp_workspaces(parse(["mcp", "--workspace", "smith", "--workspace", str(home.path("smith")) + "/", "--home", str(home.root)])):
             pass
@@ -180,8 +195,8 @@ def test_grant_mode_takes_its_workspaces_from_grants_alone(home, capsys):
     with pytest.raises(SystemExit):
         parse(["mcp", "--grants", "desktop", "--workspace", "smith"])
     with pytest.raises(SystemExit):
-        parse(["mcp", "--grants", "desktop", "--import-from", "./policies"])
-    assert "--import-from goes with --workspace" in capsys.readouterr().err
+        parse(["mcp", "--grants", "desktop", "--link", "./policies"])
+    assert "--link goes with --workspace" in capsys.readouterr().err
 
 
 def test_bond_transcribe_reads_a_pdfs_text_layer_or_records_a_producers_output(home, capsys):

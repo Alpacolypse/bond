@@ -1,6 +1,6 @@
 # Agents
 
-`bond.authoring` is how an LLM agent (or anything that would rather not handle offsets) uses Bond: it reads and writes text with inline citation tags, never offsets or version ids. `Tools` binds a workspace, a policy and the workspaces it may import from, for a host to hand to an agent; `bond mcp` serves the same tools over MCP.
+`bond.authoring` is how an LLM agent (or anything that would rather not handle offsets) uses Bond: it reads and writes text with inline citation tags, never offsets or version ids. `Tools` binds a workspace and a policy, for a host to hand to an agent, which reads, searches and cites the workspace and the workspaces it links to; `bond mcp` serves the same tools over MCP.
 
 ## The authoring tools
 
@@ -8,7 +8,8 @@
 from bond import SupportStatus
 from bond.authoring import Edit, Tools
 
-tools = Tools(case, sources={"policies": policies})   # policy: AGENT_POLICY by default
+case.set_links([policies])                            # the host's decision: case may cite policies
+tools = Tools(case)                                   # policy: AGENT_POLICY by default
 tools.read("fax_case_001.reducto")                    # the whole document as it is, to read before citing
 
 hits = tools.search("No significant damage to other rooms.", document="fax_case_001.reducto")
@@ -28,10 +29,9 @@ tools.edit("notes", [Edit(old="…", new="…")], draft.base)     # find-and-rep
 
 | Tool | Does |
 |---|---|
-| `documents(workspace=None)` | The documents in this workspace, or in one it may import from. |
-| `import_document(workspace, document)` | Bring a document in with its identity and citations; host-set `import_depth` (default 0) and `import_limit` (default 100) bound what comes along, and the result's `frontier` names what stayed behind. Importing again brings the newest version. A document of the same name the agent wrote itself is never replaced. |
-| `read(document)` | A document exactly as it is, to read before citing. |
-| `search(phrases, document=None, within=None, limit=20)` | Matches with exact handles, each with its `support` status, the `kinds` of citation over it, where it is, the text around it, and its passage's handle. Every match is returned; the agent prefers supported ones. |
+| `documents(workspace=None)` | The documents in this workspace, or in one it links to (directly or not). |
+| `read(document, workspace=None)` | A document exactly as it is, to read before citing; with `workspace`, one of a workspace it links to. |
+| `search(phrases, document=None, within=None, limit=20, workspace=None)` | Matches with exact handles, in this workspace and every workspace it links to (or only `workspace`), each with the `workspace` it is in, its `support` status, the `kinds` of citation over it, where it is, the text around it, and its passage's handle. Every match is returned; the agent prefers supported ones. A linked workspace's handles are cited as they are. |
 | `trace(handle, limit=30)` | The span's support `status` and `issues`, then what it rests on, nearest first, down to a page region, a declared source or unsourced text: each span with its handle, its citations and its `undeclared` parts. |
 | `draft(document)` | The document as a draft to edit: its text with its citations as tags, the evidence they point at, and its `base`. |
 | `write(document, draft, base=None, dry_run=False, format=None)`, `edit(document, edits, base, dry_run=False)` | Write a whole draft, or find-and-replace on the draft `draft` returned. The outcome's `status` says what happened: `written`, with the next `base` and the `support` status of what was written; `refused`, with `issues` in the agent's terms and nothing written; or, with `dry_run`, `checked` if nothing would stop the write. |
@@ -59,7 +59,7 @@ A quote's text must match its support, so the full stop sits outside the tag: pu
 
 ## Rules the layer keeps
 
-- **The core still enforces everything.** The tools compile tags into citations and write through `write_document`; tags are never stored. `AGENT_POLICY` requires every word covered and allows only `quote`, `paraphrase` and `unsourced`, so an agent can't mark its own text `source`, nor adopt an imported document as one.
+- **The core still enforces everything.** The tools compile tags into citations and write through `write_document`; tags are never stored. `AGENT_POLICY` requires every word covered and allows only `quote`, `paraphrase` and `unsourced`, so an agent can't mark its own text `source`, nor declare a linked workspace's text one.
 - **Edits carry citations forward.** An agent edits the draft it was given, so untouched sentences keep their tags. An edit's `old` must occur exactly once (or set `replace_all`); a batch of edits is written all or nothing.
 - **The layer stores nothing and decides nothing.** It is a translator built only on the core, so every write must meet the core's structural checks and selected policy. This does not guarantee correct evidence selection or semantic support. Nothing in it is specific to agents beyond the default policy: a human editor can use the same form.
 - **Rendering and compiling are inverses.** Compiling what `draft` rendered gives back the same bytes and citations, so the same version id. Tag ids (`#c1`, `#c2`) are names within one draft and never stored; `draft` places anchors (`a1`, `a2`, …) wherever a stored citation rests on a span no citation claims.
@@ -69,7 +69,7 @@ A quote's text must match its support, so the full stop sits outside the tag: pu
 
 ## Handles
 
-Handles are readable and self-contained: a version's id prefix (the shortest unique one, at least 8 characters, as git abbreviates commits) and the locator written out. Nothing is stored to resolve one, and a prefix that names no version, or more than one, is refused. A version outside the workspace is named by its whole id, which can't be resolved until it is imported.
+Handles are readable and self-contained: a version's id prefix (the shortest unique one, at least 8 characters, as git abbreviates commits) and the locator written out. Nothing is stored to resolve one, and a prefix that names no version, or more than one, is refused. Handles resolve in the workspace and in the workspaces it links to. An unreachable version (one no linked workspace holds now) is named by its whole id, which can't be resolved until the link is made again.
 
 | Addresses | Handle |
 |---|---|
@@ -85,29 +85,29 @@ Pages, rows and columns in handles count from 1.
 
 ```bash
 bond mcp --workspace smith --workspace jones                       # workspaces in the Bond home, with their links
-bond mcp --workspace ./cases/case-001 --import-from ./policies [--import-depth 0] [--import-limit 100]
-bond mcp --postgres postgresql://… --name case-001 --s3-bucket evidence --import-from policies
+bond mcp --workspace ./cases/case-001 --link ./policies            # a directory, and a workspace it may cite
+bond mcp --postgres postgresql://… --name case-001 --s3-bucket evidence --link policies
 bond mcp --grants desktop                                          # the workspaces a person granted (grant mode)
 ```
 
-`bond mcp` (with the `mcp` extra) serves the tools over stdio, with its workspaces, `AGENT_POLICY` and the workspaces each may import from bound when it starts; the agent can't reach any other workspace.
+`bond mcp` (with the `mcp` extra) serves the tools over stdio, with its workspaces and `AGENT_POLICY`; the agent can't reach any other workspace, except to read and cite the ones they link to.
 
-- `--workspace` repeats. A name opens a workspace in the Bond home, which must exist, and imports from the workspaces it links to (see [Running Bond locally](local.md)); a directory is created as a workspace if it holds none.
-- `--import-from` adds an import source to every workspace served. `--import-depth all` copies every hop.
-- With Postgres it serves one workspace, `--name`, and `--import-from` names other workspaces in the same database.
+- `--workspace` repeats. A name opens a workspace in the Bond home, which must exist, linked to the workspaces it links to there, as they are at each call (see [Running Bond locally](local.md)); a directory is created as a workspace if it holds none.
+- `--link` links every workspace served to another as well.
+- With Postgres it serves one workspace, `--name`, and `--link` names other workspaces in the same database.
 - `--grants NAME` serves the workspaces a person granted that configuration; see [Grants](local.md#grants).
 
 The server keeps no current workspace, since it may restart or serve several chats, so every tool takes the workspace as its first argument:
 
 | Tool over MCP | Does |
 |---|---|
-| `documents(workspace, from_workspace=None)` | The documents in `workspace`, or in `from_workspace`, one of its links. |
-| `import_document(workspace, from_workspace, document)` | Bring a document into `workspace` from one of its links, as `Tools.import_document` does. Always offered; refused, naming the links, when `from_workspace` isn't one. |
-| `read`, `search`, `trace`, `draft`, `write`, `edit` | As above, with `workspace` first: `read(workspace, document)`, `search(workspace, phrases, …)` and so on. |
+| `documents(workspace, from_workspace=None)` | The documents in `workspace`, or in `from_workspace`, a workspace it links to; refused, naming the links, when it isn't one. |
+| `read(workspace, document, from_workspace=None)`, `search(workspace, phrases, …, from_workspace=None)` | As above, with `from_workspace` for `Tools`' `workspace`. |
+| `trace`, `draft`, `write`, `edit` | As above, with `workspace` first: `trace(workspace, handle)` and so on. |
 | `show(workspace, document)` | Present a document in the app view; offered only to clients that render apps. |
 | `workspaces()` | In grant mode: list the granted workspaces and show the person a picker to grant another. |
 
-Citing stays within a workspace: a handle found in one names nothing in another, and a linked workspace's documents are cited only once imported. The server's instructions tell the agent how to cite, to name the workspace on every call, that a PDF's text is cited through a transcription, and which workspaces it can work in, with their links, when the server was created. A write's issues come back as its result, for the agent to fix and write again; a call that can't be carried out (a workspace it can't work in, a document that doesn't exist, a handle that names nothing) is a tool error with the reason, naming the workspaces or links it could have used.
+A workspace cites itself and the workspaces it links to: a handle found in one names nothing in a workspace that doesn't link to it, and writes go only to the workspace named. The server's instructions tell the agent how to cite, to name the workspace on every call, that a PDF's text is cited through a transcription, and which workspaces it can work in, with their links, when the server was created. A write's issues come back as its result, for the agent to fix and write again; a call that can't be carried out (a workspace it can't work in, a document that doesn't exist, a handle that names nothing) is a tool error with the reason, naming the workspaces or links it could have used.
 
 ### Building a server in Python
 
@@ -116,13 +116,14 @@ from bond.mcp.server import Served, authoring_tools, create_server
 from bond.mcp.view import packaged_view
 from bond.workspaces import Fixed
 
-workspaces = Fixed({"case-001": case}, {"case-001": {"policies": policies}})  # workspaces, and what each may import from
+case.set_links([policies])                     # what case may cite besides itself
+workspaces = Fixed({"case-001": case})         # what the agent works in
 server = create_server(workspaces, view=packaged_view())
 ```
 
-`create_server` takes any `bond.workspaces.Workspaces`. The workspaces are looked up on every call and never copied, so ones offered as access is granted are served from then on. `Served(workspaces, policy=..., import_depth=..., import_limit=...)` binds a policy other than `AGENT_POLICY`, or other budgets. `authoring_tools(Served(workspaces))` lists the tools, so a host can serve them its own way; `create_server` without a view serves just them.
+`create_server` takes any `bond.workspaces.Workspaces`. The workspaces are looked up on every call and never copied, so ones offered as access is granted are served from then on. `Served(workspaces, policy=...)` binds a policy other than `AGENT_POLICY`. `authoring_tools(Served(workspaces))` lists the tools, so a host can serve them its own way; `create_server` without a view serves just them.
 
-For grant mode, `bond.local.grants.create_server(GrantedWorkspaces(home, name), view=...)` builds the server `bond mcp --grants` runs (`GrantedWorkspaces` is the home's `Workspaces`: what was granted to `name`, with the home's links). A deployment adds model tools, instructions and app-only tools the same way grant mode does (`tools`, `more`, `extend`).
+For grant mode, `bond.local.grants.create_server(GrantedWorkspaces(home, name), view=...)` builds the server `bond mcp --grants` runs (`GrantedWorkspaces` is the home's `Workspaces`: what was granted to `name`, each linked as the home says at each call). A deployment adds model tools, instructions and app-only tools the same way grant mode does (`tools`, `more`, `extend`).
 
 ### The app view
 

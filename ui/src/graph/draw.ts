@@ -63,8 +63,8 @@ export function drawNode(n: SimNode, ctx: CanvasRenderingContext2D, s: DrawStyle
   // The selected node stays at full strength even while another neighbourhood is focused.
   ctx.globalAlpha = isLit || isSelected ? 1 : DIM;
 
-  if (n.outside) {
-    // Outside the workspace: a dashed outline, since none of it is here.
+  if (n.unreachable) {
+    // Unreachable: a dashed outline, since none of it can be read here.
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.4 * px;
     ctx.setLineDash([3 * px, 2.5 * px]);
