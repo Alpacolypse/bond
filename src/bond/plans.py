@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import weakref
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from .ids import dumps, supports
 from .jsonvalue import JsonObject, JsonValue
@@ -72,14 +72,16 @@ class WritePlan:
     versions: tuple[PlannedVersion, ...]  # to store, each before any that rests on it
     filing: FilingChange | None
     policy: Policy = STRICT  # what written versions were checked against, and are again if the plan is loaded
+    subject: VersionId | None = None  # for a plan that files nothing (import_version): the version it brings
     _mark: _Checked | None = field(default=None, compare=False, repr=False)
 
     @property
     def version(self) -> VersionId | None:
-        """The version the plan files, or (for an import that files nothing) the last it stores."""
+        """The version the plan files, or (for an import that files nothing) the version it brings, even when that
+        is here already and it stores nothing."""
         if self.filing is not None:
             return self.filing.version
-        return self.versions[-1].new.id if self.versions else None
+        return self.subject if self.subject is not None else self.versions[-1].new.id if self.versions else None
 
     @property
     def checked(self) -> bool:
@@ -107,6 +109,7 @@ class WritePlan:
                 "imported": None if self.filing.imported is None else self.filing.imported.to_dict(),
                 "origin": self.filing.origin, "title": self.filing.title,
             },
+            "subject": self.subject,
         }
         return dumps(value)
 
@@ -142,14 +145,15 @@ class WritePlan:
                                   None if f.get("base") is None else VersionId(_s(f.get("base"))), imported,
                                   None if f.get("origin") is None else _s(f.get("origin")),
                                   None if f.get("title") is None else _s(f.get("title")))
-        return WritePlan(_s(loaded.get("workspace")), tuple(versions), filing, policy)
+        subject = None if loaded.get("subject") is None else VersionId(_s(loaded.get("subject")))
+        return WritePlan(_s(loaded.get("workspace")), tuple(versions), filing, policy, subject)
 
 
 def checked(plan: WritePlan) -> WritePlan:
     """plan, marked as made by Bond's checks."""
     mark = _Checked()
     CHECKED.add(mark)
-    return WritePlan(plan.workspace, plan.versions, plan.filing, plan.policy, mark)
+    return replace(plan, _mark=mark)
 
 
 def _citation(c: Citation) -> JsonObject:

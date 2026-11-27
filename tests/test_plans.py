@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 
 import pytest
 
@@ -108,3 +109,52 @@ def test_planning_an_import_stores_nothing_and_a_refused_filing_is_refused_up_fr
     with pytest.raises(WriteError) as e:
         bond.plan_import(policies, "policy", name="other")
     assert e.value.codes == [IssueCode.DOCUMENT_EXISTS]
+
+
+def test_a_loaded_plan_that_files_a_version_it_doesnt_hold_is_refused(bond):
+    bond.ingest("a", b"Same bytes.", format=Format.MARKDOWN)
+    plan = bond.plan_ingest("b", b"Same bytes.", format=Format.MARKDOWN)  # files a version stored already
+    edited = json.loads(bond.stage(plan))
+    edited["filing"]["version"] = "0" * 64
+    with pytest.raises(BondError, match="doesn't hold and isn't stored here"):
+        bond.commit(bond.load_plan(json.dumps(edited)))
+    assert [d.name for d in bond.documents()] == ["a"]
+
+
+def test_a_loaded_plan_that_holds_a_version_twice_is_refused(bond):
+    plan = bond.plan_write("note", TEXT, WHOLE, format=Format.MARKDOWN)
+    edited = json.loads(bond.stage(plan))
+    edited["versions"] *= 2
+    with pytest.raises(BondError, match="more than once"):
+        bond.commit(bond.load_plan(json.dumps(edited)))
+
+
+def test_committing_a_plan_again_keeps_a_title_given_since(bond):
+    plan = bond.plan_write("note", TEXT, WHOLE, format=Format.MARKDOWN, title="A")
+    bond.commit(plan)
+    bond.filing.retitle("note", "B")
+    assert not bond.commit(plan).advanced
+    assert bond.document("note").title == "B"
+
+
+def test_committing_a_plan_again_titles_it_if_its_title_never_landed(bond):
+    plan = bond.plan_write("note", TEXT, WHOLE, format=Format.MARKDOWN, title="A")
+    bond.commit(replace(plan, filing=replace(plan.filing, title=None)))  # as if it stopped before titling
+    assert bond.commit(plan).advanced is False and bond.document("note").title == "A"
+
+
+def test_relabelling_the_head_applies_its_title(bond):
+    v = bond.write_document("note", TEXT, WHOLE, format=Format.MARKDOWN, title="A").version
+    bond.filing.retitle("note", "B")
+    bond.write_document("note", TEXT, WHOLE, format=Format.MARKDOWN, base=v, title="C")
+    assert bond.document("note").title == "C"
+
+
+def test_an_import_plan_names_its_version_when_it_is_here_already(bond):
+    policies = Bond(bond.store, bond.blobs, "policies")
+    v = policies.ingest("policy", b"Six weeks of written notice.", format=Format.MARKDOWN).version
+    bond.import_document(policies, "policy")
+    plan = bond.plan_import_version(policies, v)
+    assert plan.versions == () and plan.version == v
+    assert bond.commit(plan).version == v
+    assert bond.load_plan(bond.stage(plan)).version == v

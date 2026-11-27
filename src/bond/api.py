@@ -419,16 +419,33 @@ class Bond:
         filed = self.filing.file(f.version, f.document, f.base, imported=f.imported, origin=f.origin, before=before)
         if isinstance(filed, Conflict):  # another write moved the document since the plan was made
             raise WriteError([_conflict_issue(filed)])
-        self._title(f.document, f.title)
+        if f.title is not None and (filed.advanced or f.base == f.version or self._untitled_since_filed(f.document)):
+            self.filing.retitle(f.document, f.title)
         return WriteResult(f.version, filed.advanced)
 
+    def _untitled_since_filed(self, document: str) -> bool:
+        """For a plan committed again, its version already the head: whether no title came since it was filed, so
+        its title is still to apply (as after a crash between filing and titling). A later title wins over a
+        replay; a plan made to relabel the head (its base its version) applies its title whatever came before."""
+        head = self.filing.get(document)
+        return head is not None and self.filing.titled_after(head.ref.id) < head.seq
+
     def _recheck(self, plan: WritePlan) -> None:
-        """Check a plan from outside as the write it plans would be checked."""
+        """Check a plan from outside as the write it plans would be checked, and that it is whole: each version
+        once, and the version it files among them or stored here already. Its policy and imported marks are
+        taken as written: ids show what a plan holds, not who may commit it, so a host loads only plans it
+        staged itself."""
         issues: list[Issue] = []
+        ids = [pv.new.id for pv in plan.versions]
+        if len(set(ids)) != len(ids):
+            raise BondError("the plan holds a version more than once")
         for pv in plan.versions:
             if not pv.imported:
                 issues += self._check(pv.new.data, pv.new.format, pv.new.citations, plan.policy, frozenset())
         if plan.filing is not None:
+            if plan.filing.version not in ids and self.records.version(plan.filing.version) is None:
+                raise BondError(f"the plan files version {plan.filing.version[:12]}…, which it doesn't hold and "
+                                "isn't stored here")
             issues += _label_issues(plan.filing.document, plan.filing.title)
         if issues:
             raise WriteError(issues)
@@ -442,11 +459,6 @@ class Bond:
     def load_plan(self, text: str) -> WritePlan:
         """A plan stage returned, with its bytes read from this workspace's blobs; commit checks it again."""
         return WritePlan.from_json(text, self.blobs)
-
-    def _title(self, document: str, title: str | None) -> None:
-        """Label a document just filed; title was checked before anything was stored."""
-        if title is not None:
-            self.filing.retitle(document, title)
 
     def _check(
         self, content: bytes, format: Format, citations: Sequence[Citation], policy: Policy,
@@ -579,7 +591,7 @@ class Bond:
         if self.records.version(version) is None and not self.index.supported_by(version):
             raise ValueError(f"nothing in this workspace rests on version {version[:12]}…; import a document "
                              "by name instead")
-        return self._plan_filing(self._bring(source, [version], depth, limit), None, STRICT)
+        return replace(self._plan_filing(self._bring(source, [version], depth, limit), None, STRICT), subject=version)
 
     def frontier(self) -> list[VersionId]:
         """Versions that something in this workspace rests on but that aren't in it: the frontier imports left."""
