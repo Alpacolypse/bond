@@ -24,6 +24,7 @@ from bond import (
 from bond.ids import citation_id
 from bond.policies import PRODUCERS, Policy
 from case_001 import SUMMARY, build_citations, claim_locator
+from conftest import planned_issues
 
 
 def write_summary(bond, case, content=SUMMARY, citations=None, base=None):
@@ -629,7 +630,7 @@ def test_a_source_can_cite_the_parts_it_got_from_elsewhere(bond, case):
 def test_a_checked_write_stores_nothing(bond, case):
     citations = build_citations(bond, case)
     before = details.versions(bond)
-    assert bond.check_write("summary_case_001", SUMMARY, citations) == []  # nothing would stop it
+    assert planned_issues(bond, "summary_case_001", SUMMARY, citations) == []  # nothing would stop it
     assert bond.documents() == [d for d in bond.documents() if d.name != "summary_case_001"]
     assert details.versions(bond) == before
     assert write_summary(bond, case, citations=citations).advanced
@@ -638,13 +639,13 @@ def test_a_checked_write_stores_nothing(bond, case):
 def test_a_checked_write_reports_filing_problems_too(bond, case):
     first = write_summary(bond, case)
     edited = SUMMARY.replace("No significant damage to other rooms.", "No damage to other rooms.")
-    codes = [i.code for i in bond.check_write("summary_case_001", edited, [])]  # no base, but the document exists
+    codes = [i.code for i in planned_issues(bond, "summary_case_001", edited, [])]  # no base, but the document exists
     assert E.DOCUMENT_EXISTS in codes and E.UNCOVERED_CLAIM in codes
     note = bond.write_document("note", "A note.", [Citation(CitationKind.SOURCE, VersionLocator(), [])])
     newer = bond.write_document("note", "A newer note.", [Citation(CitationKind.SOURCE, VersionLocator(), [])],
                                 base=note.version)
     # A base the document has moved past.
-    [stale] = bond.check_write("note", "Another.", [Citation(CitationKind.SOURCE, VersionLocator(), [])],
+    [stale] = planned_issues(bond, "note", "Another.", [Citation(CitationKind.SOURCE, VersionLocator(), [])],
                                base=note.version)
     assert stale.code is E.STALE_BASE
     assert bond.document("note").head == newer.version

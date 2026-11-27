@@ -1,8 +1,7 @@
-"""Write plans: a write decided by plan_write (and plan_ingest), done by commit. See bond.plans."""
+"""Write plans: a write decided by plan_write (and plan_ingest), done by commit, in memory. See bond.plans."""
 
 from __future__ import annotations
 
-import json
 from dataclasses import replace
 
 import pytest
@@ -19,8 +18,8 @@ from bond import (
     VersionLocator,
     WriteError,
 )
+from bond.plans import WritePlan
 from bond.policies import ALLOW_GAPS
-from bond.storage.local import LocalBlobs
 
 TEXT = "A note."
 WHOLE = [Citation(CitationKind.SOURCE, VersionLocator(), [])]
@@ -28,7 +27,7 @@ WHOLE = [Citation(CitationKind.SOURCE, VersionLocator(), [])]
 
 def test_planning_stores_nothing_and_commit_writes(bond):
     plan = bond.plan_write("note", TEXT, WHOLE, format=Format.MARKDOWN)
-    assert plan.checked and plan.version is not None
+    assert plan.version is not None
     assert bond.documents() == [] and bond.records.version(plan.version) is None
     result = bond.commit(plan)
     assert result.advanced and result.version == plan.version and bond.document("note").head == plan.version
@@ -58,42 +57,33 @@ def test_a_plan_whose_document_moved_is_refused_and_files_nothing(bond):
     assert late.version is not None and bond.records.version(late.version) is None
 
 
-def test_a_staged_plan_commits_from_another_bond(bond):
+def test_a_plan_commits_from_another_bond_of_its_workspace(bond):
     plan = bond.plan_write("note", TEXT, WHOLE, format=Format.MARKDOWN, title="A note")
-    text = bond.stage(plan)
-    assert TEXT not in text  # bytes go by hash, in the blobs
     other = Bond(bond.store, bond.blobs, bond.workspace.name)
-    loaded = other.load_plan(text)
-    assert not loaded.checked and loaded == plan
-    assert other.commit(loaded).advanced
+    assert other.commit(plan).advanced
     assert bond.document("note").head == plan.version and bond.document("note").title == "A note"
 
 
-def test_a_loaded_plan_is_checked_again(bond):
-    # A plan made under ALLOW_GAPS, edited to claim STRICT: its ids still hold, but STRICT refuses its gap.
+def test_only_a_plan_bonds_checks_made_is_committed(bond):
+    """commit doesn't check a plan again, so a plan made by hand, which no check ever saw, is refused."""
     plan = bond.plan_write("note", "Left uncovered.", [], format=Format.MARKDOWN, policy=ALLOW_GAPS)
-    edited = json.loads(bond.stage(plan))
-    edited["policy"]["gaps"] = False
-    with pytest.raises(WriteError) as e:
-        bond.commit(bond.load_plan(json.dumps(edited)))
-    assert e.value.codes == [IssueCode.UNCOVERED_CLAIM] and bond.documents() == []
+    forged = WritePlan(plan.workspace, plan.new, plan.filing)
+    with pytest.raises(ValueError, match="wasn't made by Bond's checks"):
+        bond.commit(forged)
+    assert bond.documents() == []
 
 
-def test_a_loaded_plan_that_doesnt_hash_to_its_ids_is_refused(bond):
+def test_a_changed_plan_that_doesnt_hash_to_its_ids_is_refused(bond):
     source = bond.ingest("src", b"Six weeks of notice.", format=Format.MARKDOWN).version
     cited = [Citation(CitationKind.QUOTE, TextLocator(0, 9), [bond.search("Six weeks", documents=["src"])[0].ref])]
     plan = bond.plan_write("note", "Six weeks", cited, format=Format.MARKDOWN)
-    edited = json.loads(bond.stage(plan))
-    edited["new"]["citations"][0]["kind"] = "paraphrase"  # what the id doesn't commit to
+    assert plan.new is not None
+    paraphrased = [replace(cited[0], kind=CitationKind.PARAPHRASE)]  # what the id doesn't commit to
     with pytest.raises(BondError, match="doesn't hash to its id"):
-        bond.commit(bond.load_plan(json.dumps(edited)))
-    assert [d.name for d in bond.documents()] == ["src"] and source
-
-
-def test_a_plan_needs_its_bytes_staged(bond, tmp_path):
-    plan = bond.plan_write("note", TEXT, WHOLE, format=Format.MARKDOWN)
-    with pytest.raises(BondError, match="stage the plan first"):
-        Bond(bond.store, LocalBlobs(tmp_path / "empty"), bond.workspace.name).load_plan(plan.to_json())
+        bond.commit(replace(plan, new=replace(plan.new, citations=paraphrased)))
+    with pytest.raises(BondError, match="but holds"):
+        bond.commit(replace(plan, filing=replace(plan.filing, version=source)))
+    assert [d.name for d in bond.documents()] == ["src"]
 
 
 def test_a_plan_commits_only_in_its_workspace(bond):
@@ -110,29 +100,14 @@ def test_ingesting_what_is_stored_plans_only_its_filing(bond):
     assert bond.commit(plan).advanced and [d.name for d in bond.documents()] == ["a", "b"]
 
 
-def test_a_plan_may_cite_a_linked_workspace_and_a_loaded_one_is_checked_against_its_links_again(bond):
+def test_a_plan_may_cite_a_linked_workspace(bond):
     policies = Bond(bond.store, bond.blobs, "policies")
     text = b"Six weeks of written notice."
     policy = policies.ingest("policy", text, format=Format.MARKDOWN).version
     bond.set_links([policies])
     quoted = [Citation(CitationKind.QUOTE, TextLocator(0, len(text)), [Ref(policy, TextLocator(0, len(text)))])]
-    staged = bond.stage(bond.plan_write("summary", text, quoted, format=Format.MARKDOWN))
-    bond.set_links([])
-    with pytest.raises(WriteError) as e:
-        bond.commit(bond.load_plan(staged))
-    assert IssueCode.UNKNOWN_VERSION in e.value.codes
-    bond.set_links([policies])
-    assert bond.commit(bond.load_plan(staged)).advanced and bond.records.version(policy) is None
-
-
-def test_a_loaded_plan_that_files_a_version_it_doesnt_hold_is_refused(bond):
-    bond.ingest("a", b"Same bytes.", format=Format.MARKDOWN)
-    plan = bond.plan_ingest("b", b"Same bytes.", format=Format.MARKDOWN)  # files a version stored already
-    edited = json.loads(bond.stage(plan))
-    edited["filing"]["version"] = "0" * 64
-    with pytest.raises(BondError, match="doesn't hold and isn't stored here"):
-        bond.commit(bond.load_plan(json.dumps(edited)))
-    assert [d.name for d in bond.documents()] == ["a"]
+    assert bond.commit(bond.plan_write("summary", text, quoted, format=Format.MARKDOWN)).advanced
+    assert bond.records.version(policy) is None  # cited where it is, not copied
 
 
 def test_committing_a_plan_again_keeps_a_title_given_since(bond):

@@ -12,9 +12,10 @@ import pytest
 from psycopg_pool import ConnectionPool
 
 import case_001
-from bond import Bond, Citation, Format, VersionId
+from bond import Bond, Citation, Format, VersionId, WriteError
 from bond.authoring import Outcome, Refused, Written
 from bond.ids import dumps, hash_bytes, version_id
+from bond.models import Issue
 from bond.parsers import JsonDoc, Malformed
 from bond.storage import NewVersion
 from bond.storage.index import MemoryIndex
@@ -108,6 +109,16 @@ def store_unchecked(bond: Bond, content: str, citations: list[Citation], documen
     new = NewVersion(version, hash_bytes(data), Format.MARKDOWN, data, citations)
     bond.filing.file(version, document, None, before=lambda: bond.records.put(new))
     return version
+
+
+def planned_issues(bond: Bond, document: str, content: str | bytes, citations: list[Citation],
+                   **kwargs: Any) -> list[Issue]:
+    """Every issue a write would be refused for, filing included, found by planning it: nothing is stored."""
+    try:
+        bond.plan_write(document, content, citations, **kwargs)
+    except WriteError as e:
+        return e.errors
+    return []
 
 
 def written(out: Outcome) -> Written:

@@ -12,8 +12,8 @@ policy = bond.ingest("policy", "policy.md", title="Policy IP-112")   # a source 
 
 content = "Policy requires at least 6 weeks of written notice."
 cite = [Citation(CitationKind.PARAPHRASE, claim=TextLocator(0, len(content)), supports=[hit.ref])]
-bond.check_write("note", content, cite)                      # every issue a write would have, filing included
-result = bond.write_document("note", content, cite)
+plan = bond.plan_write("note", content, cite)                # checked now, nothing stored; WriteError with every issue
+result = bond.commit(plan)                                   # the write itself (write_document does both)
 
 bond.citations(result.version)                                       # one hop
 bond.trace(Ref(result.version, TextLocator(0, len(content))))        # all the way down
@@ -31,7 +31,6 @@ bond.write_document("note", edited, [Citation(CitationKind.PARAPHRASE, TextLocat
 |---|---|
 | `ingest(document, source, *, format=None, base=None, title=None, origin=None)` | Store a file that is a source throughout, from its bytes or a path, and file it: shorthand for writing it with one whole-version `source` citation. The format comes from a path's suffix or is sniffed from the bytes if not given. The same bytes are always the same version, wherever they are filed. `origin`, where the file came from (a path or URL), is recorded on the history entry that files it: filing, not identity, so it changes no id and `verify` never reads it. Ingesting the same bytes again where they already are adds no entry, so records no new origin. |
 | `write_document(document, content, citations, *, format=None, base=None, policy=STRICT, title=None)` | Write a cited version (bytes, or text stored as UTF-8) and file it in `document`, or raise `WriteError` with every issue at once. The format is sniffed if not given (Markdown or JSON; name CSV and TSV). |
-| `check_write(document, content, citations, *, format=None, base=None, policy=STRICT, title=None)` | Every issue `write_document` would refuse the same write for, filing included, as a list (empty if it would succeed); nothing is stored. For callers that expect refusals, like an agent's tools. |
 | `search(phrase, *, documents=None, within=None, limit=50)` | Find a phrase in this workspace's documents' current versions, or inside one reference (not both, and the reference may be in a linked workspace), and pin each match to an exact locator. Matching is case-insensitive and forgives whitespace, quote characters, ligatures and hyphenated line breaks. Each hit carries its direct `declarations` and overlapping `kinds`. |
 | `declarations(ref)` | Direct declarations, one hop: `ref`, overlapping `citations` with their original subject spans and supports, and exact `undeclared` gaps (the uncovered words of a version written under `ALLOW_GAPS`, for one). No ancestry judgment. |
 | `check_support(ref, *, max_depth=None, limit=1000)` | Assess all selected declarations' ancestry to declared sources. Returns a `SupportReport`: enum `status`, selected `regions` with individual outcomes, `issues` with reasons and explanatory paths. Computed on demand, never stored. See [Support](concepts.md#support). |
@@ -100,12 +99,12 @@ result = bond.commit(plan)                       # stores it and files it; stale
 
 | Method | What it does |
 |---|---|
-| `plan_write(...)`, `plan_ingest(...)` | Take what `write_document` and `ingest` take, and return a `WritePlan` (`bond.plans`): the version to store (none if it is stored already) and where to file it. Checked against the workspace and its links as they are; nothing is stored. Those two methods are `commit` of these. |
+| `plan_write(...)`, `plan_ingest(...)` | Take what `write_document` and `ingest` take, and return a `WritePlan` (`bond.plans`): the version to store (none if it is stored already), where to file it, and any `warnings`. Checked against the workspace and its links as they are, or `WriteError` with every issue; nothing is stored. Those two methods are `commit` of these. |
 | `commit(plan)` | Store a plan's version (blob, then record) and file it (its history entry, then its title). Refused with `stale_base` if the document moved since the plan was made, having filed nothing. Committing again is harmless. |
-| `stage(plan)` | Put a plan's bytes in the blobs, and return it as JSON (bytes named by hash), to keep where a host keeps its steps. |
-| `load_plan(text)` | A staged plan, with its bytes read back. It is checked again when committed, so a plan from outside can't store what a write couldn't. |
 
-A plan stays good: versions are never removed, so what it checked stays true, except the document it files in, which `commit` checks again atomically (and a support in a linked workspace, if the link is removed before a loaded plan is committed: it is checked again then). So a host can plan in one step (an agent's tool) and commit in another (the loop that runs it), or commit again after a crash.
+To check a write without doing it, plan it and don't commit: `plan_write` raises `WriteError` with every issue the write would have, filing included, and stores nothing. That is how the agent tools' `dry_run` works.
+
+A plan lives in memory, in the process that made it. `commit` doesn't check it again, so it commits only plans `plan_write` and `plan_ingest` made, and refuses one built any other way. A plan stays good: versions are never removed, so what it checked stays true, except the document it files in, which `commit` checks again atomically. So a caller can plan in one step and commit in the next, or commit again after a crash. A host that keeps writes as steps of its own, to commit later or in another process, keeps what it would write (document, content, citations and base) and plans again when it commits: the plan, and its version's id, come out the same, and whatever changed meanwhile (a stale base, a removed link, a superseded source) is checked again.
 
 ## Formats
 
