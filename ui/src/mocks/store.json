@@ -2250,7 +2250,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2294,7 +2294,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2320,7 +2320,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "FAX COVER SHEET",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2352,7 +2352,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2396,7 +2396,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2422,7 +2422,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "To: Intake Unit, Northwind Legal Aid",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2454,7 +2454,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2498,7 +2498,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2524,7 +2524,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "From: Riverside Tenants Union, Elena Marsh",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2556,7 +2556,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2600,7 +2600,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2626,7 +2626,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Date: 09/28/2026    Pages: 2",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2658,7 +2658,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2702,7 +2702,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2728,7 +2728,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "RE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2760,7 +2760,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2804,7 +2804,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2830,7 +2830,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Client: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2862,7 +2862,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2906,7 +2906,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -2932,7 +2932,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "CONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3000,7 +3000,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3044,7 +3044,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3070,7 +3070,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Intake Note - 09/26/2026",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3102,7 +3102,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3146,7 +3146,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3172,7 +3172,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Problem: Water leaking through the bathroom ceiling for 8 weeks.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3204,7 +3204,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3248,7 +3248,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3274,7 +3274,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "History: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3306,7 +3306,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3350,7 +3350,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3376,7 +3376,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Notice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3408,7 +3408,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3452,7 +3452,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3478,7 +3478,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Inspection: Active drip from the bathroom ceiling light fixture.\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\ndry. No signiﬁcant damage to other rooms.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3510,7 +3510,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3554,7 +3554,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3580,7 +3580,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Emergencies: None. No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3612,7 +3612,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3656,7 +3656,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3682,7 +3682,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Assessment: Habitability defect, water intrusion (HC 12.4), not\nrepaired after written notice.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3714,7 +3714,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3758,7 +3758,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3784,7 +3784,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Plan: Repair and deduct for the ceiling leak, or a demand letter\nto the landlord before filing in housing court.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3816,7 +3816,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3860,7 +3860,7 @@
      "name": "fax_case_001",
      "format": "pdf",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3886,7 +3886,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Electronically signed: Elena Marsh, Tenant Organizer",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {
@@ -3947,7 +3947,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Client: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -3972,7 +3972,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": null,
-     "outside": false
+     "unreachable": false
     },
     {
      "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
@@ -3983,7 +3983,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "From: Riverside Tenants Union, Elena Marsh",
-     "outside": false
+     "unreachable": false
     },
     {
      "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
@@ -3994,7 +3994,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "RE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4034,7 +4034,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Water leaking through the bathroom ceiling for 8 weeks.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4059,7 +4059,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "History: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4086,7 +4086,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "progressive ceil-\ning leak in the bathroom",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4113,7 +4113,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Active drip from the bathroom ceiling light fixture.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4140,7 +4140,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "No signiﬁcant damage to other rooms.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4192,7 +4192,7 @@
      "name": "policy_ip112",
      "format": "markdown",
      "text": "A needed repair still not made",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4219,7 +4219,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Habitability defect, water intrusion (HC 12.4)",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4245,7 +4245,7 @@
      "name": "policy_ip112",
      "format": "markdown",
      "text": "after at least 6 weeks of written notice",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4270,7 +4270,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Notice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4296,7 +4296,7 @@
      "name": "policy_ip112",
      "format": "markdown",
      "text": "Emergency conditions include a gas leak, sewage backup, and no heat when the outside temperature is below freezing.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4323,7 +4323,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4349,7 +4349,7 @@
      "name": "policy_ip112",
      "format": "markdown",
      "text": "A needed repair still not made after at least 6 weeks of written notice to the landlord.",
-     "outside": false
+     "unreachable": false
     },
     {
      "version": "5d8dd4b844eb64104bf7c89d08c60f39163825449831b280416ea4b4b686563f",
@@ -4361,7 +4361,7 @@
      "name": "policy_ip112",
      "format": "markdown",
      "text": "Written notice includes a letter, an email, or a message through a tenant portal",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4386,7 +4386,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Client: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4411,7 +4411,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "From: Riverside Tenants Union, Elena Marsh",
-     "outside": false
+     "unreachable": false
     },
     {
      "version": "d246983a4f7170d20e10812eadbf3556f57b7181dd9d32ffbb96c39e7e23b18a",
@@ -4422,7 +4422,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "RE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4462,7 +4462,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Water leaking through the bathroom ceiling for 8 weeks.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4487,7 +4487,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "History: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4514,7 +4514,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "progressive ceil-\ning leak in the bathroom",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4541,7 +4541,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Active drip from the bathroom ceiling light fixture.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4568,7 +4568,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "No signiﬁcant damage to other rooms.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4620,7 +4620,7 @@
      "name": "policy_ip112",
      "format": "markdown",
      "text": "A needed repair still not made",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4647,7 +4647,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Habitability defect, water intrusion (HC 12.4)",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4673,7 +4673,7 @@
      "name": "policy_ip112",
      "format": "markdown",
      "text": "after at least 6 weeks of written notice",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4698,7 +4698,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "Notice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4724,7 +4724,7 @@
      "name": "policy_ip112",
      "format": "markdown",
      "text": "Emergency conditions include a gas leak, sewage backup, and no heat when the outside temperature is below freezing.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4751,7 +4751,7 @@
      "name": "fax_case_001.reducto",
      "format": "json",
      "text": "No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4777,7 +4777,7 @@
      "name": "policy_ip112",
      "format": "markdown",
      "text": "A needed repair still not made after at least 6 weeks of written notice to the landlord.",
-     "outside": false
+     "unreachable": false
     },
     {
      "version": "5d8dd4b844eb64104bf7c89d08c60f39163825449831b280416ea4b4b686563f",
@@ -4789,7 +4789,7 @@
      "name": "policy_ip112",
      "format": "markdown",
      "text": "Written notice includes a letter, an email, or a message through a tenant portal",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4828,7 +4828,7 @@
      "name": "summary_case_001_reviewed",
      "format": "markdown",
      "text": "| Repair not made |",
-     "outside": false
+     "unreachable": false
     },
     {
      "version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
@@ -4840,7 +4840,7 @@
      "name": "summary_case_001_reviewed",
      "format": "markdown",
      "text": "| At least 6 weeks of written notice |",
-     "outside": false
+     "unreachable": false
     },
     {
      "version": "0e8cbbcb5c9926b5b74ab8a4653dff8c13dbed518ad3e89426a14e18a73b2fbc",
@@ -4852,7 +4852,7 @@
      "name": "summary_case_001_reviewed",
      "format": "markdown",
      "text": "| No emergency |",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4903,7 +4903,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": null,
-     "outside": false
+     "unreachable": false
     },
     {
      "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
@@ -4914,7 +4914,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4939,7 +4939,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": null,
-     "outside": false
+     "unreachable": false
     },
     {
      "version": "2c1394ccdd97ed35a748ff79343f8a9b053506d7a9e08413ed001e341cce1381",
@@ -4950,7 +4950,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -4978,7 +4978,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "no response",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5004,7 +5004,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "Leak traced to the unit above; \"no response\" from landlord",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5029,7 +5029,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5055,7 +5055,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "Ceiling repair, bathroom",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5080,7 +5080,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5130,7 +5130,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "R100",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5156,7 +5156,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "Dehumidifier rental",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5182,7 +5182,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "960.00",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5208,7 +5208,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "paid",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5233,7 +5233,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": null,
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5259,7 +5259,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "R200",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5285,7 +5285,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "Plumber visit, leak diagnosis",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5311,7 +5311,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "145.00",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5337,7 +5337,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "paid",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5365,7 +5365,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "Leak traced to the unit above; \"no response\" from landlord",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5395,7 +5395,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "no response",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5425,7 +5425,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "from landlord",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5451,7 +5451,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "R300",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5477,7 +5477,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "Ceiling repair, bathroom",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5503,7 +5503,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "1250.00",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5529,7 +5529,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "pending",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5559,7 +5559,7 @@
      "name": "expenses_case_001",
      "format": "csv",
      "text": "Awaiting landlord response",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}
@@ -5598,7 +5598,7 @@
      "name": "expense_rollup_case_001",
      "format": "csv",
      "text": "960.00",
-     "outside": false
+     "unreachable": false
     },
     {
      "version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
@@ -5610,7 +5610,7 @@
      "name": "expense_rollup_case_001",
      "format": "csv",
      "text": "145.00",
-     "outside": false
+     "unreachable": false
     },
     {
      "version": "080fd2c22c21396ab59824287d14239b347e9ef7c72ba1b9fa92878b6c8d4098",
@@ -5622,7 +5622,7 @@
      "name": "expense_rollup_case_001",
      "format": "csv",
      "text": "1250.00",
-     "outside": false
+     "unreachable": false
     }
    ],
    "attrs": {}

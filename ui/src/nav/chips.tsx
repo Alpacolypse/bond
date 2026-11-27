@@ -10,10 +10,10 @@ export function KindChip({ kind }: { kind: Kind }) {
   );
 }
 
-/** A format's dot; null is a version outside the workspace. */
+/** A format's dot; null is an unreachable version. */
 export function FormatDot({ format }: { format: Format | null }) {
   return (
-    <span className="dot" style={{ background: formatColor(format) }} title={format ?? "outside this workspace"} />
+    <span className="dot" style={{ background: formatColor(format) }} title={format ?? "unreachable"} />
   );
 }
 

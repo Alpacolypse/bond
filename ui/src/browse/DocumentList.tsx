@@ -58,7 +58,6 @@ export function DocumentList({
             >
               <FormatDot format={d.format} />
               <span className="doclist-name">{d.title ?? d.name}</span>
-              {d.imported_from !== null && <span className="muted">from {d.imported_from}</span>}
               {d.version_count > 1 && <span className="muted">v{d.version_count}</span>}
             </button>
           </li>

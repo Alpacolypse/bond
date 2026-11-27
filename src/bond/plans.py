@@ -1,15 +1,16 @@
 """Write plans: a write decided, but not yet done.
 
-Bond.plan_write (and plan_ingest, plan_import, plan_import_version) checks a write against the workspace as it is
+Bond.plan_write (and plan_ingest) checks a write against the workspace as it is
 and returns a WritePlan, or raises WriteError with every issue, as the write itself would. Planning stores nothing.
-Bond.commit(plan) does the write: the versions' blobs, then their records, then the history entry that files one,
+Bond.commit(plan) does the write: the version's blob, then its record, then the history entry that files it,
 then its title. A host that wants writes to go through its own steps (an agent orchestrator whose tools decide what
 to write, and whose loop writes it) plans in one place and commits in another.
 
 A plan stays good: what it checked can't stop being true, since versions are never removed and checks read only
-the plan's own content and versions already stored. The one thing that can change is the document it files in, so
+the plan's own content and versions already stored (unless the deployment stops linking to a workspace it cites in
+between, which only a check made again would see). The one thing that can change is the document it files in, so
 commit checks the base again, atomically, and refuses with stale_base if another write moved the document first.
-Committing a plan again is harmless: its versions are stored already and filing the head again is a no-op.
+Committing a plan again is harmless: its version is stored already and filing the head again is a no-op.
 
 A plan serializes (to_json) without its bytes, which it names by hash: put them first (Bond.stage), then keep the
 plan where the host keeps its steps, and load it back (Bond.load_plan) to commit, from the same or another process.
@@ -25,12 +26,12 @@ from dataclasses import dataclass, field, replace
 from .ids import dumps, supports
 from .jsonvalue import JsonObject, JsonValue
 from .locators import locator_from_dict
-from .models import SELF, BondError, Citation, CitationKind, Format, Imported, Issue, Ref, SelfRef, Support, VersionId
+from .models import SELF, BondError, Citation, CitationKind, Format, Issue, Ref, SelfRef, Support, VersionId
 from .parsers import load_json
 from .policies import STRICT, Policy
 from .storage import Blobs, NewVersion
 
-PLAN_FORMAT = 1
+PLAN_FORMAT = 2
 
 
 class _Checked:
@@ -43,15 +44,6 @@ CHECKED: weakref.WeakSet[_Checked] = weakref.WeakSet()
 
 
 @dataclass(frozen=True)
-class PlannedVersion:
-    """A version a plan stores: its bytes and citations, and whether it was brought from another workspace (its
-    identity is checked, not its content against a policy, since what it rests on may be outside)."""
-
-    new: NewVersion
-    imported: bool = False
-
-
-@dataclass(frozen=True)
 class FilingChange:
     """Where a plan files a version: in document, from base (None to create it), with what its history entry
     records."""
@@ -59,30 +51,25 @@ class FilingChange:
     document: str
     version: VersionId
     base: VersionId | None
-    imported: Imported | None = None
     origin: str | None = None
     title: str | None = None
 
 
 @dataclass(frozen=True)
 class WritePlan:
-    """A checked write of one workspace: versions to store, and where to file one, if anywhere."""
+    """A checked write of one workspace: the version to store, if it isn't stored already, and where to file it."""
 
     workspace: str  # the workspace's id: a plan is committed only where it was made
-    versions: tuple[PlannedVersion, ...]  # to store, each before any that rests on it
-    filing: FilingChange | None
-    policy: Policy = STRICT  # what written versions were checked against, and are again if the plan is loaded
-    subject: VersionId | None = None  # for a plan that files nothing (import_version): the version it brings
+    new: NewVersion | None  # None when the version is stored already and only filing it is left
+    filing: FilingChange
+    policy: Policy = STRICT  # what the new version was checked against, and is again if the plan is loaded
     warnings: tuple[Issue, ...] = ()  # what planning found that doesn't stop the write; not kept by to_json
     _mark: _Checked | None = field(default=None, compare=False, repr=False)
 
     @property
-    def version(self) -> VersionId | None:
-        """The version the plan files, or (for an import that files nothing) the version it brings, even when that
-        is here already and it stores nothing."""
-        if self.filing is not None:
-            return self.filing.version
-        return self.subject if self.subject is not None else self.versions[-1].new.id if self.versions else None
+    def version(self) -> VersionId:
+        """The version the plan files."""
+        return self.filing.version
 
     @property
     def checked(self) -> bool:
@@ -91,7 +78,7 @@ class WritePlan:
 
     def blobs(self) -> dict[str, bytes]:
         """The bytes the plan stores, by content hash."""
-        return {pv.new.content_hash: pv.new.data for pv in self.versions}
+        return {} if self.new is None else {self.new.content_hash: self.new.data}
 
     def to_json(self) -> str:
         """The plan without its bytes, which it names by hash (put them first: Bond.stage)."""
@@ -101,17 +88,14 @@ class WritePlan:
             "policy": {"gaps": self.policy.gaps, "kinds": sorted(k.value for k in self.policy.kinds),
                        "producers": sorted(self.policy.producers),
                        "refuse_superseded": self.policy.refuse_superseded},
-            "versions": [
-                {"id": pv.new.id, "content_hash": pv.new.content_hash, "format": pv.new.format.value,
-                 "imported": pv.imported, "citations": [_citation(c) for c in pv.new.citations]}
-                for pv in self.versions
-            ],
-            "filing": None if self.filing is None else {
+            "new": None if self.new is None else {
+                "id": self.new.id, "content_hash": self.new.content_hash, "format": self.new.format.value,
+                "citations": [_citation(c) for c in self.new.citations],
+            },
+            "filing": {
                 "document": self.filing.document, "version": self.filing.version, "base": self.filing.base,
-                "imported": None if self.filing.imported is None else self.filing.imported.to_dict(),
                 "origin": self.filing.origin, "title": self.filing.title,
             },
-            "subject": self.subject,
         }
         return dumps(value)
 
@@ -127,29 +111,21 @@ class WritePlan:
                         kinds=frozenset(CitationKind(_s(k)) for k in _seq(p.get("kinds"))),
                         producers=frozenset(_s(x) for x in _seq(p.get("producers"))),
                         refuse_superseded=p.get("refuse_superseded") is True)
-        versions = []
-        for raw in _seq(loaded.get("versions")):
-            v = _obj(raw)
+        new = None
+        if loaded.get("new") is not None:
+            v = _obj(loaded.get("new"))
             content_hash = _s(v.get("content_hash"))
             data = blobs.get(content_hash)
             if data is None:
                 raise BondError(f"the plan names blob {content_hash[:12]}…, which isn't stored; stage the plan first")
             citations = [_citation_from(_obj(c)) for c in _seq(v.get("citations"))]
             new = NewVersion(VersionId(_s(v.get("id"))), content_hash, Format(_s(v.get("format"))), data, citations)
-            versions.append(PlannedVersion(new, v.get("imported") is True))
-        filing = None
-        if loaded.get("filing") is not None:
-            f = _obj(loaded.get("filing"))
-            imported = None
-            if f.get("imported") is not None:
-                i = _obj(f.get("imported"))
-                imported = Imported(_s(i.get("workspace")), _s(i.get("workspace_name")), VersionId(_s(i.get("version"))))
-            filing = FilingChange(_s(f.get("document")), VersionId(_s(f.get("version"))),
-                                  None if f.get("base") is None else VersionId(_s(f.get("base"))), imported,
-                                  None if f.get("origin") is None else _s(f.get("origin")),
-                                  None if f.get("title") is None else _s(f.get("title")))
-        subject = None if loaded.get("subject") is None else VersionId(_s(loaded.get("subject")))
-        return WritePlan(_s(loaded.get("workspace")), tuple(versions), filing, policy, subject)
+        f = _obj(loaded.get("filing"))
+        filing = FilingChange(_s(f.get("document")), VersionId(_s(f.get("version"))),
+                              None if f.get("base") is None else VersionId(_s(f.get("base"))),
+                              None if f.get("origin") is None else _s(f.get("origin")),
+                              None if f.get("title") is None else _s(f.get("title")))
+        return WritePlan(_s(loaded.get("workspace")), new, filing, policy)
 
 
 def checked(plan: WritePlan) -> WritePlan:

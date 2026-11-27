@@ -32,8 +32,9 @@ def serve(workspaces: Workspaces, steps: Callable[[Client], Awaitable[Any]]) -> 
 def session(
     bond: Bond, steps: Callable[[Client], Awaitable[Any]], sources: Mapping[str, Bond] = MappingProxyType({}),
 ) -> Any:
-    """Run steps against a server over one workspace, served as CASE, with the workspaces linked to it."""
-    return serve(Fixed({CASE: bond}, {CASE: dict(sources)}), steps)
+    """Run steps against a server over one workspace, served as CASE, linked to sources."""
+    bond.set_links(list(sources.values()))
+    return serve(Fixed({CASE: bond}), steps)
 
 
 async def call(client: Client, tool: str, **arguments: Any) -> Any:
@@ -62,9 +63,7 @@ async def offered(client: Client) -> tuple[str | None, list[Any]]:
 def test_the_server_offers_the_authoring_tools_and_says_how_to_cite(bond):
     instructions, tools = session(bond, offered)
     assert instructions is not None
-    # Importing is offered even with no links: workspaces with links may be granted while the server runs.
-    assert sorted(t.name for t in tools) == ["documents", "draft", "edit", "import_document", "read", "search",
-                                             "trace", "write"]
+    assert sorted(t.name for t in tools) == ["documents", "draft", "edit", "read", "search", "trace", "write"]
     assert "<bond:cite" in instructions and "pass it on every call" in instructions
     assert "PDF" in instructions and "transcription" in instructions
     assert instructions.endswith(f"Workspaces you can work in:\n- {CASE!r}\n")
@@ -72,8 +71,9 @@ def test_the_server_offers_the_authoring_tools_and_says_how_to_cite(bond):
     # Every tool names the workspace it works in, first and required: the server remembers none.
     assert all(next(iter(t.input_schema["properties"])) == "workspace" for t in tools)
     assert all("workspace" in t.input_schema["required"] for t in tools)
-    assert set(by_name["search"].input_schema["properties"]) == {"workspace", "phrases", "document", "within", "limit"}
-    assert list(by_name["import_document"].input_schema["properties"]) == ["workspace", "from_workspace", "document"]
+    assert set(by_name["search"].input_schema["properties"]) == {"workspace", "phrases", "document", "within", "limit",
+                                                                 "from_workspace"}
+    assert list(by_name["read"].input_schema["properties"]) == ["workspace", "document", "from_workspace"]
     assert all(by_name[n].annotations.read_only_hint for n in ("documents", "read", "search", "trace", "draft"))
     assert not by_name["write"].annotations.read_only_hint and not by_name["write"].annotations.destructive_hint
 
@@ -82,7 +82,7 @@ def test_the_instructions_list_each_workspace_and_its_links_or_that_there_are_no
     with Bond.local(tmp_path / "policies") as policies:
         instructions, _ = session(bond, offered, {"policies": policies})
     assert instructions is not None and instructions.endswith(
-        f"Workspaces you can work in:\n- {CASE!r}, linked: 'policies'\n")
+        f"Workspaces you can work in:\n- {CASE!r}, links to: 'policies'\n")
 
     async def steps(client: Client):
         return client.instructions, await error(client, "documents", workspace=CASE)
@@ -200,48 +200,45 @@ def test_a_failure_the_agent_cant_fix_is_a_crash_not_an_explanation(bond, case):
     assert content_hash not in message and case["fax"] not in message and "blob" not in message
 
 
-def test_an_agent_imports_a_policy_from_a_linked_workspace_and_cites_it(bond, tmp_path):
+def test_an_agent_cites_a_policy_in_a_linked_workspace_where_it_is(bond, tmp_path):
     with Bond.local(tmp_path / "policies") as policies:
         policies.ingest("policy/IP-112", b"# IP-112\n\nSix weeks of written notice.\n")
 
         async def steps(client: Client):
             listed = await call(client, "documents", workspace=CASE, from_workspace="policies")
-            before = await call(client, "search", workspace=CASE, phrases=["Six weeks"])  # not citable until imported
-            imported = await call(client, "import_document", workspace=CASE, from_workspace="policies",
-                                  document="policy/IP-112")
-            [hit] = await call(client, "search", workspace=CASE, phrases=["Six weeks"], document="policy/IP-112")
+            read = await call(client, "read", workspace=CASE, document="policy/IP-112", from_workspace="policies")
+            [hit] = await call(client, "search", workspace=CASE, phrases=["Six weeks"])
             draft = f'<bond:cite kind="quote" from="{hit["handle"]}">Six weeks</bond:cite>'
             written = await call(client, "write", workspace=CASE, document="note", draft=draft)
-            return listed, before, imported, hit, written
+            return listed, read, hit, written
 
-        listed, before, imported, hit, written = session(bond, steps, {"policies": policies})
+        listed, read, hit, written = session(bond, steps, {"policies": policies})
+        assert bond.verify(bond.document("note").head) == []
     assert listed == [{"document": "policy/IP-112", "format": "markdown"}]
-    assert before == []
-    assert imported["document"] == "policy/IP-112" and imported["frontier"] == [] and not imported["truncated"]
-    assert bond.document("policy/IP-112").head.startswith(imported["handle"])
+    assert read["workspace"] == "policies" and "Six weeks" in read["text"]
+    assert hit["workspace"] == "policies" and hit["documents"] == ["policy/IP-112"]
     assert hit["support"] == "supported" and hit["kinds"] == ["source"]
     assert written["status"] == "written" and written["support"] == "supported"
-    assert bond.verify(bond.document("note").head) == []
+    assert [d.name for d in bond.documents()] == ["note"]  # the policy stays where it is
 
 
-def test_importing_is_refused_from_a_workspace_that_isnt_linked_naming_the_linked_ones(bond, tmp_path):
+def test_a_workspace_that_isnt_linked_cant_be_read_naming_the_linked_ones(bond, tmp_path):
     with Bond.local(tmp_path / "policies") as policies, Bond.local(tmp_path / "case-002") as other:
         other.ingest("exam", b"Normal gait.\n")
+        bond.set_links([policies])
 
         async def steps(client: Client):
             return (
-                # Served, but not linked to CASE: serving a workspace doesn't let others import from it.
-                await error(client, "import_document", workspace=CASE, from_workspace="case-002", document="exam"),
+                # Served, but not linked to CASE: serving a workspace doesn't let others read it.
+                await error(client, "read", workspace=CASE, document="exam", from_workspace="case-002"),
                 await error(client, "documents", workspace=CASE, from_workspace="case-002"),
-                await error(client, "import_document", workspace="case-002", from_workspace="policies",
-                            document="exam"),
+                await error(client, "search", workspace="case-002", phrases=["gait"], from_workspace="policies"),
             )
 
-        unlinked, unlisted, no_links = serve(
-            Fixed({CASE: bond, "case-002": other}, {CASE: {"policies": policies}}), steps)
-    assert f"{CASE!r} doesn't link to 'case-002', so you can't import from it into {CASE!r} (you can from: 'policies')" in unlinked
-    assert "(you can from: 'policies')" in unlisted
-    assert "'case-002' doesn't link to 'policies', so you can't import from it into 'case-002' (you can from: none)" in no_links
+        unlinked, unlisted, no_links = serve(Fixed({CASE: bond, "case-002": other}), steps)
+    assert "this workspace doesn't link to 'case-002' (it links to: 'policies')" in unlinked
+    assert "(it links to: 'policies')" in unlisted
+    assert "doesn't link to 'policies' (it links to: none)" in no_links
     assert bond.documents() == []
 
 
@@ -254,47 +251,44 @@ def test_the_agent_cant_mark_its_own_text_source(bond, case):
         '<bond:cite kind="source">: source citations are not allowed here (use one of: paraphrase, quote, unsourced)']}
 
 
-def test_an_imported_unsourced_draft_stays_unsupported(bond, tmp_path):
+def test_a_linked_unsourced_draft_stays_unsupported(bond, tmp_path):
     with Bond.local(tmp_path / "external") as source:
         written(Tools(source).write("draft", '<bond:cite kind="unsourced">No evidence.</bond:cite>'))
         original = source.document("draft").head
 
         async def steps(client: Client):
-            imported = await call(client, "import_document", workspace=CASE, from_workspace="external",
-                                  document="draft")
             [hit] = await call(client, "search", workspace=CASE, phrases=["No evidence."])
             why = await call(client, "trace", workspace=CASE, handle=hit["handle"])
-            return imported, hit, why
+            return hit, why
 
-        imported, hit, why = session(bond, steps, {"external": source})
-    assert original.startswith(imported["handle"]) and imported["frontier"] == []  # the same version, as it was
+        hit, why = session(bond, steps, {"external": source})
+    assert original.startswith(hit["handle"].split("@")[0]) and hit["workspace"] == "external"
     assert hit["support"] == "unsupported" and hit["kinds"] == ["unsourced"]  # never promoted to a source
     assert why["status"] == "unsupported" and why["issues"] == [{"reason": "unsourced", "handle": hit["handle"]}]
-    assert not why["truncated"] and why["frontier"] == []
+    assert not why["truncated"] and why["unreachable"] == []
     assert why["spans"][0]["undeclared"] == [] and why["spans"][0]["rests_on"] == [
         {"kind": "unsourced", "attrs": {}, "handles": []}]
 
 
-def test_mcp_default_import_reports_missing_dependencies(bond, tmp_path):
+def test_mcp_trace_reports_unreachable_dependencies(bond, tmp_path):
     from bond import Citation, Format, TextLocator
 
-    with Bond.local(tmp_path / "external") as source:
+    with Bond.local(tmp_path / "external") as source, Bond.local(tmp_path / "library") as library:
         root = source.ingest("root", b"Root fact.").version
-        source.write_document("derived", b"Root fact.", [
+        library.set_links([source])
+        library.write_document("derived", b"Root fact.", [
             Citation(CitationKind.QUOTE, TextLocator(0, 10), [Ref(root, TextLocator(0, 10))]),
         ], format=Format.MARKDOWN)
+        library.set_links([])  # the library stops linking to what derived rests on
 
         async def steps(client: Client):
-            imported = await call(client, "import_document", workspace=CASE, from_workspace="external",
-                                  document="derived")
             [hit] = await call(client, "search", workspace=CASE, phrases=["Root fact."])
             why = await call(client, "trace", workspace=CASE, handle=hit["handle"])
-            return imported, hit, why
+            return hit, why
 
-        imported, hit, why = session(bond, steps, {"external": source})
-    assert imported["frontier"] == [root] and not imported["truncated"]
-    assert hit["support"] == "unknown"
-    assert why["status"] == "unknown" and not why["truncated"] and why["frontier"] == [root]
+        hit, why = session(bond, steps, {"library": library})
+    assert hit["support"] == "unknown" and hit["workspace"] == "library"
+    assert why["status"] == "unknown" and not why["truncated"] and why["unreachable"] == [root]
     assert why["spans"][-1]["handle"] == root and why["spans"][-1]["undeclared"] == []
 
 
@@ -327,19 +321,20 @@ def test_search_and_trace_report_support_over_mcp(bond):
 def test_a_missing_json_support_is_named_by_its_version_without_a_made_up_handle(bond, tmp_path):
     from bond import Citation, Format, JsonLocator, TextLocator
 
-    with Bond.local(tmp_path / "json-source") as source:
+    with Bond.local(tmp_path / "json-source") as source, Bond.local(tmp_path / "library") as library:
         original = source.ingest("source", b'{"evidence":"fact"}', format=Format.JSON).version
-        source.write_document("derived", b"fact", [
+        library.set_links([source])
+        library.write_document("derived", b"fact", [
             Citation(CitationKind.QUOTE, TextLocator(0, 4), [Ref(original, JsonLocator((0,)))]),
         ], format=Format.MARKDOWN)
-        bond.import_document(source, "derived")
+        library.set_links([])
 
-    async def steps(client: Client):
-        [hit] = await call(client, "search", workspace=CASE, phrases=["fact"])
-        why = await call(client, "trace", workspace=CASE, handle=hit["handle"])
-        return hit, why
+        async def steps(client: Client):
+            [hit] = await call(client, "search", workspace=CASE, phrases=["fact"])
+            why = await call(client, "trace", workspace=CASE, handle=hit["handle"])
+            return hit, why
 
-    hit, why = session(bond, steps)
+        hit, why = session(bond, steps, {"library": library})
     assert hit["support"] == "unknown"
-    assert why["status"] == "unknown" and {"reason": "missing_version", "handle": original} in why["issues"]
-    assert why["spans"][0]["rests_on"][0]["handles"] == [original] and why["frontier"] == [original]
+    assert why["status"] == "unknown" and {"reason": "unreachable", "handle": original} in why["issues"]
+    assert why["spans"][0]["rests_on"][0]["handles"] == [original] and why["unreachable"] == [original]

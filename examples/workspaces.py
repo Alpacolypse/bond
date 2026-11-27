@@ -1,16 +1,15 @@
-"""Workspaces: a shared policies workspace, and one workspace per case that imports from it.
+"""Workspaces: a shared policies workspace, and one workspace per case that links to it.
 
 1. policies holds the legal aid office's intake policies, and a criteria summary of IP-112 that quotes the policy.
-2. Each case is a workspace of its own: its fax and the fax's OCR, and what it imports from policies.
-   The host brings case-001 the criteria summary with its provenance, which leaves the policy it quotes
-   outside, then brings that in by importing the version. In case-003 the agent imports the policy itself, preserving its source declaration,
-   and the summary's provenance then needs nothing more: a version's id is the same in every workspace.
-3. An agent in each case, handed the authoring tools with policies as the only workspace it may import from,
-   writes an intake decision quoting the fax and the policy.
+2. Each case is a workspace of its own, holding its fax and the fax's OCR, and linked to policies: its
+   documents can cite the policies where they are, with nothing copied. A version's id is the same wherever it
+   is read from, so the policy every case cites is one version, in one place.
+3. An agent in each case, handed the authoring tools, searches the case and the policies it links to, and
+   writes an intake decision quoting the fax and the policy. Tracing it runs from the case into policies.
 4. The host, who may open every case, asks each what rests on the policy's six-week criterion.
 
 Run with: uv run python examples/workspaces.py [--root .bond-workspaces] [--force]
-then:     uv run bond view --workspace .bond-workspaces/case-001
+then:     uv run bond view --workspace .bond-workspaces/case-001 (the viewer opens the case alone, without its link)
 """
 
 from __future__ import annotations
@@ -21,7 +20,7 @@ import sys
 from contextlib import ExitStack
 from pathlib import Path
 
-from bond import Bond, SupportStatus, VersionId, details
+from bond import Bond, Ref, SupportStatus, VersionId, VersionLocator, details
 from bond.authoring import Tools, Written
 from bond.importers.reducto import import_reducto
 
@@ -51,27 +50,16 @@ def build_policies(root: Path) -> Bond:
 
 
 def build_case(root: Path, name: str, policies: Bond) -> tuple[Bond, VersionId]:
-    """A case's workspace, what it imports, and an agent's determination in it; the determination's version."""
+    """A case's workspace, linked to policies, and an agent's determination in it; the determination's version."""
     fax, notice, verdict = CASES[name]
-    case = Bond.local(root / name)
+    case = Bond.local(root / name, links=[policies])
     import_reducto(case, (FIXTURES / f"{fax}.pdf").read_bytes(), (FIXTURES / f"{fax}.reducto.json").read_bytes(), fax)
-    tools = Tools(case, sources={"policies": policies})
-
-    if name == "case-001":
-        case.import_document(policies, "criteria/IP-112")
-        outside = case.frontier()
-        print(f"  imported criteria/IP-112 with its provenance: {len(outside)} version it rests on stayed outside")
-        case.import_version(policies, outside[0])
-        tools.import_document("policies", "policy/IP-112")  # the policy, now filed: the same version just brought in
-        print(f"  importing the version brought it in; outside now: {case.frontier()}")
-    else:
-        tools.import_document("policies", "policy/IP-112")
-        case.import_document(policies, "criteria/IP-112")
-        print(f"  the agent imported policy/IP-112; criteria/IP-112 then came with nothing outside: {case.frontier()}")
+    tools = Tools(case)
 
     # Every match comes back with its support status; an OCR parse also holds unsourced copies of its text.
     [fact] = [h for h in tools.search(notice, document=f"{fax}.reducto") if h.support is SupportStatus.SUPPORTED]
-    [rule] = tools.search(CRITERION, document="policy/IP-112")
+    # The policy is searched where it is, in policies, and cited from the case as it is.
+    [rule] = tools.search(CRITERION, document="policy/IP-112", workspace="policies")
     draft = (f'# <bond:cite kind="unsourced">Determination</bond:cite>\n\n'
              f'<bond:cite kind="quote" from="{fact.handle}">{notice}</bond:cite>: '
              f'<bond:cite kind="unsourced">this {verdict} the requirement of</bond:cite> '
@@ -80,8 +68,10 @@ def build_case(root: Path, name: str, policies: Bond) -> tuple[Bond, VersionId]:
     assert isinstance(written, Written), written
     version = case.document("determination").head
     issues = case.verify(version)
+    reached = sorted({b.workspace.name for n in case.trace(Ref(version, VersionLocator())).nodes
+                      if (b := details.owner(case, n.version)) is not None})
     print(f"  the agent wrote a determination, every word accounted for ({written.support}); "
-          f"verify: {issues or 'intact'}")
+          f"verify: {issues or 'intact'}; its trace runs through {', '.join(reached)}")
     return case, version
 
 

@@ -27,6 +27,8 @@ export type Kind =
 
 export type VersionSummary = {
   version: string;
+  /** The workspace it is filed in: this one, or one this one links to (a policy library, say). */
+  workspace: string;
   /** sha256 of the version's bytes; versions with the same bytes share it. */
   content_hash: string;
   /** The version's home: the first document it was filed in. */
@@ -45,12 +47,12 @@ export type VersionSummary = {
 export type Support = {
   version: string;
   name: string;
-  /** null for a version outside the workspace: nothing of it is here. */
+  /** null for an unreachable version: nothing of it can be read here. */
   format: Format | null;
   locator: Locator;
   text: string | null;
-  /** The version stayed in the workspace this was imported from: it can't be opened here. */
-  outside: boolean;
+  /** No workspace this one links to holds the version (a link was removed, say): it can't be opened here. */
+  unreachable: boolean;
 };
 
 export type Citation = {
@@ -63,16 +65,17 @@ export type Citation = {
   attrs: Record<string, unknown>;
 };
 
-export type GraphNode = Omit<VersionSummary, "format" | "content_hash" | "created_at"> & {
-  /** null only for a version outside the workspace, of which only the id is known here. */
+export type GraphNode = Omit<VersionSummary, "workspace" | "format" | "content_hash" | "created_at"> & {
+  /** null only for an unreachable version, of which only the id is known here. */
+  workspace: string | null;
   format: Format | null;
   content_hash: string | null;
   created_at: string | null;
   citation_count: number;
   self_citation_count: number;
   is_source: boolean;
-  /** Something here rests on this version, but an import left it in the workspace it came from. */
-  outside: boolean;
+  /** Something here rests on this version, but no workspace this one links to holds it. */
+  unreachable: boolean;
 };
 
 export type GraphEdge = {
@@ -92,8 +95,8 @@ export type Overview = {
   workspace: Workspace;
   version_count: number;
   document_count: number;
-  /** Versions something here rests on that an import left outside. */
-  outside_count: number;
+  /** Versions something here rests on that no workspace this one links to holds. */
+  unreachable_count: number;
   graph_limit: number;
 };
 
@@ -110,8 +113,6 @@ export type DocumentItem = {
   updated_at: string;
   /** How many distinct versions its history holds. */
   version_count: number;
-  /** The name of the workspace its current version was imported from, if it was. */
-  imported_from: string | null;
 };
 
 export type DocumentPage = { total: number; offset: number; documents: DocumentItem[] };

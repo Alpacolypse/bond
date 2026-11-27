@@ -1,5 +1,5 @@
-"""The authoring tools: search, read, draft, write and edit a document as text with inline citations, and
-bring documents in from other workspaces.
+"""The authoring tools: search, read, draft, write and edit a document as text with inline citations, citing
+what is in the workspace and in the workspaces it links to.
 
 Each tool is a plain function of a workspace and its arguments; nothing is remembered between calls.
 Handles name their spans outright (see handles.py), and the base a write or edit starts from is passed
@@ -9,14 +9,14 @@ core enforces: every write goes through write_document under the policy given.
 A write the core would refuse is an Outcome (Refused, with every issue in the writer's terms), never an
 error: the writer fixes it and writes again. A ToolError is a call that can't be carried out at all.
 
-Tools binds a workspace, a policy and the workspaces it may import from once, so a host can hand an agent
-tools it can't widen.
+Tools binds a workspace and a policy once, so a host can hand an agent tools it can't widen. What the agent can read
+besides the workspace is what the workspace links to, which its deployment decides.
 """
 
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -71,7 +71,8 @@ class Evidence:
     """A span that can be cited, by its handle: its version's id prefix and the span written out."""
 
     handle: str
-    documents: list[str]  # where the span's version is filed
+    workspace: str  # the workspace its version is filed in: this one, or one it links to
+    documents: list[str]  # where the span's version is filed there
     text: str  # exactly the text the handle cites
     support: SupportStatus  # whether everything in it rests, hop by hop, on declared sources; trace() says how
     kinds: list[CitationKind]  # the kinds of the citations overlapping it
@@ -99,24 +100,10 @@ class Listing:
 
 
 @dataclass(frozen=True)
-class ImportOutcome:
-    """A document brought in with its identity and citations, and what it rests on that stayed behind.
-
-    frontier lists missing versions found; truncated says the inspection budget ran out first, so there may
-    be more.
-    """
-
-    document: str
-    format: Format
-    handle: str
-    frontier: list[VersionId]
-    truncated: bool
-
-
-@dataclass(frozen=True)
 class Reading:
     """A document as it is, to read in full before citing it: nothing hidden, nothing added."""
 
+    workspace: str  # the workspace it is in: this one, or one it links to
     document: str
     format: Format
     text: str
@@ -145,13 +132,15 @@ class Link:
 class Grounds:
     """One span in a chain of provenance, and what it rests on."""
 
-    handle: str  # for a span outside the workspace, its version's whole id: nothing here can resolve a handle to it
-    documents: list[str]  # where the span's version is filed
-    text: str | None  # its text, cut short if long; None for a region of a page, or a span outside the workspace
+    handle: str  # for an unreachable span, its version's whole id: nothing here can resolve a handle to it
+    workspace: str | None  # the workspace its version is filed in; None if unreachable
+    documents: list[str]  # where the span's version is filed there
+    text: str | None  # its text, cut short if long; None for a region of a page, or an unreachable span
     where: str  # page, heading path and line, or JSON path
     rests_on: list[Link]  # none if nothing covers it
     undeclared: list[str]  # handles of the parts of it no citation covers
-    outside: bool = False  # it stayed in the workspace this was imported from, so nothing more is known of it here
+    # In neither this workspace nor any it links to (a link was removed, say), so nothing more is known of it here.
+    unreachable: bool = False
     newer: dict[str, str] = field(default_factory=dict)  # documents that moved past its version: their heads' handles
 
 
@@ -171,7 +160,7 @@ class Chain:
     issues: list[Shortfall]
     spans: list[Grounds]
     truncated: bool  # the limit cut the chain short: trace a handle where it stopped
-    frontier: list[VersionId]  # versions it rests on that stayed in the workspace they were imported from
+    unreachable: list[VersionId]  # versions it rests on in neither this workspace nor any it links to
 
 
 @dataclass(frozen=True)
@@ -216,50 +205,72 @@ Outcome = Written | Refused | Checked  # what a write or an edit did
 
 def search(
     bond: Bond, phrases: str | Sequence[str], document: str | None = None, within: str | None = None, limit: int = 20,
+    workspace: str | None = None,
 ) -> list[SearchHit]:
     """Matching text with exact handles, each with whether its support reaches declared sources.
 
-    Searches the current version of every document, or of one document, or only inside the span of a handle
-    (within), e.g. to find a phrase inside a passage found earlier. Several phrases are searched in one call,
-    up to limit matches each; each match says which phrase it matched, where it is, the text around it, and
-    the handle of the whole passage it sits in, which can be cited instead. Support is structural: it does
-    not evaluate semantic support or source authority.
+    Searches the current version of every document in the workspace and every workspace it links to, or only
+    one of those workspaces (workspace, by name), or one document (in that workspace, or this one), or only
+    inside the span of a handle (within), e.g. to find a phrase inside a passage found earlier. Several phrases
+    are searched in one call, up to limit matches each, per workspace searched; each match says which phrase it
+    matched, which workspace it is in, where it is, the text around it, and the handle of the whole passage it
+    sits in, which can be cited instead. Support is structural: it does not evaluate semantic support or source
+    authority.
     """
     if limit < 1:
         raise ToolError("limit must be at least 1")
-    if document is not None and within is not None:
-        raise ToolError("search one document, or within one handle's span, not both: the span is in one version")
+    if within is not None and (document is not None or workspace is not None):
+        raise ToolError("search within one handle's span, or in a document or workspace, not both: the span is "
+                        "in one version")
     scope: Ref | None = None
     if within is not None:
         resolved = _resolve(bond, within)
         if isinstance(resolved, Problem):
             raise ToolError(resolved.message)
         scope = resolved
+    searched = [bond] if scope is not None else [linked(bond, workspace)] if workspace is not None else (
+        [bond] if document is not None else [bond, *bond.reachable()])
     if document is not None:
-        _head(bond, document)  # the document must exist
+        _head(searched[0], document)  # the document must exist
     phrases = [phrases] if isinstance(phrases, str) else list(phrases)
     found: list[SearchHit] = []
     for phrase in phrases:
-        hits = bond.search(phrase, documents=None if document is None else [document], within=scope, limit=limit)
-        found += [_hit(bond, phrase, hit.ref, hit.documents) for hit in hits]
+        for where in searched:
+            hits = where.search(phrase, documents=None if document is None else [document], within=scope,
+                                limit=limit)
+            found += [_hit(bond, phrase, hit.ref, hit.workspace, hit.documents) for hit in hits]
     return found
 
 
-def _hit(bond: Bond, phrase: str, ref: Ref, documents: list[str]) -> SearchHit:
-    evidence = _evidence(bond, ref, documents)
+def linked(bond: Bond, workspace: str) -> Bond:
+    """The workspace bond can read by this name: itself, or one it links to (directly or not)."""
+    if workspace == bond.workspace.name:
+        return bond
+    reachable = bond.reachable()
+    for other in reachable:
+        if other.workspace.name == workspace:
+            return other
+    names = ", ".join(repr(b.workspace.name) for b in reachable) or "none"
+    raise ToolError(f"this workspace doesn't link to {workspace!r} (it links to: {names})")
+
+
+def _hit(bond: Bond, phrase: str, ref: Ref, workspace: str, documents: list[str]) -> SearchHit:
+    evidence = _evidence(bond, ref, workspace, documents)
     passage = _passage(bond, ref)
-    return SearchHit(evidence.handle, evidence.documents, evidence.text, evidence.support, evidence.kinds,
-                     evidence.newer, phrase=phrase, where=_where(bond, ref), context=_context(bond, ref),
-                     passage=None if passage is None else _handle(bond, passage))
+    return SearchHit(evidence.handle, evidence.workspace, evidence.documents, evidence.text, evidence.support,
+                     evidence.kinds, evidence.newer, phrase=phrase, where=_where(bond, ref),
+                     context=_context(bond, ref), passage=None if passage is None else _handle(bond, passage))
 
 
-def _evidence(bond: Bond, ref: Ref, documents: list[str] | None = None) -> Evidence:
+def _evidence(bond: Bond, ref: Ref, workspace: str | None = None, documents: list[str] | None = None) -> Evidence:
     """A span to cite, with whether its support reaches declared sources and the kinds overlapping it."""
-    if documents is None:
+    if workspace is None or documents is None:
+        workspace = details.held_by(bond, ref.version).workspace.name
         documents = [d.name for d in details.filed_in(bond, ref.version)]
     kinds = sorted({c.kind for c in bond.declarations(ref).citations}, key=lambda k: k.value)
     support = bond.check_support(ref, limit=SUPPORT_LIMIT).status
-    return Evidence(_handle(bond, ref), documents, bond.text(ref) or "", support, kinds, _newer(bond, ref.version))
+    return Evidence(_handle(bond, ref), workspace, documents, bond.text(ref) or "", support, kinds,
+                    _newer(bond, ref.version))
 
 
 def _newer(bond: Bond, version: VersionId) -> dict[str, str]:
@@ -305,36 +316,6 @@ def documents(bond: Bond) -> list[Listing]:
     return [Listing(d.name, details.version(bond, d.head).format) for d in bond.documents()]
 
 
-# --- import ---------------------------------------------------------------------
-
-
-def import_document(
-    bond: Bond, source: Bond, document: str, *, depth: int | None = 0, limit: int = 100,
-) -> ImportOutcome:
-    """Import with identity and provenance preserved, under host-selected depth and version budgets.
-
-    A document of that name that didn't come from source is never replaced. Missing dependencies remain
-    explicit; they never cause a fallback to source adoption. The result inspects at most limit spans.
-    """
-    if source.filing.document(document) is None:
-        raise ToolError(f"workspace {source.workspace.name!r} has no document named {document!r}")
-    base: VersionId | None = None
-    if (here := bond.filing.document(document)) is not None:
-        first = bond.history(document)[0].imported
-        if first is None or first.workspace != source.workspace.id:
-            raise ToolError(f"this workspace already has a document named {document!r} that wasn't imported from "
-                            f"{source.workspace.name!r}")
-        base = here.head
-    try:
-        result = bond.import_document(source, document, base=base, depth=depth, limit=limit)
-    except WriteError:  # another write filed it between the look above and this import
-        raise ToolError(f"{document!r} changed here while it was being imported; import it again") from None
-    whole = Ref(result.version, VersionLocator())
-    trace = bond.trace(whole, limit=limit)
-    return ImportOutcome(document, details.version(bond, result.version).format, _handle(bond, whole),
-                         sorted(trace.frontier), not trace.complete)
-
-
 # --- trace ----------------------------------------------------------------------
 
 TRACE_TEXT = 200  # characters of a span's text to show; a whole document would be far too long
@@ -356,19 +337,21 @@ def trace(bond: Bond, handle: str, limit: int = 30) -> Chain:
     report = bond.check_support(ref, limit=SUPPORT_LIMIT)
     trace = bond.trace(ref, limit=limit)
     return Chain(report.status, [Shortfall(i.reason, _ref_handle(bond, i.ref)) for i in report.issues],
-                 [_grounds(bond, trace, node) for node in trace.nodes], not trace.complete, sorted(trace.frontier))
+                 [_grounds(bond, trace, node) for node in trace.nodes], not trace.complete,
+                 sorted(trace.unreachable))
 
 
 def _grounds(bond: Bond, trace: Trace, node: Ref) -> Grounds:
-    if node.version in trace.frontier:  # nothing of it is here to show or cite: only its id, which can't change
-        return Grounds(node.version, [], None, "", [], [], outside=True)
+    if node.version in trace.unreachable:  # nothing of it is here to show or cite: only its id, which can't change
+        return Grounds(node.version, None, [], None, "", [], [], unreachable=True)
     text = bond.text(node)
     links = [
         Link(e.citation.kind, e.citation.attrs, [_ref_handle(bond, s) for s in e.citation.supports])
         for e in trace.edges_at(node)
     ]
     newer = {name: _handle(bond, Ref(head, VersionLocator())) for name, head in trace.newer.get(node.version, {}).items()}
-    return Grounds(_handle(bond, node), [d.name for d in details.filed_in(bond, node.version)],
+    return Grounds(_handle(bond, node), details.held_by(bond, node.version).workspace.name,
+                   [d.name for d in details.filed_in(bond, node.version)],
                    None if text is None else clip(text, TRACE_TEXT), details.where(bond, node), links,
                    [_handle(bond, r) for r in bond.declarations(node).undeclared], newer=newer)
 
@@ -399,7 +382,7 @@ def read(bond: Bond, document: str) -> Reading:
                 where += (f" (these transcribe an earlier version of it, and may not match it now: "
                           f"{', '.join(map(repr, earlier))})")
         raise ToolError(f"{document!r} is {version.format.value}, which has no text of its own{where}")
-    return Reading(document, version.format, bond.text(Ref(version.id, VersionLocator())) or "")
+    return Reading(bond.workspace.name, document, version.format, bond.text(Ref(version.id, VersionLocator())) or "")
 
 
 def _head(bond: Bond, document: str) -> VersionId:
@@ -415,10 +398,10 @@ def _head(bond: Bond, document: str) -> VersionId:
 def draft(bond: Bond, document: str) -> Draft:
     """A document's current version as a draft to edit; its base is what a write or edit starts from."""
     head = _head(bond, document)
-    if outside := [s.version for c in bond.citations(head) for s in c.supports if bond.records.version(s.version)
-                   is None]:
-        raise ToolError(f"{document!r} rests on {len(set(outside))} version(s) outside this workspace, so its "
-                        "citations can't be written out for editing; read() shows it as it is")
+    if unreachable := [s.version for c in bond.citations(head) for s in c.supports
+                       if details.owner(bond, s.version) is None]:
+        raise ToolError(f"{document!r} rests on {len(set(unreachable))} version(s) in workspaces this one doesn't "
+                        "link to, so its citations can't be written out for editing; read() shows it as it is")
     text = _render(bond, document, head)
     if isinstance(text, Problem):
         raise ToolError(text.message)
@@ -633,15 +616,20 @@ def _handle(bond: Bond, ref: Ref) -> str:
 
 
 def _ref_handle(bond: Bond, ref: Ref) -> str:
-    """A ref's handle, or for a version outside the workspace, which nothing here can resolve, its whole id."""
-    if bond.records.version(ref.version) is None:
+    """A ref's handle, or for an unreachable version, which nothing here can resolve, its whole id."""
+    if details.owner(bond, ref.version) is None:
         return ref.version
     return _handle(bond, ref)
 
 
+def _ids(bond: Bond) -> list[VersionId]:
+    """Every version bond can read: its own and those of the workspaces it links to, each id once."""
+    return list(dict.fromkeys(v.id for b in [bond, *bond.reachable()] for v in details.versions(b)))
+
+
 def _prefix(bond: Bond, version: VersionId) -> str:
-    """The shortest prefix of a version's id, at least 8 characters, that no other version shares."""
-    ids = [v.id for v in details.versions(bond)]
+    """The shortest prefix of a version's id, at least 8 characters, that no other version it can read shares."""
+    ids = _ids(bond)
     for n in range(8, len(version)):
         if sum(i.startswith(version[:n]) for i in ids) == 1:
             return version[:n]
@@ -653,7 +641,7 @@ def _resolve(bond: Bond, token: str) -> Ref | Problem:
     handle = parse_handle(token)
     if isinstance(handle, BadHandle):
         return Problem(f"{handle.message}; use search() to find evidence to cite")
-    matches = [v.id for v in details.versions(bond) if v.id.startswith(handle.prefix)]
+    matches = [v for v in _ids(bond) if v.startswith(handle.prefix)]
     if not matches:
         return Problem(f"no version's id starts with {handle.prefix!r}, so {token!r} names nothing; search() again")
     if len(matches) > 1:
@@ -696,44 +684,25 @@ def _apply(text: str, edit: Edit, n: int) -> str | Problem:
 
 @dataclass(frozen=True)
 class Tools:
-    """The tools with a workspace, a policy and the workspaces it may import from bound, for a host to hand to an
-    agent, including host-selected import depth and version budgets.
+    """The tools with a workspace and a policy bound, for a host to hand to an agent.
 
-    The agent works in bond's workspace only. sources are other workspaces (shared policies, public data) the
-    host lets it read the documents of and bring them in from, by name; it can never write to them.
+    The agent writes in bond's workspace only. It reads, searches and cites that workspace and the workspaces it
+    links to (shared policies, public data), which bond carries and its deployment decides; it can never write
+    to those.
     """
 
     bond: Bond
     policy: Policy = AGENT_POLICY
-    sources: Mapping[str, Bond] = field(default_factory=dict)
-    import_depth: int | None = 0
-    import_limit: int = 100
-
-    def __post_init__(self) -> None:
-        if self.import_depth is not None and self.import_depth < 0:
-            raise ValueError("import_depth must be non-negative or None")
-        if self.import_limit < 1:
-            raise ValueError("import_limit must be at least 1")
 
     def search(self, phrases: str | Sequence[str], document: str | None = None, within: str | None = None,
-               limit: int = 20) -> list[SearchHit]:
-        return search(self.bond, phrases, document, within, limit)
+               limit: int = 20, workspace: str | None = None) -> list[SearchHit]:
+        return search(self.bond, phrases, document, within, limit, workspace)
 
     def documents(self, workspace: str | None = None) -> list[Listing]:
-        return documents(self.bond if workspace is None else self._source(workspace))
+        return documents(self.bond if workspace is None else linked(self.bond, workspace))
 
-    def import_document(self, workspace: str, document: str) -> ImportOutcome:
-        return import_document(self.bond, self._source(workspace), document,
-                               depth=self.import_depth, limit=self.import_limit)
-
-    def _source(self, workspace: str) -> Bond:
-        if workspace not in self.sources:
-            can = ", ".join(map(repr, self.sources)) or "none"
-            raise ToolError(f"{workspace!r} isn't a workspace you can import from (you can from: {can})")
-        return self.sources[workspace]
-
-    def read(self, document: str) -> Reading:
-        return read(self.bond, document)
+    def read(self, document: str, workspace: str | None = None) -> Reading:
+        return read(self.bond if workspace is None else linked(self.bond, workspace), document)
 
     def trace(self, handle: str, limit: int = 30) -> Chain:
         return trace(self.bond, handle, limit)

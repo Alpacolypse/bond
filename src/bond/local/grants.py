@@ -9,7 +9,6 @@ the agent works there. Grants live in the home (bond.local.home), so they outlas
 from __future__ import annotations
 
 import threading
-from collections.abc import Mapping
 from contextlib import ExitStack
 from dataclasses import dataclass
 
@@ -55,8 +54,9 @@ class GrantedWorkspaces:
     """The workspaces granted to one configuration, read from the home on each call (bond.workspaces.Workspaces).
 
     This is what the server serves in grant mode: a grant made after the server started is served from the next
-    call, and a revoked one is refused from the next call. Each workspace is opened on first use and kept open (and
-    its links with it) until close; a workspace deleted from the home is simply no longer offered.
+    call, and a revoked one is refused from the next call. Each workspace is opened on first use and kept open until
+    close, and reads the workspaces it links to from the home as they are at each call, so a link made or removed
+    while the server runs counts from then on; a workspace deleted from the home is simply no longer offered.
     """
 
     def __init__(self, home: Home, config: str):
@@ -74,13 +74,14 @@ class GrantedWorkspaces:
             raise KeyError(name)
         return self._bond(name)
 
-    def links(self, name: str) -> Mapping[str, Bond]:
-        return {n: self._bond(n) for n in self.home.links(name) if self.home.exists(n)}
+    def _links(self, name: str) -> list[Bond]:
+        return [self._bond(n) for n in self.home.links(name) if self.home.exists(n)]
 
     def _bond(self, name: str) -> Bond:
         with self._lock:
             if name not in self._open:
-                self._open[name] = self._stack.enter_context(Bond.local(self.home.path(name), create=False))
+                self._open[name] = self._stack.enter_context(
+                    Bond.local(self.home.path(name), create=False, links=lambda: self._links(name)))
             return self._open[name]
 
     def close(self) -> None:
@@ -88,8 +89,8 @@ class GrantedWorkspaces:
 
 
 def create_server(grants: GrantedWorkspaces | Served, *, view: str | None) -> MCPServer:
-    """The authoring tools over what grants holds (bound to AGENT_POLICY and the default import budgets unless given
-    as Served), with workspaces() and, given the view, the picker."""
+    """The authoring tools over what grants holds (bound to AGENT_POLICY unless given as Served), with workspaces()
+    and, given the view, the picker."""
     served = grants if isinstance(grants, Served) else Served(grants)
     if not isinstance(served.workspaces, GrantedWorkspaces):
         raise TypeError("grant mode serves the workspaces granted in a home (GrantedWorkspaces)")

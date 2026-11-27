@@ -500,7 +500,7 @@ def test_trace_follows_a_span_down_to_the_page_with_handles_to_cite_along_the_wa
     written(tools.write("findings", summary(tools)))
     [mine] = tools.search(SECOND, document="findings")
     why = tools.trace(mine.handle)
-    assert (why.status, why.issues, why.truncated, why.frontier) == (SupportStatus.SUPPORTED, [], False, [])
+    assert (why.status, why.issues, why.truncated, why.unreachable) == (SupportStatus.SUPPORTED, [], False, [])
     note, ocr, page = why.spans
     assert note.handle == mine.handle and note.documents == ["findings"] and note.text == SECOND
     assert [(r.kind, r.handles) for r in note.rests_on] == [(CitationKind.QUOTE, [ocr.handle])]

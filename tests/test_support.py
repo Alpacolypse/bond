@@ -96,21 +96,22 @@ def test_source_does_not_hide_overlapping_unsourced_or_broken_declarations(bond)
     assert len(bond.declarations(Ref(version, TextLocator(0, 5))).citations) == 3
 
 
-def test_budget_unknown_keeps_established_regions_and_missing_is_not_unsupported(bond, tmp_path):
+def test_budget_unknown_keeps_established_regions_and_unreachable_is_not_unsupported(bond, tmp_path):
     with Bond.local(tmp_path / "external") as external:
         s = source(external)
-        v = write(external, "mixed", "known missing bad", [
+        bond.set_links([external])
+        v = write(bond, "mixed", "known missing bad", [
             Citation(K.SOURCE, TextLocator(0, 5), []),
             Citation(K.PARAPHRASE, TextLocator(6, 13), [s]),
             Citation(K.UNSOURCED, TextLocator(14, 17), []),
         ])
-        bond.import_document(external, "mixed")
+        bond.set_links([])  # the link is removed: what rests on external can't be followed
         ref = Ref(v, VersionLocator())
         r = bond.check_support(ref)
         assert r.status is S.UNKNOWN
         assert [part.status for part in r.regions] == [S.SUPPORTED, S.UNKNOWN, S.UNSUPPORTED]
-        assert R.MISSING_VERSION in {i.reason for i in r.issues}
-        bond.import_version(external, s.version)
+        assert R.UNREACHABLE in {i.reason for i in r.issues}
+        bond.set_links([external])
         assert bond.check_support(ref).status is S.PARTIALLY_SUPPORTED
         for kwargs, reason in [({"limit": 1}, R.LIMIT), ({"max_depth": 0}, R.DEPTH_LIMIT)]:
             r = bond.check_support(ref, **kwargs)
@@ -290,7 +291,7 @@ def test_unknown_propagates_through_a_cycle_without_hiding_other_regions(bond):
     rests_on(bond, b, a, missing)
     r = bond.check_support(a)
     assert r.status is S.UNKNOWN
-    assert {i.reason for i in r.issues} == {R.CYCLE, R.MISSING_VERSION}
+    assert {i.reason for i in r.issues} == {R.CYCLE, R.UNREACHABLE}
 
 
 def test_support_is_recomputed_from_workspace_evidence_without_persisting_assessments(bond, tmp_path):
@@ -300,11 +301,14 @@ def test_support_is_recomputed_from_workspace_evidence_without_persisting_assess
         return (versions, documents, [bond.citations(v.id) for v in versions],
                 [bond.history(d.name) for d in documents])
 
-    with Bond.local(tmp_path / "external") as external, Bond.local(tmp_path / "other") as other:
+    with (Bond.local(tmp_path / "external") as external, Bond.local(tmp_path / "library") as library,
+          Bond.local(tmp_path / "other") as other):
         base = source(external)
-        top = derived(external, "top", [base])
-        bond.import_document(external, "top")
-        other.import_document(external, "top")
+        library.set_links([external])
+        top = derived(library, "top", [base])
+        library.set_links([])  # the library no longer links to what top rests on
+        bond.set_links([library])
+        other.set_links([library])
         before = snapshot()
         unknown = bond.check_support(top)
         assert unknown.status is S.UNKNOWN
@@ -312,7 +316,7 @@ def test_support_is_recomputed_from_workspace_evidence_without_persisting_assess
         assert set(unknown.to_dict()) == {"ref", "status", "regions", "issues"}
         assert set(unknown.issues[0].to_dict()) == {"ref", "reason", "path"}
 
-        bond.import_version(external, base.version)
+        bond.set_links([library, external])  # bond can read what top rests on directly
         after_import = snapshot()
         supported = bond.check_support(top)
         assert supported.ref == unknown.ref and supported.status is S.SUPPORTED

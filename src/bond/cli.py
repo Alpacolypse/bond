@@ -2,7 +2,7 @@
 
 Workspaces live in a Bond home (bond.local): `bond new` makes one, `bond add` adds files to it as sources,
 `bond transcribe` writes the text of a source with none of its own (a PDF) as a document citing where it was read,
-`bond link` lets documents be imported from one into another, and `bond grant` lets an agent's server
+`bond link` lets one's documents cite another's, and `bond grant` lets an agent's server
 configuration work in one. Those are a person's decisions; an agent gets none of these commands, only the
 authoring tools `bond mcp` serves.
 
@@ -11,7 +11,7 @@ authoring tools `bond mcp` serves.
     bond add smith fax-v2.md --as fax.md --update        # a new version of a document
     bond transcribe smith report.pdf                     # its text, by a producer Bond runs: report.pdf.pypdf
     bond transcribe smith fax.pdf --with reducto --output fax.reducto.json   # a parse Reducto returned
-    bond link smith --from criteria                      # documents in criteria may be imported into smith
+    bond link smith --to criteria                        # smith's documents may cite criteria's
     bond grant smith --to desktop                        # bond mcp --grants desktop may work in smith
     bond workspaces                                      # what the home holds, its links and grants
 
@@ -22,19 +22,15 @@ agent over MCP (stdio): the authoring tools, for the workspaces named and the on
     bond view --workspace smith --workspace ./cases/001                     # a name in the home, a directory
     bond view --postgres postgresql://… --name case-001 --s3-bucket evidence  # one in Postgres, blobs in S3
     bond mcp --workspace smith --workspace jones                            # an agent's workspaces
-    bond mcp --workspace ./cases/001 --import-from ./policies               # a directory, and what it may import
+    bond mcp --workspace ./cases/001 --link ./policies                      # a directory, and what it may cite
     bond mcp --grants desktop                                               # what a person granted desktop
 
 A workspace given with a / in it is a directory; anything else is a name in the Bond home (BOND_HOME, or
 --home). Opening a workspace to view never creates one; `bond mcp` creates a new local one in an existing
 directory, but a name must already be in the home. Postgres needs psycopg 3 and psycopg_pool, S3 needs boto3:
 installed by you, configured as they usually are (credentials, region and endpoint from the environment, or
---s3-endpoint). With --postgres, --name and --import-from name workspaces in the same database, with their blobs
-in the same place.
-
-`bond import` brings a document from one workspace into another, with its provenance:
-
-    bond import --from policies --into ./cases/001 policy/IP-112
+--s3-endpoint). With --postgres, --name and --link name workspaces in the same database, with their blobs in the
+same place.
 """
 
 from __future__ import annotations
@@ -46,13 +42,13 @@ import os
 import sys
 import threading
 import webbrowser
-from collections.abc import Generator, Sequence
+from collections.abc import Callable, Generator, Sequence
 from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING
 
-from .api import Bond
+from .api import Bond, Links
 from .formats import spec
 from .http.viewer import GRAPH_LIMIT
 from .local import Home, is_path
@@ -67,7 +63,7 @@ if TYPE_CHECKING:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse(argv)
-    commands = {"view": run_view, "mcp": run_mcp, "import": run_import, "new": run_new, "add": run_add,
+    commands = {"view": run_view, "mcp": run_mcp, "new": run_new, "add": run_add,
                 "transcribe": run_transcribe, "link": run_link, "grant": run_grant, "workspaces": run_workspaces}
     return commands[args.command](args)
 
@@ -90,20 +86,9 @@ def parse(argv: Sequence[str] | None = None) -> argparse.Namespace:
     _store_arguments(mcp, required=True, names=False).add_argument(
         "--grants", metavar="NAME", help="serve the workspaces a person granted this configuration (in the view, or "
                                          "with bond grant), from the Bond home")
-    mcp.add_argument("--import-from", action="append", default=[], metavar="WORKSPACE",
-                     help="a workspace the agent may import documents from: a directory, or with --postgres a "
-                          "name (repeatable)")
-    mcp.add_argument("--import-depth", type=_depth, default=0, help="dependency hops to copy, or 'all' (default: 0)")
-    mcp.add_argument("--import-limit", type=_positive, default=100, help="maximum versions visited per import")
-    bring = commands.add_parser("import", help="bring a document from one local workspace into another")
-    bring.add_argument("document", help="the document's name in the workspace it comes from")
-    bring.add_argument("--from", dest="source", required=True, help="the workspace it comes from: a name or directory")
-    bring.add_argument("--into", required=True,
-                       help="the workspace it goes into: a name in the home, or a directory (created if new)")
-    bring.add_argument("--as", dest="name", help="its name there (default: the same)")
-    bring.add_argument("--depth", type=_depth, default=0, help="dependency hops to copy, or 'all' (default: 0)")
-    bring.add_argument("--limit", type=_positive, default=100, help="maximum versions to visit (default: 100)")
-    _home_argument(bring)
+    mcp.add_argument("--link", action="append", default=[], metavar="WORKSPACE",
+                     help="a workspace the served ones link to, so their documents may cite its own, besides "
+                          "their links in the home: a directory, or with --postgres a name (repeatable)")
     new = commands.add_parser("new", help="create a workspace in the Bond home")
     new.add_argument("workspace", help="its name")
     _home_argument(new)
@@ -127,10 +112,12 @@ def parse(argv: Sequence[str] | None = None) -> argparse.Namespace:
                             help="with --output: the version of the document the producer read (default: the "
                                  "one it holds now)")
     _home_argument(transcribe)
-    link = commands.add_parser("link", help="let documents be imported from one workspace into another")
-    link.add_argument("workspace", help="the workspace documents may be imported into")
-    link.add_argument("--from", dest="source", required=True, help="the workspace they may come from")
-    link.add_argument("--remove", action="store_true", help="remove the link instead; what was imported stays")
+    link = commands.add_parser("link", help="let one workspace's documents cite another's")
+    link.add_argument("workspace", help="the workspace whose documents may cite")
+    link.add_argument("--to", dest="source", required=True, help="the workspace they may cite (a policy library, say)")
+    link.add_argument("--remove", action="store_true",
+                      help="remove the link instead; what already cites it stays, and can't be traced there until "
+                           "it is linked again")
     _home_argument(link)
     grant = commands.add_parser("grant", help="let an MCP server configuration's agent work in a workspace")
     grant.add_argument("workspace", help="a workspace in the Bond home")
@@ -140,29 +127,14 @@ def parse(argv: Sequence[str] | None = None) -> argparse.Namespace:
     listing = commands.add_parser("workspaces", help="list the workspaces in the Bond home, their links and grants")
     _home_argument(listing)
     args = parser.parse_args(argv)
-    if args.command == "mcp" and args.grants and args.import_from:
-        parser.error("--import-from goes with --workspace; in grant mode, workspaces import from what they link to")
+    if args.command == "mcp" and args.grants and args.link:
+        parser.error("--link goes with --workspace; in grant mode, workspaces cite what they link to in the home")
     if args.command in ("view", "mcp"):
         if args.postgres and (args.blobs is None) == (args.s3_bucket is None):
             parser.error("--postgres needs exactly one of --blobs and --s3-bucket")
         if not args.postgres and (args.blobs or args.s3_bucket or args.name):
             parser.error("--name, --blobs and --s3-bucket go with --postgres; a local workspace holds its own blobs")
     return args
-
-
-def _depth(text: str) -> int | None:
-    """A number of dependency hops, or 'all' (None) for no bound."""
-    if text == "all":
-        return None
-    if not text.isdigit():
-        raise argparse.ArgumentTypeError(f"a depth is a number of hops, or 'all'; got {text!r}")
-    return int(text)
-
-
-def _positive(text: str) -> int:
-    if not text.isdigit() or int(text) < 1:
-        raise argparse.ArgumentTypeError(f"must be a whole number, at least 1; got {text!r}")
-    return int(text)
 
 
 def _store_arguments(command: argparse.ArgumentParser, required: bool, names: bool,
@@ -279,17 +251,16 @@ def run_transcribe(args: argparse.Namespace) -> int:
 
 
 def run_link(args: argparse.Namespace) -> int:
-    """bond link: let documents be imported from one workspace in the home into another, or stop that."""
+    """bond link: let one workspace's documents in the home cite another's, or stop that."""
     try:
         home = home_of(args)
         if args.remove:
             changed = home.unlink(args.workspace, args.source)
-            print(f"documents in {args.source!r} can no longer be imported into {args.workspace!r}" if changed else
+            print(f"documents in {args.workspace!r} can no longer cite {args.source!r}" if changed else
                   f"{args.workspace!r} wasn't linked to {args.source!r}")
         else:
             changed = home.link(args.workspace, args.source)
-            print(f"documents in {args.source!r} can be imported into {args.workspace!r}"
-                  + ("" if changed else " (already linked)"))
+            print(f"documents in {args.workspace!r} can cite {args.source!r}" + ("" if changed else " (already linked)"))
         return 0
     except BondError as e:
         print(f"bond link: {e}", file=sys.stderr)
@@ -314,40 +285,19 @@ def run_grant(args: argparse.Namespace) -> int:
 
 
 def run_workspaces(args: argparse.Namespace) -> int:
-    """bond workspaces: the workspaces in the home, what each may import from, and who may work in it."""
+    """bond workspaces: the workspaces in the home, what each links to, and who may work in it."""
     try:
         home = home_of(args)
         names = home.names()
         if not names:
             print(f"no workspaces in {home.root}; create one with: bond new NAME")
         for name in names:
-            notes = [f"imports from: {', '.join(links)}" for links in [home.links(name)] if links]
+            notes = [f"links to: {', '.join(links)}" for links in [home.links(name)] if links]
             notes += [f"granted to: {', '.join(grantees)}" for grantees in [home.grantees(name)] if grantees]
             print(name + (f"  ({'; '.join(notes)})" if notes else ""))
         return 0
     except BondError as e:
         print(f"bond workspaces: {e}", file=sys.stderr)
-        return 1
-
-
-def run_import(args: argparse.Namespace) -> int:
-    """bond import: bring one document's head in, and say what came and what stayed outside."""
-    try:
-        home = home_of(args)
-        # A directory to import into is made if new, as it always was; a name must already be in the home.
-        target = Bond.local(Path(args.into)) if is_path(args.into) else open_local(home, args.into)
-        with open_local(home, args.source) as source, target as into:
-            name = args.name or args.document
-            existing = into.filing.document(name)
-            result = into.import_document(source, args.document, name=name, depth=args.depth, limit=args.limit,
-                                          base=existing.head if existing else None)
-            print(f"imported {args.document!r} from {source.workspace.name!r} into {into.workspace.name!r} as "
-                  f"{name!r} with its provenance: version {result.version[:12]}…")
-            if outside := into.frontier():
-                print(f"{len(outside)} version(s) it rests on stayed outside; bring them in with --depth and --limit")
-            return 0
-    except (BondError, ValueError) as e:
-        print(f"bond import: {e}", file=sys.stderr)
         return 1
 
 
@@ -366,7 +316,7 @@ def run_view(args: argparse.Namespace) -> int:
 @contextmanager
 def view_workspaces(args: argparse.Namespace) -> Generator[Fixed]:
     """The workspaces bond view offers, by name, opened as they are and closed after: each --workspace or --name
-    given, or with neither every workspace in the home. Nothing is created."""
+    given, or with neither every workspace in the home, each with its links in the home. Nothing is created."""
     with ExitStack() as stack:
         if args.postgres:
             stores = [stack.enter_context(open_postgres(args, name)) for name in args.name or [None]]
@@ -376,7 +326,8 @@ def view_workspaces(args: argparse.Namespace) -> Generator[Fixed]:
             if not values:
                 raise BondError(f"no workspaces in {home.root}; create one with bond new NAME, or name a directory "
                                 "with --workspace")
-            stores = [stack.enter_context(open_local(home, value)) for value in values]
+            open_linked = home_opener(home, stack)
+            stores = [open_linked(value) for value in values]
         offered: dict[str, Bond] = {}
         for bond in stores:
             if bond.workspace.name in offered:
@@ -422,18 +373,17 @@ def run_mcp(args: argparse.Namespace) -> int:
 
 @contextmanager
 def mcp_served(args: argparse.Namespace) -> Generator[Served]:
-    """What bond mcp serves: its workspaces, bound to the agent's policy and the import budgets given."""
+    """What bond mcp serves: its workspaces, bound to the agent's policy."""
     from .mcp.server import Served
 
     with mcp_workspaces(args) as workspaces:
-        yield Served(workspaces, import_depth=args.import_depth, import_limit=args.import_limit)
+        yield Served(workspaces)
 
 
 @contextmanager
 def mcp_workspaces(args: argparse.Namespace) -> Generator[Workspaces]:
-    """The workspaces bond mcp serves, by name: each workspace the arguments name, with the workspaces it may import
-    from (its links in the home, and every --import-from), or in grant mode what was granted; every one closed
-    after.
+    """The workspaces bond mcp serves, by name: each workspace the arguments name, linked to the workspaces it links
+    to in the home and to every --link, or in grant mode what was granted; every one closed after.
 
     A directory with no workspace in it becomes a new one, as before; a name must already be in the home, since
     making a workspace is a person's decision (bond new). Each workspace is opened once, however often it's named.
@@ -450,38 +400,44 @@ def mcp_workspaces(args: argparse.Namespace) -> Generator[Workspaces]:
     with ExitStack() as stack:
         if args.postgres:
             bond = stack.enter_context(open_postgres(args, args.name))
-            sources = [stack.enter_context(open_postgres(args, source)) for source in args.import_from]
-            name = bond.workspace.name
-            yield Fixed({name: bond}, {name: {s.workspace.name: s for s in sources}})
+            bond.set_links([stack.enter_context(open_postgres(args, name)) for name in args.link])
+            yield Fixed({bond.workspace.name: bond})
             return
-        home = home_of(args)
-        opened: dict[Path, Bond] = {}
-
-        def open_once(value: str, create: bool = False) -> Bond:
-            path = home.resolve(value).resolve()
-            if path not in opened:
-                opened[path] = stack.enter_context(open_local(home, value, create=create))
-            return opened[path]
-
-        extra = [open_once(source) for source in args.import_from]
+        open_linked = home_opener(home_of(args), stack)
+        extra = [open_linked(value) for value in args.link]
         served: dict[str, Bond] = {}
-        links: dict[str, dict[str, Bond]] = {}
         for value in args.workspace:
-            bond = open_once(value, create=is_path(value))
+            bond = open_linked(value, create=is_path(value), also=extra)
             name = bond.workspace.name
             if name in served:
                 raise BondError(f"two workspaces given are named {name!r}; an agent names workspaces by name")
-            linked = [] if is_path(value) else [open_once(n) for n in home.links(name)]
-            sources = {s.workspace.name: s for s in (*linked, *extra) if s is not bond}
-            served[name], links[name] = bond, sources
-        yield Fixed(served, links)
+            served[name] = bond
+        yield Fixed(served)
+
+
+def home_opener(home: Home, stack: ExitStack) -> Callable[..., Bond]:
+    """A function that opens a local workspace (a name in the home, or a directory) once, however often it is
+    asked for, closed with stack. A workspace in the home is linked to what it links to in the home, read at each
+    call and opened when first needed; the first opening also links it to the workspaces given as also."""
+    opened: dict[Path, Bond] = {}
+
+    def open_once(value: str, create: bool = False, also: Sequence[Bond] = ()) -> Bond:
+        path = home.resolve(value).resolve()
+        if path not in opened:
+            def links(value: str = value, also: tuple[Bond, ...] = tuple(also)) -> list[Bond]:
+                in_home = [] if is_path(value) else [open_once(n) for n in home.links(value) if home.exists(n)]
+                return [*in_home, *also]
+            opened[path] = stack.enter_context(open_local(home, value, create=create, links=links))
+        return opened[path]
+
+    return open_once
 
 
 # --- opening workspaces ------------------------------------------------------------
 
 
 @contextmanager
-def open_local(home: Home, value: str | os.PathLike[str], create: bool = False) -> Generator[Bond]:
+def open_local(home: Home, value: str | os.PathLike[str], create: bool = False, links: Links = ()) -> Generator[Bond]:
     """A local workspace: a directory (a value with a separator in it), or a name in the home, closed after.
 
     With create, a directory with no workspace in it becomes a new one; a name is never created here.
@@ -494,7 +450,7 @@ def open_local(home: Home, value: str | os.PathLike[str], create: bool = False) 
     else:
         home.require(text)
         create = False
-    with Bond.local(path, create=create) as bond:
+    with Bond.local(path, create=create, links=links) as bond:
         yield bond
 
 

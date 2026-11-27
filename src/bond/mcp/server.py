@@ -4,10 +4,10 @@ Run with: bond mcp (see bond.cli). Needs the `mcp` extra. It speaks MCP over std
 Claude Desktop, an agent harness) starts it.
 
 The server only carries calls. It serves the workspaces it is given (bond.workspaces.Workspaces), looked up on
-every call, with what it binds them to: a policy (AGENT_POLICY: every word covered, no `source`) and import
-budgets. The agent names the workspace on every call and the server remembers none: it may restart, or serve
-several chats at once, so a call means the same whenever it is made. The agent can't change what a workspace is
-bound to, nor reach a workspace it wasn't offered except to import from one linked to it. Issues from a write come
+every call, with the policy it binds them to (AGENT_POLICY: every word covered, no `source`). The agent names the
+workspace on every call and the server remembers none: it may restart, or serve several chats at once, so a call
+means the same whenever it is made. The agent can't change what a workspace is bound to, nor reach a workspace it
+wasn't offered except to read and cite one the workspace links to. Issues from a write come
 back as the tool's result, for the agent to fix and retry; a call that can't be carried out at all (a workspace or
 document that doesn't exist, a handle that names nothing) is a tool error with the reason. Anything else that goes
 wrong is a crash, logged here and not explained to the agent.
@@ -31,7 +31,7 @@ from mcp_types import ToolAnnotations
 
 from .. import authoring
 from ..api import Bond
-from ..authoring import AGENT_POLICY, Chain, Draft, Edit, ImportOutcome, Listing, Outcome, Reading, SearchHit, Tools
+from ..authoring import AGENT_POLICY, Chain, Draft, Edit, Listing, Outcome, Reading, SearchHit, Tools
 from ..authoring.tools import SUPPORT_LIMIT
 from ..locators import VersionLocator
 from ..models import Format, Ref, SupportStatus
@@ -90,13 +90,13 @@ tags in its cells: a wrapping tag cites part of a cell, a self-closing tag cites
 or on='column' its row or column.
 """
 
-IMPORTING = """
-A workspace may have links: other workspaces a person linked to it so documents can be imported from them. \
-documents(workspace, from_workspace=...) lists the documents of a workspace linked to workspace, and \
-import_document(workspace, from_workspace, document) brings one into workspace. A linked workspace's documents \
-can't be cited where they are: import one, then search it in workspace. Imports keep each document's identity \
-and citations; the host bounds how much of what it rests on comes along, and the result's frontier lists what \
-stayed behind. You cannot declare an imported document a source.
+LINKS = """
+A workspace may link to others (a shared policy library, say): you can read, search and cite their documents from \
+the workspace, but you write only in the workspace itself. search(workspace, phrases) covers the workspace and \
+every workspace it links to, and each hit names the workspace it is in; documents(workspace, \
+from_workspace=...) lists a linked workspace's documents, read(workspace, document, from_workspace=...) reads \
+one, and search(workspace, phrases, from_workspace=...) searches only it. Cite a linked document's handles as \
+they are.
 """
 
 Writable = Literal["markdown", "json", "csv", "tsv"]
@@ -113,20 +113,11 @@ class ServedTool:
 
 @dataclass(frozen=True)
 class Served:
-    """The workspaces a server offers the agent, and what it binds every one to: the policy its writes must meet,
-    and how much of what an imported document rests on comes along (import_depth hops, None for all; import_limit
-    versions at most). The deployment that made workspaces owns every Bond in it, and closes them."""
+    """The workspaces a server offers the agent, and the policy every write must meet. The deployment that made
+    workspaces owns every Bond in it, and closes them."""
 
     workspaces: Workspaces
     policy: Policy = AGENT_POLICY
-    import_depth: int | None = 0
-    import_limit: int = 100
-
-    def __post_init__(self) -> None:
-        if self.import_depth is not None and self.import_depth < 0:
-            raise ValueError("import_depth must be non-negative or None")
-        if self.import_limit < 1:
-            raise ValueError("import_limit must be at least 1")
 
     def open(self, workspace: str) -> Bond:
         """The workspace the agent named, or a ToolError saying which it can work in."""
@@ -137,10 +128,8 @@ class Served:
             raise authoring.ToolError(f"{workspace!r} isn't a workspace you can work in (you can in: {names})") from None
 
     def tools(self, workspace: str) -> Tools:
-        """The authoring tools for the workspace the agent named, bound to its links, policy and budgets."""
-        bond = self.open(workspace)
-        return Tools(bond, self.policy, sources=self.workspaces.links(workspace), import_depth=self.import_depth,
-                     import_limit=self.import_limit)
+        """The authoring tools for the workspace the agent named, bound to the policy."""
+        return Tools(self.open(workspace), self.policy)
 
 
 @dataclass(frozen=True)
@@ -159,8 +148,7 @@ def create_server(
     workspaces: Workspaces | Served, *, view: str | None = None, tools: Sequence[ServedTool] = (), more: str = "",
     extend: Callable[[ViewTools], None] | None = None,
 ) -> MCPServer:
-    """The authoring tools over workspaces (bound to AGENT_POLICY and the default import budgets unless given as
-    Served), with the app view if view, its HTML, is given (bond.mcp.view.packaged_view()).
+    """The authoring tools over workspaces (bound to AGENT_POLICY unless given as Served), with the app view if view, its HTML, is given (bond.mcp.view.packaged_view()).
 
     workspaces is looked up on every call, so a workspace offered after the server started is served from then on.
     Only the instructions are fixed at creation, listing what it offered then. A deployment adds model tools (which
@@ -197,8 +185,8 @@ def create_server(
 
 
 def instructions(served: Served) -> str:
-    """What the agent is told when it connects: how to cite, how to import, and the workspaces there now."""
-    return INSTRUCTIONS + IMPORTING + _available(served)
+    """What the agent is told when it connects: how to cite, how links work, and the workspaces there now."""
+    return INSTRUCTIONS + LINKS + _available(served)
 
 
 def authoring_tools(served: Served) -> list[ServedTool]:
@@ -218,56 +206,39 @@ def authoring_tools(served: Served) -> list[ServedTool]:
     def tools(workspace: str) -> Tools:
         return served.tools(workspace)
 
-    def linked(workspace: str, from_workspace: str) -> Tools:
-        """The tools for workspace, once from_workspace is known to be one of its links."""
-        bound = tools(workspace)
-        if from_workspace not in bound.sources:
-            names = ", ".join(map(repr, bound.sources)) or "none"
-            raise authoring.ToolError(f"{workspace!r} doesn't link to {from_workspace!r}, so you can't import from it "
-                                      f"into {workspace!r} (you can from: {names})")
-        return bound
-
     # Tools are async, so calls run one at a time on the event loop, as an agent makes them. Bond is
     # safe to share across threads, so this keeps calls in order rather than keeping Bond safe.
 
     @tool(reading)
     async def documents(workspace: str, from_workspace: str | None = None) -> list[Listing]:
         """Every document in `workspace`, oldest first, with the format of its current version (a PDF has no text
-        of its own: its text is cited through a transcription); or, with `from_workspace`, the documents of that workspace, one
-        linked to `workspace`, which you can cite only after bringing them in with import_document."""
-        if from_workspace is None:
-            return tools(workspace).documents()
-        return linked(workspace, from_workspace).documents(from_workspace)
-
-    # Offered whatever the workspaces' links are now: a workspace with links may be granted while the server runs.
-    @tool(writing)
-    async def import_document(workspace: str, from_workspace: str, document: str) -> ImportOutcome:
-        """Bring a document into `workspace` from `from_workspace`, one of its links, under the same name, so you
-        can read, search and cite it in `workspace`. Identity and citations are preserved; frontier lists what it
-        rests on that stayed behind. Importing again brings the newest version."""
-        return linked(workspace, from_workspace).import_document(from_workspace, document)
+        of its own: its text is cited through a transcription); or, with `from_workspace`, the documents of a
+        workspace `workspace` links to, which you can read, search and cite from `workspace`."""
+        return tools(workspace).documents(from_workspace)
 
     @tool(reading)
-    async def read(workspace: str, document: str) -> Reading:
-        """A document's current version exactly as it is, to read in full before citing it.
+    async def read(workspace: str, document: str, from_workspace: str | None = None) -> Reading:
+        """A document's current version exactly as it is, to read in full before citing it; with `from_workspace`,
+        a document of a workspace `workspace` links to.
 
         Nothing in it is a handle: to cite part of it, search for that text. A source with no text of its own (a
         PDF) names the documents that transcribe it instead.
         """
-        return tools(workspace).read(document)
+        return tools(workspace).read(document, from_workspace)
 
     @tool(reading)
     async def search(workspace: str, phrases: list[str], document: str | None = None, within: str | None = None,
-                     limit: int = 20) -> list[SearchHit]:
-        """Matching text in `workspace` with exact handles, and whether each match's support reaches declared
-        sources.
+                     limit: int = 20, from_workspace: str | None = None) -> list[SearchHit]:
+        """Matching text with exact handles, and whether each match's support reaches declared sources.
 
-        Searches every document's current version, or only `document`, or only inside the span of a handle
-        (`within`), e.g. to find a phrase inside a passage found earlier. Up to `limit` matches per phrase;
-        each says which phrase it matched, where it is, the text around it (the match marked ▸like this◂),
-        the handle of the passage it sits in, its support status and the kinds of citation over it.
+        Searches every document's current version in `workspace` and in every workspace it links to, or only in
+        `from_workspace` (one it links to), or only `document` (in `from_workspace` if given, else in
+        `workspace`), or only inside the span of a handle (`within`), e.g. to find a phrase inside a passage
+        found earlier. Up to `limit` matches per phrase and workspace; each says which phrase it matched, the
+        workspace it is in, where it is, the text around it (the match marked ▸like this◂), the handle of the
+        passage it sits in, its support status and the kinds of citation over it.
         """
-        return tools(workspace).search(phrases, document, within, limit)
+        return tools(workspace).search(phrases, document, within, limit, from_workspace)
 
     @tool(reading)
     async def trace(workspace: str, handle: str, limit: int = 30) -> Chain:
@@ -278,8 +249,8 @@ def authoring_tools(served: Served) -> list[ServedTool]:
         citation it rests on (its kind, its producer, if any, and the handles of what it rests on
         in turn), down to a region of a page, a declared source, or unsourced text, with the parts of each
         span no citation covers. Every span has its own handle, so evidence along the way can be cited
-        directly. When truncated, trace a handle that was cut off; versions listed in frontier stayed
-        in the workspace they were imported from.
+        directly, wherever it is. When truncated, trace a handle that was cut off; versions listed as
+        unreachable are in no workspace `workspace` links to now.
         """
         return tools(workspace).trace(handle, limit)
 
@@ -324,8 +295,10 @@ def _available(served: Served) -> str:
     if not names:
         return ("\nNo workspaces are available to you yet. A call naming one you can't work in lists those you "
                 "can.\n")
-    lines = [f"- {name!r}" + (f", linked: {', '.join(map(repr, links))}" if (links := served.workspaces.links(name))
-                              else "") for name in names]
+    lines = []
+    for name in names:
+        links = [b.workspace.name for b in served.workspaces.open(name).links()]
+        lines.append(f"- {name!r}" + (f", links to: {', '.join(map(repr, links))}" if links else ""))
     return "\nWorkspaces you can work in:\n" + "\n".join(lines) + "\n"
 
 

@@ -59,6 +59,7 @@ function summary(v: StoredVersion): VersionSummary {
   const index = siblings.indexOf(v) + 1;
   return {
     version: v.version,
+    workspace: "mock",
     content_hash: v.content_hash,
     name: v.name,
     title: v.title,
@@ -96,7 +97,7 @@ function graphOf(included: StoredVersion[]): Graph {
       citation_count: owned.length,
       self_citation_count: owned.filter((c) => c.supports.some((s) => s.version === v.version)).length,
       is_source: owned.some((c) => c.kind === "source" && c.claim.type === "version"),
-      outside: false, // the snapshot is one workspace with nothing imported
+      unreachable: false, // the snapshot is one workspace that links to none
     };
   });
   return { nodes, edges: [...edges.values()] };
@@ -149,7 +150,6 @@ function documentItems(): DocumentItem[] {
       created_at: first.created_at,
       updated_at: head.created_at,
       version_count: held.length,
-      imported_from: null,
     };
     return [item];
   });
@@ -170,7 +170,7 @@ function overview(): Overview {
     workspace: { id: "ws_mock", name: "mock", created_at: versions[0]?.created_at ?? "" },
     version_count: versions.length,
     document_count: documentItems().length,
-    outside_count: 0,
+    unreachable_count: 0,
     graph_limit: 300,
   };
 }

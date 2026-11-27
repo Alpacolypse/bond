@@ -62,9 +62,9 @@ export function NavProvider({ nodes, children }: { nodes: ReadonlyMap<string, Gr
       open: s.open,
       canBack: s.index > 0,
       canForward: s.index < s.history.length - 1,
-      // A version outside the workspace has nothing here to open.
+      // An unreachable version has nothing here to open.
       navigate: (version, locator = { type: "version" }) => {
-        if (!nodes.get(version)?.outside) dispatch({ type: "navigate", ref: { version, locator } });
+        if (!nodes.get(version)?.unreachable) dispatch({ type: "navigate", ref: { version, locator } });
       },
       back: () => dispatch({ type: "go", delta: -1 }),
       forward: () => dispatch({ type: "go", delta: 1 }),

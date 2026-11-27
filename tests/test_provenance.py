@@ -64,7 +64,7 @@ def test_search_reports_support_for_the_entire_match_and_the_passage(bond):
     # The one shortfall is the assertion, in the document the quote copied it from.
     unsourced = hit.handle.split("@")[0] + f"@{text.index('Unsubstantiated')}-{len(text)}"
     assert why.status is SupportStatus.UNSUPPORTED and why.issues == [Shortfall(SupportReason.UNSOURCED, unsourced)]
-    assert not why.truncated and why.frontier == []
+    assert not why.truncated and why.unreachable == []
     assert any(link.kind is K.UNSOURCED for s in why.spans for link in s.rests_on)
 
 
@@ -210,50 +210,44 @@ def test_trace_reports_gaps_inside_partly_cited_ancestry_and_honest_limits(bond)
     written(tools.write("summary", f'<bond:cite kind="paraphrase" from="{hit.handle}">A conclusion.</bond:cite>'))
     [summary] = tools.search("A conclusion.")
     why = tools.trace(summary.handle)
-    assert not why.truncated and why.frontier == []
+    assert not why.truncated and why.unreachable == []
     partial_node = next(s for s in why.spans if s.documents == ["partial"])
     assert partial_node.undeclared == [partial_node.handle.split("@")[0] + "@7-15"]  # "Unknown."
     bounded = tools.trace(summary.handle, limit=1)
-    assert bounded.truncated and bounded.frontier == []
+    assert bounded.truncated and bounded.unreachable == []
     assert not bond.trace(Ref(head(bond, "summary"), VersionLocator()), max_depth=0).complete
     assert bond.trace(Ref(partial.version, TextLocator(7, 15)), max_depth=0).complete
 
 
-def test_default_agent_import_preserves_unsourced_material(bond, tmp_path):
+def test_linked_unsourced_material_stays_unsourced(bond, tmp_path):
     with Bond.local(tmp_path / "external") as source:
         written(Tools(source).write("draft", '<bond:cite kind="unsourced">Unsupported assertion.</bond:cite>'))
-        tools = Tools(bond, sources={"external": source})
-        imported = tools.import_document("external", "draft")
-        version = head(source, "draft")
-        assert head(bond, "draft") == version and imported.handle == version[:8]
-        assert imported.frontier == [] and not imported.truncated
-        assert bond.citations(version)[0].kind is K.UNSOURCED
+        bond.set_links([source])
+        tools = Tools(bond)
         [hit] = tools.search("Unsupported assertion.")
-        assert hit.support is SupportStatus.UNSUPPORTED
+        assert (hit.workspace, hit.documents, hit.support) == ("external", ["draft"], SupportStatus.UNSUPPORTED)
+        assert bond.citations(head(source, "draft"))[0].kind is K.UNSOURCED
+        assert bond.documents() == []  # nothing was copied
 
 
-def test_host_import_budget_preserves_frontier_and_trace_distinguishes_missing_from_truncated(bond, tmp_path):
-    with Bond.local(tmp_path / "external") as source:
+def test_trace_distinguishes_unreachable_from_truncated(bond, tmp_path):
+    with Bond.local(tmp_path / "external") as source, Bond.local(tmp_path / "library") as library:
         root = source.ingest("root", b"Root fact.").version
-        source.write_document(
-            "derived",
-            b"Root fact.",
-            [
-            Citation(K.QUOTE, TextLocator(0, 10), [Ref(root, TextLocator(0, 10))]),
-        ],
-            format=Format.MARKDOWN,
-        )
-        tools = Tools(bond, sources={"external": source}, import_depth=None, import_limit=1)
-        imported = tools.import_document("external", "derived")
-        assert imported.truncated and bond.frontier() == [root]  # the inspection budget ran out first
+        library.set_links([source])
+        library.write_document("derived", b"Root fact.", [Citation(K.QUOTE, TextLocator(0, 10), [Ref(root, TextLocator(0, 10))])],
+                               format=Format.MARKDOWN)
+        library.set_links([])  # the library stops linking to what derived rests on
+        bond.set_links([library])
+        tools = Tools(bond)
         [hit] = tools.search("Root fact.")
-        assert hit.support is SupportStatus.UNKNOWN
+        assert hit.support is SupportStatus.UNKNOWN and hit.workspace == "library"
         why = tools.trace(hit.handle)
-        assert why.status is SupportStatus.UNKNOWN and not why.truncated and why.frontier == [root]
-        assert why.spans[-1].handle == root and why.spans[-1].rests_on == []
-        assert bond.import_version(source, root).advanced
+        assert why.status is SupportStatus.UNKNOWN and not why.truncated and why.unreachable == [root]
+        assert why.spans[-1].handle == root and why.spans[-1].rests_on == [] and why.spans[-1].unreachable
+        library.set_links([source])
         again = tools.trace(hit.handle)
-        assert again.status is SupportStatus.SUPPORTED and again.frontier == []
+        assert again.status is SupportStatus.SUPPORTED and again.unreachable == []
+        assert [g.workspace for g in again.spans] == ["library", "external"]
 
 
 def test_trace_detects_unsourced_self_support(bond):
@@ -284,15 +278,6 @@ def test_search_annotates_every_match_rather_than_filtering(bond):
     assert [(h.documents, h.support) for h in hits] == [
         (["first"], SupportStatus.UNSUPPORTED), (["second"], SupportStatus.SUPPORTED)]
     assert len(tools.search("Repeated phrase.", limit=1)) == 1
-
-
-def test_invalid_import_budgets_do_not_copy_anything(bond, tmp_path):
-    with Bond.local(tmp_path / "external") as source:
-        source.ingest("source", b"Source.")
-        for kwargs, problem in (({"depth": -1}, "depth must be non-negative"), ({"limit": 0}, "limit must be at least 1")):
-            with pytest.raises(ValueError, match=problem):
-                bond.import_document(source, "source", **kwargs)
-        assert details.versions(bond) == [] and bond.documents() == []
 
 
 def test_invalid_agent_query_limits_are_repairable_errors(bond):

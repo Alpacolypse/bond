@@ -4,7 +4,7 @@ Bond is a core, two APIs over it, and deployments that decide where workspaces l
 
 - The **core** (`bond`) keeps provenance. It is also the API for software: a program opens workspaces and calls `Bond` directly, as importers do. It stores no decision about where workspaces live or who may reach them.
 - **`bond.mcp`** is the API for agents: the authoring tools over MCP, and the document in the chat (the app view, `show`, adding sources). **`bond.http`** is the read-only JSON API the viewer uses.
-- A **deployment** decides which workspaces an API offers and which may import from which, and hands that over as a `bond.workspaces.Workspaces`: `names()`, `open(name)` and `links(name)`, read on every call. `Fixed` holds workspaces a program opened itself (directories, Postgres). **`bond.local`** is one deployment: one person's computer, where workspaces live in a home and the person decides who reaches them (see [Running Bond locally](local.md)).
+- A **deployment** decides which workspaces an API offers and which each links to (whose versions its citations may rest on). It hands the first over as a `bond.workspaces.Workspaces`: `names()` and `open(name)`, read on every call; each `Bond` it opens carries its links (`Bond.set_links`, a list or a function read on every call). `Fixed` holds workspaces a program opened itself (directories, Postgres). **`bond.local`** is one deployment: one person's computer, where workspaces live in a home and the person decides who reaches them (see [Running Bond locally](local.md)).
 
 ## Layering rules
 
@@ -45,7 +45,7 @@ src/bond/
   http/           the read-only JSON API for the viewer (server, ui/API.md), from whole-workspace reads (viewer)
   local/          one person's machine: the Bond home (home.py; home.db: links, grants), grant mode
                   (grants.py, GrantedWorkspaces) and its picker, the Claude Desktop extension (desktop.py)
-  cli.py          the bond command: view, mcp, import, and the person's commands (new, add, transcribe, link, grant)
+  cli.py          the bond command: view, mcp, and the person's commands (new, add, transcribe, link, grant)
 ui/               the viewer and app view (React, Vite); built into src/bond/static/, not committed
 packaging/mcpb/   the Claude Desktop extension: manifest, entry point, build script
 fixtures/         synthetic faxes to a legal aid office, their OCR output, an expense log and intake policies (all invented)

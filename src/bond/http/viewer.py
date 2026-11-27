@@ -8,8 +8,9 @@ Locators are shown as stored, except that a JSON value is named by its pointer
 (shown), and a locator sent back in that form is positioned in its version
 (located): Bond stores JSON locators as positional paths, which hold no keys.
 
-A version outside the workspace (left behind by an import) is shown as what it
-is: an id that something here rests on, with nothing else known about it here.
+A version in a workspace this one links to is shown like one of its own, with the name of the workspace it is
+in. A version no reachable workspace holds (its link was removed, say) is shown as what it is: an id that
+something here rests on, with nothing else known about it here.
 """
 
 from __future__ import annotations
@@ -49,6 +50,7 @@ class RefView(TypedDict):
 
 class VersionSummary(TypedDict):
     version: str
+    workspace: str  # the workspace it is filed in: this one, or one this one links to
     content_hash: str
     name: str
     title: str | None
@@ -66,9 +68,10 @@ class VersionDetail(VersionSummary):
 
 
 class GraphNode(TypedDict):
-    """A VersionSummary with its citation counts; for a version outside the workspace, its id with nulls."""
+    """A VersionSummary with its citation counts; for an unreachable version, its id with nulls."""
 
     version: str
+    workspace: str | None
     content_hash: str | None
     name: str
     title: str | None
@@ -81,7 +84,7 @@ class GraphNode(TypedDict):
     citation_count: int
     self_citation_count: int
     is_source: bool
-    outside: bool
+    unreachable: bool
 
 
 GraphEdge = TypedDict("GraphEdge", {"id": str, "from": str, "to": str, "count": int, "kinds": dict[str, int]})
@@ -108,7 +111,7 @@ class Overview(TypedDict):
     workspace: WorkspaceView
     version_count: int
     document_count: int
-    outside_count: int
+    unreachable_count: int
     graph_limit: int
 
 
@@ -121,7 +124,6 @@ class DocumentRow(TypedDict):
     format: str
     version_count: int
     updated_at: str
-    imported_from: str | None
 
 
 class DocumentsPage(TypedDict):
@@ -136,7 +138,7 @@ class SupportView(TypedDict):
     name: str
     format: str | None
     text: str | None
-    outside: bool
+    unreachable: bool
 
 
 class CitationView(TypedDict):
@@ -201,7 +203,7 @@ class TraceNode(TypedDict):
     locator: JsonObject
     kinds: list[str]
     text: str | None
-    outside: bool
+    unreachable: bool
 
 
 TraceEdgeView = TypedDict("TraceEdgeView", {"citation_id": str, "kind": str, "from": str, "to": list[str],
@@ -216,6 +218,7 @@ class TraceView(TypedDict):
 
 class SearchHitView(TypedDict):
     ref: RefView
+    workspace: str
     documents: list[str]
     format: str
     snippet: str
@@ -234,7 +237,8 @@ class TextView(TypedDict):
 class Summaries:
     """VersionSummary shapes, with each document's history read once.
 
-    A version is shown under its home: the first document it was filed in. Its
+    A version is shown under its home: the first document it was filed in, in the
+    workspace that holds it (this one, or one it links to). Its
     place among siblings is its place in that document's history, where each
     version counts once, at its latest entry; so after a revert the reverted-to
     version is last, and latest.
@@ -253,19 +257,21 @@ class Summaries:
             self._filed[v] = details.filed_in(self.bond, v)
         return self._filed[v]
 
-    def lineage(self, doc: DocumentRef) -> list[VersionId]:
-        """A document's versions, each once at its latest entry, oldest first: the head is last."""
+    def lineage(self, doc: DocumentRef, of: VersionId) -> list[VersionId]:
+        """A document's versions, each once at its latest entry, oldest first: the head is last. The document is
+        one of the workspace that holds version of."""
         if doc.id not in self._lineage:
-            entries = [e.version for e in self.bond.filing.history(doc.id)]
+            entries = [e.version for e in details.held_by(self.bond, of).filing.history(doc.id)]
             self._lineage[doc.id] = list(reversed(dict.fromkeys(reversed(entries))))
         return self._lineage[doc.id]
 
     def summary(self, version: Version) -> VersionSummary:
         home = self.home(version.id)
-        lineage = self.lineage(home) if home else [version.id]
+        lineage = self.lineage(home, version.id) if home else [version.id]
         i = lineage.index(version.id) + 1
         return {
-            "version": version.id, "content_hash": version.content_hash, "format": version.format.value,
+            "version": version.id, "workspace": details.held_by(self.bond, version.id).workspace.name,
+            "content_hash": version.content_hash, "format": version.format.value,
             "created_at": version.created_at, "name": home.name if home else version.id[:12],
             "title": home.title if home else None, "documents": [d.name for d in self.filed(version.id)],
             "version_index": i, "version_count": len(lineage), "latest": i == len(lineage),
@@ -274,7 +280,7 @@ class Summaries:
     def siblings(self, v: VersionId) -> list[VersionSummary]:
         """Summaries of every version in v's home document, oldest first (including v)."""
         home = self.home(v)
-        return [self.summary(details.version(self.bond, s)) for s in (self.lineage(home) if home else [v])]
+        return [self.summary(details.version(self.bond, s)) for s in (self.lineage(home, v) if home else [v])]
 
     def detail(self, version: Version) -> VersionDetail:
         """A version's summary, its text if it has text of its own, and its home document's versions."""
@@ -284,27 +290,39 @@ class Summaries:
 
 
 def node(summary: VersionSummary, citation_count: int, self_citation_count: int, is_source: bool) -> GraphNode:
-    """A version in the workspace as a graph node."""
+    """A version the workspace can read as a graph node."""
     return {**summary, "citation_count": citation_count, "self_citation_count": self_citation_count,
-            "is_source": is_source, "outside": False}
+            "is_source": is_source, "unreachable": False}
 
 
-def outside_node(v: VersionId) -> GraphNode:
-    """A GraphNode for a version outside the workspace: only its id is known here."""
+def unreachable_node(v: VersionId) -> GraphNode:
+    """A GraphNode for a version no reachable workspace holds: only its id is known here."""
     return {
-        "version": v, "content_hash": None, "name": v[:12], "title": None, "documents": [], "format": None,
-        "created_at": None, "version_index": 1, "version_count": 1, "latest": True,
-        "citation_count": 0, "self_citation_count": 0, "is_source": False, "outside": True,
+        "version": v, "workspace": None, "content_hash": None, "name": v[:12], "title": None, "documents": [],
+        "format": None, "created_at": None, "version_index": 1, "version_count": 1, "latest": True,
+        "citation_count": 0, "self_citation_count": 0, "is_source": False, "unreachable": True,
     }
+
+
+def read_node(bond: Bond, summaries: Summaries, v: VersionId, cited: list[StoredCitation]) -> GraphNode:
+    """A graph node for a version bond can read, from the citations it was written with."""
+    return node(summaries.summary(details.version(bond, v)), len(cited),
+                sum(any(s.version == v for s in c.supports) for c in cited),
+                any(c.kind is CitationKind.SOURCE and isinstance(c.claim, VersionLocator) for c in cited))
+
+
+def citations_of(bond: Bond, v: VersionId) -> list[StoredCitation]:
+    """The citations a version was written with, wherever bond reads it from; none if it is unreachable."""
+    owner = details.owner(bond, v)
+    return [] if owner is None else owner.records.citations(v)
 
 
 def shown(bond: Bond, ref: Ref) -> JsonObject:
     """A ref's locator as the viewer shows it: as stored, but a JSON value by its pointer.
 
-    A JSON value in a version outside the workspace is shown by its stored position: only its version knows
-    the keys."""
+    A JSON value in an unreachable version is shown by its stored position: only its version knows the keys."""
     locator = ref.locator
-    if not isinstance(locator, JsonLocator) or bond.records.version(ref.version) is None:
+    if not isinstance(locator, JsonLocator) or details.owner(bond, ref.version) is None:
         return locator.to_dict()
     d: JsonObject = {"type": "json", "pointer": details.pointer(bond, ref)}
     if locator.span is not None:
@@ -344,7 +362,7 @@ def citations(bond: Bond, cited: list[StoredCitation]) -> list[CitationView]:
 
     def version(v: VersionId) -> Version | None:
         if v not in versions:
-            versions[v] = bond.records.version(v)
+            versions[v] = None if details.owner(bond, v) is None else details.version(bond, v)
         return versions[v]
 
     def name(v: VersionId) -> str:
@@ -358,7 +376,7 @@ def citations(bond: Bond, cited: list[StoredCitation]) -> list[CitationView]:
     def support(s: Ref) -> SupportView:
         stored = version(s.version)
         return {"version": s.version, "locator": shown(bond, s), "name": name(s.version),
-                "format": stored.format.value if stored else None, "text": snippet(s), "outside": stored is None}
+                "format": stored.format.value if stored else None, "text": snippet(s), "unreachable": stored is None}
 
     return [
         {"id": c.id, "owner_version": c.owner_version, "kind": c.kind.value,
@@ -380,7 +398,9 @@ def graph(bond: Bond) -> Graph:
         c = counts.get(version.id)
         nodes.append(node(summaries.summary(version), c.citations if c else 0, c.self_supported if c else 0,
                           c.whole_source if c else False))
-    nodes += [outside_node(v) for v in bond.frontier()]
+    for v in bond.index.outside():  # cited here, held by a workspace this one links to or by none
+        nodes.append(unreachable_node(v) if details.owner(bond, v) is None else
+                     read_node(bond, summaries, v, citations_of(bond, v)))
     edges: dict[tuple[str, str], GraphEdge] = {}
     for edge in bond.index.edges():
         a, b = edge.citing, edge.cited
@@ -392,11 +412,12 @@ def graph(bond: Bond) -> Graph:
 
 def overview(bond: Bond, graph_limit: int) -> Overview:
     """Which workspace this is and how big, so a viewer can choose between the whole graph and browsing
-    documents. Versions outside the workspace aren't counted."""
+    documents. Only versions stored in the workspace itself are counted, besides the unreachable ones it cites."""
     ws = bond.workspace
+    unreachable = [v for v in bond.index.outside() if details.owner(bond, v) is None]
     return {"workspace": {"id": ws.id, "name": ws.name, "created_at": ws.created_at},
             "version_count": len(details.versions(bond)), "document_count": len(bond.documents()),
-            "outside_count": len(bond.frontier()), "graph_limit": graph_limit}
+            "unreachable_count": len(unreachable), "graph_limit": graph_limit}
 
 
 def documents(bond: Bond, q: str = "", offset: int = 0, limit: int = 50) -> DocumentsPage:
@@ -409,11 +430,10 @@ def documents(bond: Bond, q: str = "", offset: int = 0, limit: int = 50) -> Docu
     page: list[DocumentRow] = []
     for d in matching[offset:offset + limit]:
         history = bond.filing.history(d.id)
-        imported = history[-1].imported
         page.append({
             "id": d.id, "name": d.name, "title": d.title, "head": d.head, "created_at": d.created_at,
             "format": details.version(bond, d.head).format.value, "version_count": len({e.version for e in history}),
-            "updated_at": history[-1].at, "imported_from": imported.workspace_name if imported else None,
+            "updated_at": history[-1].at,
         })
     return {"total": len(matching), "offset": offset, "documents": page}
 
@@ -423,8 +443,9 @@ def neighborhood(
 ) -> Neighborhood:
     """The versions within depth citation hops of center, either way, as a graph like graph()'s.
 
-    Breadth first from center, through supports (what a version rests on) and
-    citers (what rests on it). Every version next to center is included, but
+    Breadth first from center, through supports (what a version rests on, here
+    or in a linked workspace) and citers in this workspace (what rests on it).
+    Every version next to center is included, but
     each one further out brings at most fanout new ones, so a hub (a policy
     every summary cites) doesn't fill the graph with its other citers. At most
     limit versions in all, nearest first; truncated says some were left out.
@@ -433,9 +454,9 @@ def neighborhood(
     details.version(bond, center)  # UnknownVersion if there is none
     owned: dict[VersionId, list[StoredCitation]] = {}
 
-    def citations_of(v: VersionId) -> list[StoredCitation]:
+    def cited_by_v(v: VersionId) -> list[StoredCitation]:
         if v not in owned:
-            owned[v] = bond.records.citations(v)
+            owned[v] = citations_of(bond, v)
         return owned[v]
 
     included, frontier, truncated = [center], [center], False
@@ -443,7 +464,7 @@ def neighborhood(
     for _ in range(depth):
         next_frontier = []
         for v in frontier:
-            near = [s.version for c in citations_of(v) for s in c.supports]
+            near = [s.version for c in cited_by_v(v) for s in c.supports]
             near += [c.owner_version for c in bond.index.supported_by(v)]
             brought = 0
             for n in dict.fromkeys(near):
@@ -462,15 +483,11 @@ def neighborhood(
     nodes: list[GraphNode] = []
     edges: dict[tuple[str, str], GraphEdge] = {}
     for v in included:
-        stored = bond.records.version(v)
-        if stored is None:
-            nodes.append(outside_node(v))
+        if details.owner(bond, v) is None:
+            nodes.append(unreachable_node(v))
             continue
-        cited = citations_of(v)
-        nodes.append(node(
-            summaries.summary(stored), len(cited), sum(any(s.version == v for s in c.supports) for c in cited),
-            any(c.kind is CitationKind.SOURCE and isinstance(c.claim, VersionLocator) for c in cited),
-        ))
+        cited = cited_by_v(v)
+        nodes.append(read_node(bond, summaries, v, cited))
         for c in cited:
             for to in dict.fromkeys(s.version for s in c.supports):
                 if to == v or to not in seen:
@@ -505,7 +522,8 @@ def declarations(bond: Bond, ref: Ref) -> DeclarationsView:
 
 
 def search_hits(bond: Bond, hits: list[Hit]) -> list[SearchHitView]:
-    return [{"ref": shown_ref(bond, h.ref), "documents": h.documents, "format": h.format.value,
+    return [{"ref": shown_ref(bond, h.ref), "workspace": h.workspace, "documents": h.documents,
+             "format": h.format.value,
              "snippet": h.snippet, "context": h.context.to_dict(), "kinds": _values(h.kinds),
              "declarations": declarations(bond, h.ref)} for h in hits]
 
@@ -526,17 +544,17 @@ def check_support(bond: Bond, ref: Ref, *, max_depth: int | None = None, limit: 
 
 
 def trace(bond: Bond, ref: Ref, max_depth: int | None = None) -> TraceView:
-    """bond.trace with node ids and each node's name, format, covering kinds and text; a node outside the
-    workspace has only its id and locator."""
+    """bond.trace with node ids and each node's name, format, covering kinds and text; an unreachable node has
+    only its id and locator."""
     t = bond.trace(ref, max_depth)
     owned: dict[VersionId, list[StoredCitation]] = {}
     summaries = Summaries(bond)
     nodes: list[TraceNode] = []
     for r in t.nodes:
         v = r.version
-        if v in t.frontier:
+        if v in t.unreachable:
             nodes.append({"id": node_id(bond, r), "version": v, "name": v[:12], "format": None,
-                          "locator": shown(bond, r), "kinds": [], "text": None, "outside": True})
+                          "locator": shown(bond, r), "kinds": [], "text": None, "unreachable": True})
             continue
         if v not in owned:
             owned[v] = bond.citations(v)
@@ -545,7 +563,7 @@ def trace(bond: Bond, ref: Ref, max_depth: int | None = None) -> TraceView:
         nodes.append({
             "id": node_id(bond, r), "version": v, "name": home.name if home else v[:12],
             "format": version.format.value, "locator": shown(bond, r),
-            "kinds": _values(covering_kinds(owned[v], r.locator)), "text": bond.text(r), "outside": False,
+            "kinds": _values(covering_kinds(owned[v], r.locator)), "text": bond.text(r), "unreachable": False,
         })
     edges: list[TraceEdgeView] = [
         {"citation_id": e.citation.id, "kind": e.citation.kind.value, "from": node_id(bond, e.node),

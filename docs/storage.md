@@ -33,8 +33,8 @@ case = Bond(PostgresStore(pool), S3Blobs(boto3.client("s3"), "evidence", prefix=
 - **One `Bond` is safe to share across threads**, and several processes or machines can share one store. Bond holds no connection or transaction itself: SQLite gives each thread its own connection, Postgres takes one from the pool per call.
 - **Nothing is updated in place.** A version's record, a document's name, each entry of its history and each of its titles is a key written once. A document's head is its latest history entry, and its title its latest title entry.
 - **Filing is creating the next history entry.** A write reads the document's head, then creates entry seq + 1. If another write created it first, the store refuses the create and the write fails with `stale_base` (or `document_exists`, for a new document). Writing a version that is already the head is a no-op, so a retried write succeeds.
-- **A write stores in order: blob, record, entry.** A crash, or a write that loses the race for its entry, can leave an orphan blob, or a version stored but filed in no document (an *unfiled* version, like one an import brings without filing). It is never anyone's head, and nothing rests on it unless something filed cites it. A head always has its record, and a record its bytes.
-- **Reverse lookups are an index Bond derives.** What cites a version, which documents hold it and what lies outside the workspace are kept in memory per `Bond`, caught up from the store before each such query, so writes by other processes are seen. Write checks and `verify` never read the index.
+- **A write stores in order: blob, record, entry.** A crash, or a write that loses the race for its entry, can leave an orphan blob, or a version stored but filed in no document (an *unfiled* version). It is never anyone's head, and nothing rests on it unless something filed cites it. A head always has its record, and a record its bytes.
+- **Reverse lookups are an index Bond derives.** What cites a version, which documents hold it and which cited versions are stored elsewhere are kept in memory per `Bond`, caught up from the store before each such query, so writes by other processes are seen. Write checks and `verify` never read the index.
 - **Backends store; they never judge.** Hashing, checks, kinds, policies and filing stay in Bond, and `verify` recomputes every id from what a backend returns.
 - `S3Blobs` sends each blob's sha256 with its upload, so S3 refuses bytes corrupted on the way.
 
@@ -49,9 +49,8 @@ Every value is JSON. `ws` is the workspace's id (`ws_` and 32 hex digits); a nam
 (ws, "records", version)             -> {id, content_hash, format, created_at,
                                          citations: [{id, kind, claim, attrs, supports: [[version, locator], …]}]}
 (ws, "names", sha256(name))          -> {id, name, created_at}           a document's id, claimed once
-(ws, "entries", document_id, seq)    -> {version, base, at, imported, origin}
+(ws, "entries", document_id, seq)    -> {version, base, at, origin}
 (ws, "titles", document_id, seq)     -> {title, at, after}               after: the entry seq it followed
-(ws, "imported", version)            -> {}                               an import brought it here, filed or not
 ```
 
 A claimed name with no entries yet is not a document (a writer stopped between the two). No derived data is stored: parsed documents are held in memory only (a bounded cache per `Bond`), and the index is rebuilt from the keys.
@@ -81,12 +80,12 @@ This is enforced, not hoped for: the kinds' validators refuse any other attr, an
 | `workspaces` values | a workspace's id, name and creation time | **Yes**: the name is free text the host chose; name workspaces with opaque case ids, not clients' names or case numbers |
 | `names` values | a document's id, name and creation time | **Yes**: names are free text, like file names |
 | `titles` values | each title a document has had, and when | **Yes**: titles are free text, and every past one is kept |
-| `entries` values | which versions a document held, and when; for an import, where it came from; for an ingested file, its `origin` | **Yes**, through an import's `workspace_name`, a copy of a workspace's name, and `origin`, free text like names and titles (a path like `Cases/Smith/fax.pdf` can hold a client's name); the rest are ids and timestamps |
+| `entries` values | which versions a document held, and when; for an ingested file, its `origin` | **Yes**, through `origin`, free text like names and titles (a path like `Cases/Smith/fax.pdf` can hold a client's name); the rest are ids and timestamps |
 | keys | ids, hashes (of names too), seqs | No |
 | `bond_schema` (SQL stores) | the schema version | No |
 
-**Across workspaces.** One store can hold many workspaces, and an import copies a version's record into the importing workspace, so each case holds its own copy of each policy it cites. A version's id is the same in every workspace that holds it, so someone with access across workspaces can see that two cases hold identical bytes (the same fax filed for two clients).
+**Across workspaces.** One store can hold many workspaces. A case that links to a policy library cites the library's versions where they are: nothing is copied into the case, and the records of the case name the library's versions by id. Bond keeps no record of links; the deployment does (`bond.local` keeps them in `home.db`). A version's id is the same in every workspace that holds it, so someone with access across workspaces can see that two cases hold identical bytes (the same fax filed for two clients).
 
 **What Bond emits.** Issues from writes and the authoring tools quote the text they are about (`no citation covers 'Jordan Avery'`), so a writer can fix it; they go to the caller, and Bond logs nothing. The viewer API and the authoring tools return document text to whoever calls them. The MCP server passes unexpected errors to the MCP SDK, which logs them, and a message can include values from a document, so treat those logs like the workspace.
 
-**Deleting.** Bond has no delete operation. A deployment that must delete documents deletes their blobs and, if names, titles or origins hold content, their name, title and entry keys (out of band: no Store deletes); citations into deleted versions then fail `verify` with `blob_missing`, and the records, holding no content, can stay. A workspace is the natural unit of deletion: nothing outside a case rests on it, so deleting a case is deleting its keys (every key that starts with its id, and its `workspaces` key) and the blobs no other workspace holds.
+**Deleting.** Bond has no delete operation. A deployment that must delete documents deletes their blobs and, if names, titles or origins hold content, their name, title and entry keys (out of band: no Store deletes); citations into deleted versions then fail `verify` with `blob_missing`, and the records, holding no content, can stay. A workspace is the natural unit of deletion: nothing outside a case rests on it (cases link to shared workspaces, never the other way), so deleting a case is deleting its keys (every key that starts with its id, and its `workspaces` key) and the blobs no other workspace holds.

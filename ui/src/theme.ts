@@ -28,11 +28,11 @@ export const FORMAT_COLOR: Record<Format, string> = {
   pdf: "#e07b5f",
 };
 
-/** A version outside the workspace: something here rests on it, but only its id is here. */
-export const OUTSIDE_COLOR = "#a3a9b4";
+/** An unreachable version: something here rests on it, but only its id is known here. */
+export const UNREACHABLE_COLOR = "#a3a9b4";
 
-/** A format's colour, or the outside colour for a version of which nothing is here. */
-export const formatColor = (format: Format | null) => (format === null ? OUTSIDE_COLOR : FORMAT_COLOR[format]);
+/** A format's colour, or the unreachable colour for a version of which nothing can be read. */
+export const formatColor = (format: Format | null) => (format === null ? UNREACHABLE_COLOR : FORMAT_COLOR[format]);
 
 /** Marks where navigation went: the graph edge just traversed (the CSS --accent flashes the target). */
 export const ACCENT = "#e8a33d";

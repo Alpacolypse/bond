@@ -2,7 +2,7 @@
 
     (ws, "names", sha256(name))        -> the document's id, name and creation time, claimed once
     (ws, "entries", document_id, seq)  -> the version it held from then on, the base it was written from, when,
-                                          and where an import or an ingested file came from
+                                          and where an ingested file came from
     (ws, "titles", document_id, seq)   -> a title, or none
 
 A document's head is its latest entry, and its title its latest title entry. A write advances a document by
@@ -18,10 +18,10 @@ from collections.abc import Callable, Container, Mapping
 from dataclasses import dataclass, replace
 
 from ..jsonvalue import JsonObject, JsonValue
-from ..models import BondError, DocumentId, DocumentRef, HistoryEntry, Imported, IssueCode, UnknownDocument, VersionId
+from ..models import BondError, DocumentId, DocumentRef, HistoryEntry, IssueCode, UnknownDocument, VersionId
 from . import Conflict, Filed, filing_problem, stale
 from .store import Key, LastKey, Store, now
-from .values import decode, encode, mapping, name_hash, optional_text, text
+from .values import decode, encode, name_hash, optional_text, text
 
 
 @dataclass(frozen=True)
@@ -144,16 +144,15 @@ class Filing:
     # --- writes ---
 
     def file(
-        self, v: VersionId, document: str, base: VersionId | None, *, imported: Imported | None = None,
-        origin: str | None = None, before: Callable[[], object] | None = None,
+        self, v: VersionId, document: str, base: VersionId | None, *, origin: str | None = None,
+        before: Callable[[], object] | None = None,
     ) -> Filed | Conflict:
         """File version v in document, from base, following filing_problem: the conflict, or the document after.
 
         before, if given, runs once the filing is allowed and before the entry that files v is created: what
         must be stored before anything names it (v's record). Then the next entry is created; if another write
         created it first, the head is read again: if it is v, the write already happened (a retry, or two
-        writers of the same version), and otherwise it is a conflict. imported and origin are recorded on the
-        entry.
+        writers of the same version), and otherwise it is a conflict. origin is recorded on the entry.
         """
         read = self.get(document)
         doc = None if read is None else read.ref
@@ -165,11 +164,11 @@ class Filing:
             before()
         if read is None:
             claim = self.claim(document)
-            entry = HistoryEntry(1, v, None, now(), imported, origin)
+            entry = HistoryEntry(1, v, None, now(), origin)
             title = None
         else:
             claim = Claim(read.ref.id, document, read.ref.created_at)
-            entry = HistoryEntry(read.seq + 1, v, read.ref.head, now(), imported, origin)
+            entry = HistoryEntry(read.seq + 1, v, read.ref.head, now(), origin)
             title = read.ref.title
         if not self.append(claim.id, entry):
             again = self.get(document)
@@ -192,9 +191,7 @@ class Filing:
 
     def append(self, doc: DocumentId, entry: HistoryEntry) -> bool:
         """Create entry at its seq unless one is there; True if this call created it."""
-        value: JsonObject = {"version": entry.version, "base": entry.base, "at": entry.at,
-                             "imported": None if entry.imported is None else entry.imported.to_dict(),
-                             "origin": entry.origin}
+        value: JsonObject = {"version": entry.version, "base": entry.base, "at": entry.at, "origin": entry.origin}
         return self.store.create((*self._entries(doc), entry.seq), encode(value))
 
     def retitle(self, name: str, title: str | None) -> DocumentRef:
@@ -229,9 +226,5 @@ def _claim(obj: Mapping[str, JsonValue]) -> Claim:
 
 def _entry(seq: int, obj: Mapping[str, JsonValue]) -> HistoryEntry:
     base = optional_text(obj, "base")
-    imported = None
-    if obj.get("imported") is not None:
-        i = mapping(obj.get("imported"), "an import's source")
-        imported = Imported(text(i, "workspace"), text(i, "workspace_name"), VersionId(text(i, "version")))
     return HistoryEntry(seq, VersionId(text(obj, "version")), None if base is None else VersionId(base),
-                        text(obj, "at"), imported, optional_text(obj, "origin"))
+                        text(obj, "at"), optional_text(obj, "origin"))

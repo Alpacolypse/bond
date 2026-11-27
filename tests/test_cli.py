@@ -64,34 +64,21 @@ def test_a_local_workspace_is_named_after_its_directory(tmp_path):
         assert again.workspace == bond.workspace
 
 
-def test_import_brings_a_document_from_one_workspace_into_another(tmp_path, capsys):
-    with Bond.local(tmp_path / "policies") as policies:
-        policies.ingest("policy", b"# IP-112\n\nSix weeks of written notice.\n", format=Format.MARKDOWN)
-    argv = ["import", "--from", str(tmp_path / "policies"), "--into", str(tmp_path / "case-001"), "policy"]
-    assert main(argv) == 0 and main(argv) == 0  # again: nothing new to bring
-    assert "imported 'policy' from 'policies' into 'case-001' as 'policy' with its provenance" in capsys.readouterr().out
-    with Bond.local(tmp_path / "case-001") as case:
-        [entry] = case.history("policy")
-        assert entry.imported is not None and entry.imported.workspace_name == "policies"
-    assert main(["import", "--from", str(tmp_path / "nowhere"), "--into", str(tmp_path / "x"), "policy"]) == 1
-    assert "no workspace at" in capsys.readouterr().err
-
-
-def test_mcp_serves_a_local_workspace_with_its_import_sources(tmp_path):
+def test_mcp_serves_a_local_workspace_linked_to_what_it_may_cite(tmp_path):
     with Bond.local(tmp_path / "policies") as policies:
         policies.ingest("policy", b"Six weeks.", format=Format.MARKDOWN)
     (tmp_path / "case-001").mkdir()  # an empty directory becomes a new workspace for the agent
-    argv = ["mcp", "--workspace", str(tmp_path / "case-001"), "--import-from", str(tmp_path / "policies"),
-            "--import-depth", "all", "--import-limit", "7"]
+    argv = ["mcp", "--workspace", str(tmp_path / "case-001"), "--link", str(tmp_path / "policies")]
     with mcp_served(parse(argv)) as served:
         [name] = served.workspaces.names()
         tools = served.tools(name)
         assert (name, tools.bond.workspace.name, tools.bond.documents()) == ("case-001", "case-001", [])
-        assert list(tools.sources) == ["policies"] and [d.document for d in tools.documents("policies")] == ["policy"]
-        assert (tools.import_depth, tools.import_limit) == (None, 7)
+        assert [b.workspace.name for b in tools.bond.links()] == ["policies"]
+        assert [d.document for d in tools.documents("policies")] == ["policy"]
+        [hit] = tools.search("Six weeks")
+        assert hit.workspace == "policies"
     with mcp_served(parse(["mcp", "--workspace", str(tmp_path / "case-001")])) as served:
-        tools = served.tools("case-001")
-        assert (dict(tools.sources), tools.import_depth, tools.import_limit) == ({}, 0, 100)
+        assert served.tools("case-001").bond.links() == []
 
 
 def test_mcp_needs_existing_directories(tmp_path, capsys):
@@ -99,7 +86,7 @@ def test_mcp_needs_existing_directories(tmp_path, capsys):
     assert "bond mcp: no workspace at" in capsys.readouterr().err
     assert not (tmp_path / "nothing").exists()
     (tmp_path / "case").mkdir()
-    assert main(["mcp", "--workspace", str(tmp_path / "case"), "--import-from", str(tmp_path / "nowhere")]) == 1
+    assert main(["mcp", "--workspace", str(tmp_path / "case"), "--link", str(tmp_path / "nowhere")]) == 1
     assert "bond mcp: no workspace at" in capsys.readouterr().err
 
 
@@ -110,20 +97,10 @@ def test_mcp_refuses_mixed_up_arguments(tmp_path, capsys):
         (["mcp", "--postgres", "postgresql://x", "--blobs", "b", "--s3-bucket", "b"],
          "--postgres needs exactly one of --blobs and --s3-bucket"),
         (["mcp", "--workspace", str(tmp_path), "--blobs", "b"], "go with --postgres"),
-        (["mcp", "--workspace", str(tmp_path), "--import-depth", "-1"], "a depth is a number of hops, or 'all'"),
-        (["mcp", "--workspace", str(tmp_path), "--import-limit", "0"], "must be a whole number, at least 1"),
     ):
         with pytest.raises(SystemExit) as e:
             parse(argv)
         assert e.value.code == 2 and problem in capsys.readouterr().err, argv
-
-
-def test_import_depth_is_a_number_of_hops_or_all(tmp_path, capsys):
-    root = ["import", "--from", str(tmp_path / "a"), "--into", str(tmp_path / "b"), "doc"]
-    assert (parse(root).depth, parse([*root, "--depth", "3"]).depth, parse([*root, "--depth", "all"]).depth) == (0, 3, None)
-    with pytest.raises(SystemExit):
-        parse([*root, "--depth", "-1"])
-    assert "a depth is a number of hops, or 'all'; got '-1'" in capsys.readouterr().err
 
 
 def test_view_offers_the_workspaces_named_or_else_the_whole_home(tmp_path, capsys):

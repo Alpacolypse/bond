@@ -12,9 +12,11 @@ uv run bond view --home .bond-demo --no-browser          # the API (and the buil
 cd ui && npm run dev                                       # Vite proxies /api to :8000
 ```
 
-A workspace's citations can rest on a version outside it: one an import left in the workspace it came from (see
-[Workspaces and imports](../docs/python-api.md#workspaces-and-imports)). Such a version is never served (`/api/versions/{v}` is a 404); where it appears, it is marked
-`"outside": true` and only its id, and the locator citing it, are known.
+A workspace's citations can rest on versions in the workspaces it links to (see
+[Workspaces and links](../docs/python-api.md#workspaces-and-links)). Those are served through it like its own:
+`/api/versions/{v}` and the routes under it answer for them, and each names the `workspace` it is in. A version no
+workspace it links to holds now (its link was removed, say) is unreachable: it is never served (`/api/versions/{v}` is
+a 404), and where it appears it is marked `"unreachable": true` and only its id, and the locator citing it, are known.
 
 ## Shared shapes
 
@@ -39,6 +41,7 @@ A workspace's citations can rest on a version outside it: one an import left in 
 ```json
 {
   "version": "5e29…",            // the version id (a sha256 over its content and citations), the id everywhere
+  "workspace": "case-001",       // the workspace it is filed in: this one, or one this one links to
   "content_hash": "ee87…",       // sha256 of its bytes: versions with the same bytes share it
   "name": "fax_case_001.reducto", // the version's home: the first document it was filed in
   "title": "Fax OCR, case 001",  // the home document's title for people, or null: show `name` then
@@ -65,10 +68,10 @@ once, at its latest entry, so after a revert the reverted-to version is last and
   "claim_text": "FAX COVER SHEET" | null,   // null for whole-version claims (e.g. an ingested file's SOURCE)
   "supports": [
     {
-      "version": "…", "name": "fax_case_001", "format": "pdf",   // format null if outside
-      "locator": Locator,        // a JSON locator outside the workspace is its stored {"path": [...]}
-      "text": "…" | null,        // null for pdf regions, whole versions, and versions outside
-      "outside": false           // true: the version isn't in this workspace, so it can't be opened
+      "version": "…", "name": "fax_case_001", "format": "pdf",   // format null if unreachable
+      "locator": Locator,        // a JSON locator in an unreachable version is its stored {"path": [...]}
+      "text": "…" | null,        // null for pdf regions, whole versions, and unreachable versions
+      "unreachable": false       // true: no workspace this one links to holds the version, so it can't be opened
     }
   ],
   "attrs": {"transcriber": "reducto"}
@@ -96,8 +99,8 @@ The viewer has no authentication: offering several stores makes all of them read
 
 Which workspace this is, and how big:
 `{"workspace": {"id": str, "name": str, "created_at": str}, "version_count": int, "document_count": int,
-"outside_count": int, "graph_limit": int}`. `outside_count` is how many versions something here rests on that
-aren't here. A workspace of more than `graph_limit` versions is browsed by document (`/api/documents`,
+"unreachable_count": int, "graph_limit": int}`. `version_count` counts the versions stored in this workspace, and
+`unreachable_count` how many versions something here rests on that no workspace it links to holds. A workspace of more than `graph_limit` versions is browsed by document (`/api/documents`,
 `/api/neighborhood`), not drawn whole.
 
 ### `GET /api/documents?q=…&offset=0&limit=50`
@@ -107,18 +110,16 @@ A page of documents, ordered by name, whose names or titles contain `q` (ignorin
 
 ```json
 {"total": 5001, "offset": 0, "documents": [{"id": "doc_…", "name": "cases/00042/summary", "title": "Summary, case 42" | null, "head": "<version>",
-  "format": "markdown", "created_at": "…", "updated_at": "…", "version_count": 1,
-  "imported_from": "policies" | null}]}
+  "format": "markdown", "created_at": "…", "updated_at": "…", "version_count": 1}]}
 ```
 
-`total` counts every match; `updated_at` is when the document last moved, `version_count` how many distinct
-versions its history holds, and `imported_from` the name of the workspace its current version was imported from
-(null if it was written here).
+`total` counts every match; `updated_at` is when the document last moved, and `version_count` how many distinct
+versions its history holds.
 
 ### `GET /api/neighborhood?version=V&depth=2&limit=200`
 
 The versions within `depth` (0 to 5) citation hops of V, either way: through supports (what a version rests on) and
-citers (what rests on it). It is a `Graph` like `/api/graph`'s, over just those versions, plus where it is centred:
+citers in this workspace (what rests on it). It is a `Graph` like `/api/graph`'s, over just those versions, plus where it is centred:
 
 ```json
 Graph + {"center": "<version>", "depth": 2, "truncated": false}
@@ -130,9 +131,10 @@ new ones, so a hub (a policy every summary cites) doesn't fill the graph with it
 
 ### `GET /api/graph`
 
-Every version is a node; edges aggregate citations between versions. Versions outside the workspace that something
-here rests on are nodes too, with `"outside": true`, `"format": null`, `"content_hash": null`, `"created_at": null`,
-no documents, and their id's first 12 characters as `name`. A workspace of more than `graph_limit` versions (see
+Every version is a node; edges aggregate citations between versions. Versions in linked workspaces that something here
+rests on are nodes too, named and filed as their own workspace has them. Unreachable ones are nodes with
+`"unreachable": true`, `"workspace": null`, `"format": null`, `"content_hash": null`, `"created_at": null`, no
+documents, and their id's first 12 characters as `name`. A workspace of more than `graph_limit` versions (see
 `/api/overview`) is refused with a 400.
 
 ```json
@@ -142,7 +144,7 @@ no documents, and their id's first 12 characters as `name`. A workspace of more 
       "citation_count": 153,                 // citations owned by this version
       "self_citation_count": 18,             // of those, how many have a support inside this same version
       "is_source": false,                    // true if a whole-version SOURCE citation covers it (an ingested file)
-      "outside": false                       // true for a version outside the workspace (see above)
+      "unreachable": false                   // true for an unreachable version (see above)
     }
   ],
   "edges": [
@@ -205,7 +207,7 @@ Provenance from a ref down to its roots, as a DAG (each distinct ref appears onc
 {
   "root": "<node id>",
   "nodes": [{"id": str, "version": str, "name": str, "format": Format | null,
-             "locator": Locator, "kinds": [Kind], "text": str | null, "outside": bool}],
+             "locator": Locator, "kinds": [Kind], "text": str | null, "unreachable": bool}],
   "edges": [{"citation_id": str, "kind": Kind, "from": "<node id>", "to": ["<node id>"],
              "claim": Locator}]
 }
@@ -217,10 +219,10 @@ UNSOURCED edge has `"to": []`.
 ### `GET /api/search?q=…&limit=50&documents=d1,d2`
 
 ```json
-[{"ref": Ref, "documents": [str], "format": Format, "snippet": str, "context": {…}, "kinds": [Kind], "declarations": Declarations}]
+[{"ref": Ref, "workspace": str, "documents": [str], "format": Format, "snippet": str, "context": {…}, "kinds": [Kind], "declarations": Declarations}]
 ```
 
-Finds a literal phrase in every document's head, or only in `documents` (comma-separated). Every match is
+Finds a literal phrase in every head of this workspace's documents, or only in `documents` (comma-separated). Every match is
 returned with its direct declarations; `/api/check-support` says whether a match's support reaches declared
 sources. `q` is required and `limit` must be positive.
 

@@ -3,8 +3,9 @@
 Evidence: ingest, write_document (and check_write), search, declarations, check_support, citations, trace, cited_by
 and verify, plus blob and text to read what a version holds.
 Filing: document, documents and history. Writes go through both: each stores a version and files it in a document.
-Between workspaces: import_document brings a document in from another workspace, import_version a version an
-import left outside, and frontier lists what was left outside.
+Between workspaces: a workspace may link to others (a shared policy library, say), as its deployment decides.
+Its citations can rest on versions in those, and in what they link to in turn; reading a version, checking a
+citation, tracing and verifying all look there too. A link gives read access only: writes stay in this workspace.
 
 Lower-level reads (version records, where a span is, JSON pointers) are in bond.details, and whole-workspace
 reads for the viewer in bond.http.viewer, both on top of these."""
@@ -13,7 +14,7 @@ from __future__ import annotations
 
 import functools
 import os
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, replace
 from functools import lru_cache, partial
 from pathlib import Path
@@ -35,7 +36,6 @@ from .models import (
     Freshness,
     HistoryEntry,
     Hit,
-    Imported,
     Issue,
     IssueCode,
     Ref,
@@ -57,7 +57,7 @@ from .models import (
     WriteResult,
 )
 from .parsers import JsonDoc, Malformed, ParsedDoc
-from .plans import FilingChange, PlannedVersion, WritePlan, checked
+from .plans import FilingChange, WritePlan, checked
 from .policies import STRICT, Policy
 from .storage import Blobs, Conflict, NewVersion, filing_problem
 from .storage.filing import Filing
@@ -85,20 +85,20 @@ def _one_view[**P, R](method: Callable[Concatenate[Bond, P], R]) -> Callable[Con
 class Bond:
     """One provenance-enforcing workspace: its keys in a store, its bytes in blobs.
 
-    A workspace is a closed world, like a case: writes cite versions in it.
-    Imports preserve references to dependencies that have not yet been copied.
-    Safe to share across threads, with any backends: Bond holds no connection
-    or transaction of its own. See bond.storage for the backends.
+    A workspace is a world of its own, like a case: writes cite versions in it, or in the workspaces it links to
+    (links), which a deployment decides and may change at any time. Safe to share across threads, with any
+    backends: Bond holds no connection or transaction of its own. See bond.storage for the backends.
     """
 
     def __init__(
         self, store: Store, blobs: Blobs, workspace: str | None = None, *, create: bool = True,
-        parsed_cache_size: int = DEFAULT_PARSED_CACHE_SIZE,
+        links: Links = (), parsed_cache_size: int = DEFAULT_PARSED_CACHE_SIZE,
     ):
         """The workspace named workspace in store (created if missing, unless create is False; with no name, the only
         one there is), its bytes in blobs, keeping up to parsed_cache_size parsed versions in memory.
 
-        The store and blobs stay the caller's: close() leaves them open."""
+        links are the workspaces this one links to (see set_links). The store and blobs stay the caller's: close()
+        leaves them open."""
         self.store = store
         self.blobs = blobs
         self.workspace: Workspace = open_workspace(store, workspace, create)  # the workspace this Bond reads and writes
@@ -106,13 +106,14 @@ class Bond:
         self.filing = Filing(store, self.workspace.id)  # its documents
         self.index = MemoryIndex(self.records, self.filing)  # reverse lookups, derived from both
         self._owned: list[object] = []  # what this Bond opened itself, and closes
+        self.set_links(links)
         # Per instance, so the cache doesn't keep this Bond alive after it is closed.
         self._load = lru_cache(maxsize=parsed_cache_size)(self._load_version)
 
     @classmethod
     def local(
         cls, root: str | os.PathLike[str], parsed_cache_size: int = DEFAULT_PARSED_CACHE_SIZE,
-        create: bool = True,
+        create: bool = True, links: Links = (),
     ) -> Bond:
         """Open a workspace in a local directory: a SQLite store and a directory of blobs, closed with the Bond.
 
@@ -126,7 +127,8 @@ class Bond:
         name = None if (root / "bond.db").exists() else root.resolve().name
         store = SQLiteStore(root / "bond.db", create=create)
         try:
-            bond = cls(store, LocalBlobs(root / "blobs"), name, create=create, parsed_cache_size=parsed_cache_size)
+            bond = cls(store, LocalBlobs(root / "blobs"), name, create=create, links=links,
+                       parsed_cache_size=parsed_cache_size)
         except BaseException:
             store.close()
             raise
@@ -147,6 +149,58 @@ class Bond:
 
     def __exit__(self, *exc: object) -> None:
         self.close()
+
+    # --- links ---------------------------------------------------------------
+
+    def set_links(self, links: Links) -> None:
+        """Link this workspace to others: its citations may rest on their versions, and on those of the workspaces
+        they link to, and so on. links is a list of opened workspaces, or a function giving them, asked on every
+        read, for a deployment whose links change while it runs. A link gives read access, nothing more."""
+        if isinstance(links, Iterable):
+            fixed = tuple(links)
+            self._links: Callable[[], Iterable[Bond]] = lambda: fixed
+        else:
+            self._links = links
+
+    def links(self) -> list[Bond]:
+        """The workspaces this one links to directly, as its deployment says now."""
+        return [b for b in self._links() if b.workspace.id != self.workspace.id]
+
+    def reachable(self) -> list[Bond]:
+        """Every other workspace this one can read: those it links to, those they link to, and so on, nearest first.
+        Each once, however often it is reached; links that loop back are followed no further."""
+        seen = {self.workspace.id}
+        found: list[Bond] = []
+        level = self.links()
+        while level:
+            following: list[Bond] = []
+            for b in level:
+                if b.workspace.id in seen:
+                    continue
+                seen.add(b.workspace.id)
+                found.append(b)
+                following += b.links()
+            level = following
+        return found
+
+    def _owner(self, version: VersionId) -> Bond | None:
+        """The workspace a version is read from: this one if it holds it, else the nearest reachable one that
+        does; None if none does."""
+        if self.records.as_stored(version) is not None:
+            return self
+        return next((b for b in self.reachable() if b.records.as_stored(version) is not None), None)
+
+    def _held(self, version: VersionId) -> Bond:
+        """The workspace a version is read from; raises UnknownVersion if none reachable holds it."""
+        owner = self._owner(version)
+        if owner is None:
+            raise UnknownVersion(version)
+        return owner
+
+    def _citations_of(self, version: VersionId) -> list[StoredCitation]:
+        """The citations a version was written with, wherever it is held; none if it is unreachable."""
+        owner = self._owner(version)
+        return [] if owner is None else owner.records.citations(version)
 
     # --- ingest --------------------------------------------------------------
 
@@ -185,15 +239,15 @@ class Bond:
         whole = [Citation(CitationKind.SOURCE, VersionLocator(), [])]
         version = version_id(hash_bytes(data), fmt, whole)
         if self.records.version(version):  # stored already: only filing it is left, so skip parsing it again
-            return self._plan_filing((), FilingChange(document, version, base, None, origin, title), STRICT)
+            return self._plan_filing(None, FilingChange(document, version, base, origin, title), STRICT)
         return self._plan_written(data, fmt, document, whole, base, STRICT, title, origin)
 
     # --- reading versions -----------------------------------------------------
 
     def blob(self, version: VersionId) -> bytes:
         """A version's raw bytes, in any format; raises CorruptVersion if they are missing."""
-        stored = self._version(version)
-        data = self.blobs.get(stored.content_hash)
+        owner = self._held(version)
+        data = owner.blobs.get(owner._version(version).content_hash)
         if data is None:
             raise CorruptVersion(version, "its blob is missing")
         return data
@@ -206,8 +260,10 @@ class Bond:
         return self._doc(ref.version).text(ref.locator)
 
     def _version(self, version: VersionId) -> Version:
-        """A stored version's record; raises UnknownVersion if there is none."""
+        """A version's record, here or in a reachable workspace; raises UnknownVersion if there is none."""
         stored = self.records.version(version)
+        if stored is None:
+            stored = self._held(version).records.version(version)
         if stored is None:
             raise UnknownVersion(version)
         return stored
@@ -220,7 +276,9 @@ class Bond:
     ) -> list[Hit]:
         """Find a phrase in the current versions of documents and pin each match to a locator.
 
-        Searches the heads of all documents, or of the given documents, or only inside one reference (within).
+        Searches the heads of all documents in this workspace, or of the given documents, or only inside one
+        reference (within), which may be in a workspace this one links to; search a linked workspace's documents
+        on its own Bond.
         Matching is case-insensitive and forgives whitespace, quote characters, ligatures and hyphenated line
         breaks. Matches are not collapsed. Each hit carries its direct declarations; check_support() says
         whether a match's support reaches declared sources.
@@ -253,12 +311,13 @@ class Bond:
         matches = self._doc(version.id).search(phrase)
         if not matches:
             return []
-        owned = self.records.citations(version.id)
-        holding = self.index.holding(version.id)
+        owner = self._held(version.id)
+        owned = owner.records.citations(version.id)
+        holding = owner.index.holding(version.id)
         names = [d.name for d in holding]
         newer = {d.name: d.head for d in holding if d.head != version.id}
         return [
-            Hit(Ref(version.id, m.locator), list(names), version.format, m.snippet, m.context,
+            Hit(Ref(version.id, m.locator), owner.workspace.name, list(names), version.format, m.snippet, m.context,
                 self._declarations(Ref(version.id, m.locator), owned), dict(newer))
             for m in matches
         ]
@@ -270,7 +329,7 @@ class Bond:
         format coverage rules; PDF selections use geometric coverage rather than text extraction.
         """
         self._check_ref(ref)
-        return self._declarations(ref, self.records.citations(ref.version))
+        return self._declarations(ref, self._citations_of(ref.version))
 
     def _declarations(self, ref: Ref, citations: list[StoredCitation]) -> Declarations:
         selected = tuple(c for c in citations if overlaps(c.claim, ref.locator))
@@ -382,53 +441,40 @@ class Bond:
         content_hash = hash_bytes(content)
         version = version_id(content_hash, format, list(citations))
         new = NewVersion(version, content_hash, format, content, list(citations))
-        return checked(WritePlan(self.workspace.id, (PlannedVersion(new),),
-                                 FilingChange(document, version, base, None, origin, title), policy,
+        return checked(WritePlan(self.workspace.id, new, FilingChange(document, version, base, origin, title), policy,
                                  warnings=tuple(self._superseded(citations))))
 
-    def _plan_filing(
-        self, versions: tuple[PlannedVersion, ...], filing: FilingChange | None, policy: Policy,
-    ) -> WritePlan:
-        """A plan that files a version stored already (or brought with it), checked for its label and filing."""
-        if filing is not None:
-            issues = _label_issues(filing.document, filing.title)
-            conflict = filing_problem(self.filing.document(filing.document), filing.document, filing.base,
-                                      filing.version)
-            if conflict:
-                issues.append(_conflict_issue(conflict))
-            if issues:
-                raise WriteError(issues)
-        return checked(WritePlan(self.workspace.id, versions, filing, policy))
+    def _plan_filing(self, new: NewVersion | None, filing: FilingChange, policy: Policy) -> WritePlan:
+        """A plan that files a version stored already, checked for its label and filing."""
+        issues = _label_issues(filing.document, filing.title)
+        conflict = filing_problem(self.filing.document(filing.document), filing.document, filing.base, filing.version)
+        if conflict:
+            issues.append(_conflict_issue(conflict))
+        if issues:
+            raise WriteError(issues)
+        return checked(WritePlan(self.workspace.id, new, filing, policy))
 
     def commit(self, plan: WritePlan) -> WriteResult:
-        """Do a planned write: store its versions (blobs, then records), file one (its history entry, then its
-        title), and say what changed. Raises WriteError(stale_base) if the document moved since the plan was made,
-        having stored no version it files. A plan that wasn't made by this process's checks (one loaded from JSON)
-        is checked again first, and refused with every issue as a write would be. Committing again is harmless."""
+        """Do a planned write: store its version (blob, then record), file it (its history entry, then its title),
+        and say what changed. Raises WriteError(stale_base) if the document moved since the plan was made, having
+        stored no version. A plan that wasn't made by this process's checks (one loaded from JSON) is checked again
+        first, and refused with every issue as a write would be. Committing again is harmless."""
         if plan.workspace != self.workspace.id:
             raise ValueError(f"this plan was made in another workspace ({plan.workspace}), not {self.workspace.id}")
-        for pv in plan.versions:
-            new = pv.new
-            if hash_bytes(new.data) != new.content_hash or version_id(
-                    new.content_hash, new.format, list(new.citations)) != new.id:
-                raise BondError(f"the plan's version {new.id[:12]}… doesn't hash to its id")
+        new = plan.new
+        if new is not None and new.id != plan.filing.version:
+            raise BondError(f"the plan files version {plan.filing.version[:12]}…, but holds {new.id[:12]}…")
+        if new is not None and (hash_bytes(new.data) != new.content_hash
+                                or version_id(new.content_hash, new.format, list(new.citations)) != new.id):
+            raise BondError(f"the plan's version {new.id[:12]}… doesn't hash to its id")
         if not plan.checked:
             self._recheck(plan)
-        filed_new = None
-        stored = False
-        for pv in plan.versions:
-            self.blobs.put(pv.new.content_hash, pv.new.data)  # before any record names it
-            if pv.imported:
-                self.records.mark_imported(pv.new.id)
-            if plan.filing is not None and pv.new.id == plan.filing.version:
-                filed_new = pv.new  # stored with its filing, only if that goes through
-            else:
-                stored |= self.records.put(pv.new)
-        if plan.filing is None:  # an import that files nothing: advanced says whether it stored anything
-            return WriteResult(plan.version or VersionId(""), stored)
+        before = None
+        if new is not None:
+            self.blobs.put(new.content_hash, new.data)  # before any record names it
+            before = partial(self.records.put, new)  # stored with its filing, only if that goes through
         f = plan.filing
-        before = None if filed_new is None else partial(self.records.put, filed_new)
-        filed = self.filing.file(f.version, f.document, f.base, imported=f.imported, origin=f.origin, before=before)
+        filed = self.filing.file(f.version, f.document, f.base, origin=f.origin, before=before)
         if isinstance(filed, Conflict):  # another write moved the document since the plan was made
             raise WriteError([_conflict_issue(filed)])
         if f.title is not None and (filed.advanced or f.base == f.version or self._untitled_since_filed(f.document)):
@@ -443,24 +489,18 @@ class Bond:
         return head is not None and self.filing.titled_after(head.ref.id) < head.seq
 
     def _recheck(self, plan: WritePlan) -> None:
-        """Check a plan from outside as the write it plans would be checked, and that it is whole: each version
-        once, and the version it files among them or stored here already. Its policy and imported marks are
-        taken as written: ids show what a plan holds, not who may commit it, so a host loads only plans it
-        staged itself."""
+        """Check a plan from outside as the write it plans would be checked, and that it is whole: the version it
+        files is the one it holds, or stored here already. Its policy is taken as written: ids show what a plan
+        holds, not who may commit it, so a host loads only plans it staged itself."""
         issues: list[Issue] = []
-        ids = [pv.new.id for pv in plan.versions]
-        if len(set(ids)) != len(ids):
-            raise BondError("the plan holds a version more than once")
-        for pv in plan.versions:
-            if not pv.imported:
-                issues += self._check(pv.new.data, pv.new.format, pv.new.citations, plan.policy, frozenset())
-                if plan.policy.refuse_superseded:
-                    issues += self._superseded(pv.new.citations)
-        if plan.filing is not None:
-            if plan.filing.version not in ids and self.records.version(plan.filing.version) is None:
-                raise BondError(f"the plan files version {plan.filing.version[:12]}…, which it doesn't hold and "
-                                "isn't stored here")
-            issues += _label_issues(plan.filing.document, plan.filing.title)
+        if (new := plan.new) is not None:
+            issues += self._check(new.data, new.format, new.citations, plan.policy, frozenset())
+            if plan.policy.refuse_superseded:
+                issues += self._superseded(new.citations)
+        elif self.records.version(plan.filing.version) is None:
+            raise BondError(f"the plan files version {plan.filing.version[:12]}…, which it doesn't hold and "
+                            "isn't stored here")
+        issues += _label_issues(plan.filing.document, plan.filing.title)
         if issues:
             raise WriteError(issues)
 
@@ -479,7 +519,7 @@ class Bond:
         unchecked: frozenset[VersionId],
     ) -> list[Issue]:
         """The issues a write of this content and these citations would have, except that supports into the
-        versions unchecked (ones verify can't read: outside the workspace, or with bytes it reports itself) are
+        versions unchecked (ones verify can't read: unreachable, or with bytes it reports itself) are
         taken as written: their citations still cover their claims, but nothing that needs what they rest on,
         like a quote's text, can be checked here."""
         issues: list[Issue] = []
@@ -519,10 +559,10 @@ class Bond:
                     problem = doc.check(support.locator) if doc is not None else None
                 case Ref() if support.version in unchecked:
                     continue
-                case Ref() if self.records.version(support.version) is None:
+                case Ref() if self._owner(support.version) is None:
                     errors.append(Issue(
-                        IssueCode.UNKNOWN_VERSION, f"version {support.version!r} does not exist", citation_index=i,
-                        support_index=j, locator=support.locator,
+                        IssueCode.UNKNOWN_VERSION, f"version {support.version!r} isn't in this workspace or any it "
+                        "links to", citation_index=i, support_index=j, locator=support.locator,
                         hint="find versions with search() or document(name).head; use SelfRef for this version",
                     ))
                     continue
@@ -560,95 +600,6 @@ class Bond:
         """A document's history, oldest first: the versions it pointed at, and the base each was written from."""
         return self.filing.history(self.document(name).id)
 
-    # --- between workspaces ----------------------------------------------------
-
-    def import_document(
-        self, source: Bond, document: str, *, name: str | None = None, base: VersionId | None = None,
-        depth: int | None = 0, limit: int | None = None,
-    ) -> WriteResult:
-        """Copy a document's head from source, preserving its bytes, citations and identity, and file it here
-        under name (by default, the same name), from base as in write_document.
-
-        depth counts dependency hops copied with it (None for all). limit bounds distinct versions visited,
-        including versions already here. Dependencies left out remain an explicit outside-workspace frontier
-        (frontier()); importing one of them later changes nothing here, since its id is already committed to.
-        Import never promotes derived or unsourced text to a source declaration.
-        """
-        return self.commit(self.plan_import(source, document, name=name, base=base, depth=depth, limit=limit))
-
-    def plan_import(
-        self, source: Bond, document: str, *, name: str | None = None, base: VersionId | None = None,
-        depth: int | None = 0, limit: int | None = None,
-    ) -> WritePlan:
-        """The plan import_document commits: the versions it copies, each checked against its id in source, and
-        the filing. Raises WriteError for a filing that would be refused. Stores nothing."""
-        _check_other(self, source)
-        head = source.document(document).head
-        imported = Imported(source.workspace.id, source.workspace.name, head)
-        versions = self._bring(source, [head], depth, limit)
-        return self._plan_filing(versions, FilingChange(document if name is None else name, head, base, imported),
-                                 STRICT)
-
-    def import_version(
-        self, source: Bond, version: VersionId, *, depth: int | None = 0, limit: int | None = None,
-    ) -> WriteResult:
-        """Copy a version an earlier import left outside (see frontier()) from source, without filing it, and what
-        it rests on as import_document does. advanced says whether anything was copied."""
-        result = self.commit(self.plan_import_version(source, version, depth=depth, limit=limit))
-        return WriteResult(version, result.advanced)
-
-    def plan_import_version(
-        self, source: Bond, version: VersionId, *, depth: int | None = 0, limit: int | None = None,
-    ) -> WritePlan:
-        """The plan import_version commits. Stores nothing."""
-        _check_other(self, source)
-        if self.records.version(version) is None and not self.index.supported_by(version):
-            raise ValueError(f"nothing in this workspace rests on version {version[:12]}…; import a document "
-                             "by name instead")
-        return replace(self._plan_filing(self._bring(source, [version], depth, limit), None, STRICT), subject=version)
-
-    def frontier(self) -> list[VersionId]:
-        """Versions that something in this workspace rests on but that aren't in it: the frontier imports left."""
-        return self.index.outside()
-
-    def _bring(
-        self, source: Bond, versions: list[VersionId], depth: int | None, limit: int | None,
-    ) -> tuple[PlannedVersion, ...]:
-        """The versions to copy from source: these, then what they rest on, depth hops down; those already here are
-        kept, but what they rest on is still followed. Each before any that rests on it. Stores nothing."""
-        if depth is not None and depth < 0:
-            raise ValueError("depth must be non-negative or None")
-        if limit is not None and limit < 1:
-            raise ValueError("limit must be at least 1")
-        brought: list[PlannedVersion] = []
-        seen: set[VersionId] = set()
-        level, hops = versions, 0
-        while level:
-            following: list[VersionId] = []
-            for v in level:
-                if v in seen:
-                    continue
-                if limit is not None and len(seen) >= limit:
-                    return tuple(reversed(brought))
-                seen.add(v)
-                cited = self._copy(source, v, brought)
-                following += [s.version for c in cited for s in c.supports if s.version != v]
-            if depth is not None and hops >= depth:
-                break
-            level, hops = following, hops + 1
-        return tuple(reversed(brought))
-
-    def _copy(self, source: Bond, v: VersionId, brought: list[PlannedVersion]) -> list[StoredCitation]:
-        """Add one version from source to brought unless it is here; its citations, none if source doesn't have it
-        either (it stays on the frontier)."""
-        if self.records.version(v) is not None:
-            return self.records.citations(v)
-        if source.records.version(v) is None:
-            return []
-        new = _checked_import(source, v)
-        brought.append(PlannedVersion(new, imported=True))
-        return source.records.citations(v)
-
     # --- citations / trace ---------------------------------------------------
 
     def citations(self, version: VersionId) -> list[StoredCitation]:
@@ -658,47 +609,50 @@ class Bond:
         """
         self._version(version)
         doc = self._doc(version)
-        return sorted(self.records.citations(version), key=lambda c: (doc.position(c.claim), c.id))
+        return sorted(self._citations_of(version), key=lambda c: (doc.position(c.claim), c.id))
 
     @_one_view
     def trace(self, ref: Ref, max_depth: int | None = None, limit: int | None = None) -> Trace:
         """Follow provenance from ref down to its sources, as a DAG.
 
         A node (V, L) has an edge for every citation owned by V whose claim
-        overlaps L; the citation's supports are the next nodes. A chain ends at a
-        SOURCE or UNSOURCED edge (no supports), or at a node with no edges
-        (uncited), or at a version outside this workspace, which an import left
-        behind: those are listed in the trace's frontier. Each distinct ref is one
+        overlaps L; the citation's supports are the next nodes, which may be in
+        workspaces this one links to. A chain ends at a SOURCE or UNSOURCED edge
+        (no supports), or at a node with no edges (uncited), or at a version no
+        reachable workspace holds: those are listed as unreachable. Each distinct ref is one
         node, at its shortest distance from ref; max_depth bounds that distance,
         and limit the number of nodes (the nearest are kept). Raises ValueError if
         ref's locator isn't valid in its version.
         """
         self._check_ref(ref)
-        owned: dict[VersionId, list[StoredCitation]] = {}
-        outside: set[VersionId] = set()
+        owners: dict[VersionId, Bond | None] = {}
+
+        def owner(v: VersionId) -> Bond | None:
+            if v not in owners:
+                owners[v] = self._owner(v)
+            return owners[v]
 
         def down(node: Ref) -> list[tuple[StoredCitation, list[Ref]]]:
-            if node.version not in owned:
-                here = self.records.version(node.version) is not None
-                owned[node.version] = self.records.citations(node.version) if here else []
-                if not here:
-                    outside.add(node.version)
-            return [(c, c.supports) for c in _edges_at(owned[node.version], node.locator)]
+            held = owner(node.version)
+            cited = [] if held is None else held.records.citations(node.version)
+            return [(c, c.supports) for c in _edges_at(cited, node.locator)]
 
         nodes, edges, complete = _walk(ref, down, max_depth, limit)
-        # A node past max_depth was never stepped into; find out whether it is here all the same.
-        outside |= {n.version for n in nodes if n.version not in owned and self.records.version(n.version) is None}
+        versions = list(dict.fromkeys(n.version for n in nodes))
+        unreachable = frozenset(v for v in versions if owner(v) is None)
         newer: dict[VersionId, dict[str, VersionId]] = {}
-        for v in dict.fromkeys(n.version for n in nodes):
-            if moved := {d.name: d.head for d in self.index.holding(v) if d.head != v}:
+        for v in versions:
+            held = owner(v)
+            if held is not None and (moved := {d.name: d.head for d in held.index.holding(v) if d.head != v}):
                 newer[v] = moved
-        return Trace(ref, nodes, edges, complete, frozenset(outside), newer)
+        return Trace(ref, nodes, edges, complete, unreachable, newer)
 
     @_one_view
     def cited_by(self, ref: Ref) -> list[StoredCitation]:
-        """Citations, from any version, with a support in ref.version that overlaps ref.locator.
+        """Citations, from any version in this workspace, with a support in ref.version that overlaps ref.locator.
 
-        The reverse of one hop of trace. A VersionLocator matches every support
+        The reverse of one hop of trace, within this workspace: what cites a version of a linked workspace is
+        asked here, never there (a library can't list the cases that cite it). A VersionLocator matches every support
         in the version. Raises ValueError if ref's locator isn't valid in its version.
         """
         self._check_ref(ref)
@@ -710,8 +664,10 @@ class Bond:
     @_one_view
     def transcriptions_of(self, version: VersionId) -> list[TranscriptionOf]:
         """Versions whose TRANSCRIPTION citations rest on version: its transcriptions, found by what they cite,
-        never by their names. Each with its producer and where it is filed. Raises UnknownVersion."""
-        self._version(version)
+        never by their names, in the workspace that holds version. Each with its producer and where it is filed.
+        Raises UnknownVersion."""
+        if (owner := self._held(version)) is not self:
+            return owner.transcriptions_of(version)
         found: dict[VersionId, str | None] = {}
         for c in self.cited_by(Ref(version, VersionLocator())):
             if c.kind is CitationKind.TRANSCRIPTION:
@@ -725,7 +681,8 @@ class Bond:
 
     @_one_view
     def freshness(self, ref: Ref, document: str | None = None, as_of: str | None = None) -> Freshness:
-        """Whether ref's version is still current in each document that holds it (or only in document), computed
+        """Whether ref's version is still current in each document that holds it (or only in document), in the
+        workspace that holds it (this one, or one it links to), computed
         now, never stored. For a version a document has moved past: its head, when it moved, and, for a span
         narrower than the whole version, whether the span's text is in the head (where, if so). as_of, a time
         as Bond records them, also asks whether the version was the document's head then. Raises ValueError if
@@ -741,17 +698,16 @@ class Bond:
         """
         self._check_ref(ref)
         v = ref.version
-        holding = [d for d in self.index.holding(v) if document is None or d.name == document]
+        owner = self._held(v)
+        holding = [d for d in owner.index.holding(v) if document is None or d.name == document]
         found: list[DocumentFreshness] = []
-        imported = self.records.imported(v)
         for d in holding:
             # The head, when v was last held and what followed, all from one read of the history, so a write
             # meanwhile (a revert to v, say) can't make them disagree.
-            history = self.filing.history(d.id)
+            history = owner.filing.history(d.id)
             held = [i for i, e in enumerate(history) if e.version == v]
             if not held:
                 continue
-            imported |= any(history[i].imported is not None for i in held)
             head = history[-1].version
             current = head == v
             superseded_at = None if current else history[held[-1] + 1].at
@@ -761,7 +717,7 @@ class Bond:
                 current_as_of = bool(then) and then[-1].version == v
             span = None if current or isinstance(ref.locator, VersionLocator) else self._span_fate(ref, head)
             found.append(DocumentFreshness(d.name, current, head, superseded_at, current_as_of, span))
-        return Freshness(ref, tuple(found), imported)
+        return Freshness(ref, tuple(found))
 
     def _span_fate(self, ref: Ref, head: VersionId) -> SpanFate:
         """What became of a span's text in head: there at the same place, elsewhere, or not at all.
@@ -794,7 +750,7 @@ class Bond:
         found: list[Issue] = []
         for i, c in enumerate(citations):
             for j, s in enumerate(c.supports):
-                if not isinstance(s, Ref) or self.records.version(s.version) is None or self._locator_problem(s):
+                if not isinstance(s, Ref) or self._owner(s.version) is None or self._locator_problem(s):
                     continue
                 fresh = self.freshness(s)
                 if fresh.superseded:
@@ -818,45 +774,47 @@ class Bond:
         Rules are today's and policy is the one supplied now; the historical policy is not stored.
         Neither source authority nor semantic support is evaluated. Document names, histories and timestamps are not covered.
 
-        A version outside this workspace, which an import left behind, can't be
-        checked here: it is reported once, as OUTSIDE_WORKSPACE, and the
+        Versions in workspaces this one links to are checked as well. A version
+        no reachable workspace holds can't be checked here: it is reported once,
+        as UNREACHABLE, and the
         citations resting on it are checked as far as they can be without it,
         as are those resting on a version whose own bytes are missing or damaged,
         which that version reports. So an empty list still means everything
         beneath version was checked. Raises UnknownVersion if version itself
-        isn't in this workspace.
+        isn't in this workspace or one it links to.
         """
-        if self.records.as_stored(version) is None:
+        if self._owner(version) is None:
             raise UnknownVersion(version)
         issues: list[Issue] = []
         seen: set[VersionId] = set()
-        outside: dict[VersionId, None] = {}
+        unreachable: dict[VersionId, None] = {}
         stack = [version]
         while stack:
             v = stack.pop()
             if v in seen:
                 continue
             seen.add(v)
-            record = self.records.as_stored(v)  # checked against v itself, whatever version it names
-            if record is None:
-                outside[v] = None
+            owner = self._owner(v)
+            record = None if owner is None else owner.records.as_stored(v)  # checked against v, whatever it names
+            if owner is None or record is None:
+                unreachable[v] = None
                 continue
             stored, cited = record.version, record.citations
             beneath = [s.version for c in cited for s in c.supports if s.version != v]
             unchecked = frozenset(s for s in set(beneath) if not self._intact(s))
-            issues += [replace(i, version=v) for i in self._verify_one(stored, cited, policy, unchecked)]
+            issues += [replace(i, version=v) for i in self._verify_one(owner, stored, cited, policy, unchecked)]
             stack += beneath
         return issues + [
-            Issue(IssueCode.OUTSIDE_WORKSPACE, "this version isn't in the workspace, so what rests on it can't be "
-                  "checked here", hint="bring it in with import_version(source, version) from the workspace it "
-                  "was imported from", version=v)
-            for v in outside
+            Issue(IssueCode.UNREACHABLE, "this version is in neither this workspace nor any it links to, so what "
+                  "rests on it can't be checked here", hint="link this workspace to the one that holds it", version=v)
+            for v in unreachable
         ]
 
     def _verify_one(
-        self, version: Version, cited: list[StoredCitation], policy: Policy, unchecked: frozenset[VersionId],
+        self, owner: Bond, version: Version, cited: list[StoredCitation], policy: Policy,
+        unchecked: frozenset[VersionId],
     ) -> list[Issue]:
-        """Issues with one version, not with the versions it cites."""
+        """Issues with one version, held by owner, not with the versions it cites."""
         v = version.id
         issues = []
         written = [c.as_written() for c in cited]
@@ -865,7 +823,7 @@ class Bond:
                 issues.append(Issue(IssueCode.ID_MISMATCH, f"citation {c.id[:12]}… does not hash to its id"))
         if version_id(version.content_hash, version.format, written) != v:
             issues.append(Issue(IssueCode.ID_MISMATCH, "its content hash, format and citations do not hash to its id"))
-        content = self.blobs.get(version.content_hash)
+        content = owner.blobs.get(version.content_hash)
         if content is None:
             return issues + [Issue(IssueCode.BLOB_MISSING, "its blob is missing")]
         if hash_bytes(content) != version.content_hash:
@@ -873,13 +831,14 @@ class Bond:
         return issues + self._check(content, version.format, written, policy, unchecked)
 
     def _intact(self, version: VersionId) -> bool:
-        """Whether what rests on a version can be checked against it: it is here, and its bytes are there, hash to
-        its content hash and are well-formed."""
-        record = self.records.as_stored(version)
-        if record is None or record.stored_id != version:
+        """Whether what rests on a version can be checked against it: it is reachable, and its bytes are there,
+        hash to its content hash and are well-formed."""
+        owner = self._owner(version)
+        record = None if owner is None else owner.records.as_stored(version)
+        if owner is None or record is None or record.stored_id != version:
             return False
         stored = record.version
-        data = self.blobs.get(stored.content_hash)
+        data = owner.blobs.get(stored.content_hash)
         return (data is not None and hash_bytes(data) == stored.content_hash
                 and not isinstance(self._load(version), Malformed))
 
@@ -888,8 +847,9 @@ class Bond:
     def _load_version(self, version: VersionId) -> ParsedDoc | Malformed:
         """A stored version, parsed, or what is wrong with its bytes. Read through the self._load cache, which can't
         go stale: versions are immutable."""
-        stored = self._version(version)
-        data = self.blobs.get(stored.content_hash)
+        owner = self._held(version)
+        stored = owner._version(version)
+        data = owner.blobs.get(stored.content_hash)
         return Malformed("its blob is missing") if data is None else parse(stored.format, data)
 
     def _doc(self, version: VersionId) -> ParsedDoc:
@@ -917,10 +877,14 @@ class _Graph:
     bond: Bond
 
     def parsed(self, version: VersionId) -> ParsedDoc | None:
-        return None if self.bond.records.version(version) is None else self.bond._doc(version)
+        return None if self.bond._owner(version) is None else self.bond._doc(version)
 
     def citations(self, version: VersionId) -> list[StoredCitation]:
         return self.bond.citations(version)
+
+
+# The workspaces a workspace links to: opened workspaces, or a function giving them now (see Bond.set_links).
+Links = Iterable[Bond] | Callable[[], Iterable[Bond]]
 
 
 def _encoded(content: bytes | str, format: Format | None) -> tuple[bytes, Format]:
@@ -938,25 +902,6 @@ def superseded_message(fresh: Freshness) -> str:
                 SpanStatus.UNKNOWN: ""}[None if d.span is None else d.span.status]
         parts.append(f"{d.document!r} has moved past it to {d.head[:12]}…{fate}")
     return f"cites version {fresh.ref.version[:12]}…, which no document holds as its head now: " + "; ".join(parts)
-
-
-def _check_other(here: Bond, source: Bond) -> None:
-    if source.workspace.id == here.workspace.id:
-        raise ValueError("an import brings material in from another workspace; this is the same one")
-
-
-def _checked_import(source: Bond, v: VersionId) -> NewVersion:
-    """Validate the pinned artifact's identity without relying on a parsed-content cache."""
-    stored = source._version(v)
-    cited = source.records.citations(v)
-    data = source.blob(v)
-    written = [c.as_written() for c in cited]
-    if (hash_bytes(data) != stored.content_hash
-            or any(citation_id(w) != c.id for c, w in zip(cited, written, strict=True))
-            or version_id(stored.content_hash, stored.format, written) != v):
-        raise BondError(f"version {v[:12]}… in workspace {source.workspace.name!r} doesn't hash to its id; "
-                        "this version was not imported (bond.verify there says what changed)")
-    return NewVersion(v, stored.content_hash, stored.format, data, written)
 
 
 def _walk(

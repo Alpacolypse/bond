@@ -18,6 +18,7 @@ export function makeCitation(overrides: Partial<Citation> = {}): Citation {
 export function makeNode(version: string, overrides: Partial<GraphNode> = {}): GraphNode {
   return {
     version,
+    workspace: "case",
     content_hash: "",
     name: version,
     title: null,
@@ -30,7 +31,7 @@ export function makeNode(version: string, overrides: Partial<GraphNode> = {}): G
     citation_count: 0,
     self_citation_count: 0,
     is_source: false,
-    outside: false,
+    unreachable: false,
     ...overrides,
   };
 }

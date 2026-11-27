@@ -21,12 +21,15 @@ def root(tmp_path_factory: pytest.TempPathFactory):
 @pytest.fixture(scope="module")
 def seeded(root):
     with ExitStack() as stack:
-        yield {name: stack.enter_context(Bond.local(root / "workspaces" / name, create=False)) for name in seed.STORES}
+        policies = stack.enter_context(Bond.local(root / "workspaces" / "policies", create=False))
+        cases = {name: stack.enter_context(Bond.local(root / "workspaces" / name, create=False, links=[policies]))
+                 for name in seed.STORES if name != "policies"}
+        yield {**cases, "policies": policies}
 
 
 def case_data(seeded, case="001"):
     bond = seeded[f"case-{case}"]
-    docs = {"policy_112": bond.document("policy_ip112").head}
+    docs = {"policy_112": seeded["policies"].document("policy_ip112").head}
     for doc in bond.documents():
         if doc.name.endswith(".reducto"):
             docs[f"fax_{case}"] = doc.head
@@ -85,8 +88,10 @@ def test_the_reconsideration_traces_through_the_review_to_the_page(seeded):
 
 @pytest.mark.parametrize("case", ["001", "003"])
 def test_each_case_is_a_connected_graph(seeded, case):
+    """Connected through what it cites in the policies it links to, too."""
     bond, _ = case_data(seeded, case)
-    graph = {v.id: set() for v in details.versions(bond)}
+    graph: dict[str, set[str]] = {v.id: set() for v in details.versions(bond)}
+    graph |= {v.id: set() for v in details.versions(seeded["policies"])}
     for v in graph:
         for c in bond.citations(v):
             for s in c.supports:
@@ -151,12 +156,10 @@ def test_clients_are_isolated_and_only_the_policy_is_shared(seeded, root):
     assert a.search("Jordan Avery") and not a.search("Samuel Okafor")
     assert b.search("Samuel Okafor") and not b.search("Jordan Avery")
     assert [Home(root).links(c) for c in ("case-001", "case-003")] == [["policies"], ["policies"]]
-    shared = {v.id for v in details.versions(a)} & {v.id for v in details.versions(b)}
-    assert shared == {policies.document("policy_ip112").head}
+    assert not {v.id for v in details.versions(a)} & {v.id for v in details.versions(b)}  # nothing copied
+    policy = policies.document("policy_ip112").head
     assert len(policies.documents()) == 1
     for bond in (a, b):
-        [entry] = bond.history("policy_ip112")
-        assert entry.imported is not None
-        assert entry.imported.workspace == policies.workspace.id
-        assert not bond.frontier()
+        assert bond.filing.document("policy_ip112") is None and details.owner(bond, policy) is policies
+        assert any(policy in {s.version for c in bond.citations(d.head) for s in c.supports} for d in bond.documents())
         assert all(not bond.verify(doc.head, policy=ALLOW_GAPS) for doc in bond.documents())

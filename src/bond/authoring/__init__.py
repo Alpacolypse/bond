@@ -2,8 +2,8 @@
 
 A document is read as a draft with its citations written in (<bond:cite> tags in text; $bond wrappers and
 tags in JSON; tags in CSV and TSV cells), and written back the same way; evidence is cited by handles that
-name exact spans. Tools binds a workspace, a policy and the workspaces it may import from, for a host to hand
-to an agent; every write goes through the core under that policy, so the core still enforces everything.
+name exact spans, in the workspace or a workspace it links to. Tools binds a workspace and a policy, for a host
+to hand to an agent; every write goes through the core under that policy, so the core still enforces everything.
 See docs/agents.md.
 """
 
@@ -16,7 +16,6 @@ from .tools import (
     Edit,
     Evidence,
     Grounds,
-    ImportOutcome,
     Link,
     Listing,
     Outcome,
@@ -38,7 +37,6 @@ __all__ = [
     "Edit",
     "Evidence",
     "Grounds",
-    "ImportOutcome",
     "Link",
     "Listing",
     "Outcome",

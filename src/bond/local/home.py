@@ -12,7 +12,9 @@ separator, and a name can't start with a dot, which keeps `.` and `..` meaning d
 The home also keeps two kinds of decision, rows in its home.db, made only by a person (`bond link`, `bond grant`,
 or a click in the app view) and never by an agent:
 
-- a link lets documents be imported from one workspace into another; it gives no access to work in the other.
+- a link lets one workspace's documents cite another's (a case citing a policy library): an agent working in the
+  first can read, search and cite the second, and what the second links to, but never write there. Links never
+  loop, so a shared workspace can't come to rest on the cases that cite it.
 - a grant lets the agent of a server configuration (`bond mcp --grants NAME`) work in a workspace. It belongs to
   the configuration, not to a process or a chat: the host may restart the server or share one process between
   chats, and the server can tell neither apart. So a grant covers every chat that configuration serves until
@@ -129,19 +131,34 @@ class Home:
     # --- links -----------------------------------------------------------------
 
     def links(self, name: str) -> list[str]:
-        """The workspaces documents may be imported from into name, in the order they were linked."""
+        """The workspaces name links to (whose documents its own may cite), in the order they were linked."""
         return self._column("SELECT source FROM links WHERE workspace = ? ORDER BY at, rowid", check_name(name))
 
+    def reaches(self, name: str, other: str) -> bool:
+        """Whether name links to other, directly or through workspaces it links to."""
+        seen, level = {name}, [name]
+        while level:
+            level = [n for w in level for n in self.links(w) if n not in seen]
+            if other in level:
+                return True
+            seen.update(level)
+        return False
+
     def link(self, name: str, source: str) -> bool:
-        """Let documents be imported from source into name; False if they already could. Both must exist."""
+        """Let name's documents cite source's; False if they already could. Both must exist, and source must not
+        already reach name: links never loop."""
         self.require(name)
         self.require(source)
         if name == source:
             raise BondError("a workspace can't be linked to itself")
+        if self.reaches(source, name):
+            raise BondError(f"{source!r} already links to {name!r}, directly or through others; links can't loop, "
+                            "so a workspace never rests on one that rests on it")
         return self._change("INSERT INTO links VALUES (?, ?, ?) ON CONFLICT DO NOTHING", name, source, _now())
 
     def unlink(self, name: str, source: str) -> bool:
-        """Stop documents being imported from source into name; False if they couldn't be. What was imported stays."""
+        """Stop name's documents citing source's; False if they couldn't. What already cites source stays, and is
+        unreachable from name until it is linked again."""
         return self._change("DELETE FROM links WHERE workspace = ? AND source = ?", check_name(name), source)
 
     # --- grants ----------------------------------------------------------------

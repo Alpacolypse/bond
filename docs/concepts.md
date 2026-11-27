@@ -6,7 +6,7 @@ Bond stores bytes, citations, and filing. Everything else, including the structu
 - **Document.** A name, like a file path, with a stable id and an append-only history of the versions it pointed at; the last is its head. Documents are filing, never provenance. One version can be filed in many documents, and one document can hold the same version more than once (a revert).
 - **Citation.** A provenance record: this part of a version (its subject span, stored as `claim`) rests on these parts of other versions (its supports), in this way (its kind); or declares a source; or declares no supporting evidence.
 - **Locator.** The address of a span inside one version, in that version's format: a character range, a JSON value, a table cell, a region of a PDF page. A locator always travels with its version as a `Ref(version, locator)`.
-- **Workspace.** A closed world of documents and their versions, such as one case. Writes cite versions in it; material from another workspace comes in by import. Who may open which workspace is the host's one access decision.
+- **Workspace.** A world of documents and their versions, such as one case. Writes cite versions in it, or in the workspaces it links to, where they are: a case links to a shared policy library and cites it with nothing copied. Who may open which workspace, and which links to which, are the host's access decisions.
 
 A **source** is a property of a region, not of a document: an ingested file is a source throughout, and a written document can have source regions next to cited ones.
 
@@ -80,7 +80,7 @@ An id hashes the ids it cites, so ids form a Merkle DAG: one expected id (record
 
 ## Trace
 
-A node `(V, L)` has an edge for every citation of `V` whose claim overlaps `L`, and that citation's supports are the next nodes. So a support pointing at a paragraph of a summary picks up every citation inside it, and each of those the text it cites, down to a page region. A chain ends at a `source` edge (declared origin), an `unsourced` edge (no declared support), a node with no edges (uncited), or a version outside the workspace.
+A node `(V, L)` has an edge for every citation of `V` whose claim overlaps `L`, and that citation's supports are the next nodes. So a support pointing at a paragraph of a summary picks up every citation inside it, and each of those the text it cites, down to a page region. A chain ends at a `source` edge (declared origin), an `unsourced` edge (no declared support), a node with no edges (uncited), or an unreachable version: one held by no workspace the traced one links to now (a link was removed, say).
 
 The graph is acyclic: supports into other versions must exist when a version is written, and supports inside one are checked for loops. `cited_by` walks one hop the other way: what to look at again when evidence turns out to be wrong, like an OCR misreading on page 2.
 
@@ -110,7 +110,7 @@ Every supporting reference of a relevant derived citation must pass. An overlapp
 
 `limit` counts distinct references including the root; `max_depth=0` inspects only direct declarations. Shared ancestry is read once per query. Issues identify affected spans with a `SupportReason` and one explanatory path of references. Reasons include undeclared content, unsourced declarations, missing versions, depth/reference limits, invalid references, cycles, and a support containing no content under the coverage rules.
 
-Support is a query result, not a stored property of a version. The same immutable version can be `UNKNOWN` in one workspace and `SUPPORTED` in another, or change outcome after importing a missing dependency. Changing the query budget can change its outcome too. Any future cross-query cache must account for workspace evidence availability, the queried reference, assessment rules, and query parameters; a version ID alone is not a valid cache key.
+Support is a query result, not a stored property of a version. The same immutable version can be `UNKNOWN` in one workspace and `SUPPORTED` in another, or change outcome when a link to what it rests on is made or removed. Changing the query budget can change its outcome too. Any future cross-query cache must account for workspace evidence availability, the queried reference, assessment rules, and query parameters; a version ID alone is not a valid cache key.
 
 Bond reserves `SupportStatus` for its documented structural check. Application judgments such as accepted, needs review, or authoritative belong in application-owned enums and functions built over `declarations()`, `trace()`, and/or `check_support()`.
 
@@ -128,4 +128,4 @@ What everything relies on, and what any change has to keep:
 8. Provenance composes by overlap, every edge runs between spans of versions, and edges never loop.
 9. Evidence and filing are separate. Citations point at versions, never documents, and a write advances a document only from the head it started from.
 10. Records hold no content: every stored field of a version and its citations is a hash, an enum, a number, a positional locator, a producer id or Bond's workspace id.
-11. The workspace is the unit of access, isolation and deletion. Citations never cross workspaces; material enters one only by import, and a support outside the workspace is a valid state that `verify` reports rather than fails.
+11. The workspace is the unit of access, isolation and deletion. Citations rest on versions in the workspace or in the workspaces it links to, which a deployment decides; a workspace can read what those link to in turn, links never give write access, and a deployment's links never loop, so a shared workspace never rests on the cases that cite it. A support no reachable workspace holds (its link was removed) is a valid state that `verify` reports as `unreachable` rather than fails.
