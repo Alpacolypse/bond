@@ -1,8 +1,11 @@
 """Checked writes and verify(): integrity always, a policy for the rest, at write time and offline alike."""
 
+import pytest
+
 from bond import (
     ALLOW_GAPS,
     STRICT,
+    BondError,
     Citation,
     CitationKind,
     Format,
@@ -18,7 +21,7 @@ from bond import (
 from bond.models import Issue, SupportStatus
 from bond.storage.local import LocalBlobs
 from case_001 import SUMMARY, build_citations
-from conftest import rewrite_record, store_unchecked
+from conftest import overwrite, rewrite_record, store_unchecked
 
 FIRST = "Water leaking through the bathroom ceiling for 8 weeks."
 
@@ -200,3 +203,14 @@ def test_a_lost_blob_beneath_hides_nothing_about_what_rests_on_it(bond, case):
 
 def bond_citations(bond, version: VersionId) -> list[Citation]:
     return [Citation(c.kind, c.claim, list(c.supports), c.attrs) for c in bond.citations(version)]
+
+
+def test_a_whole_record_swapped_under_another_key_is_caught(bond):
+    a = bond.ingest("a", b"First note.", format=Format.MARKDOWN).version
+    b = bond.ingest("b", b"Second note.", format=Format.MARKDOWN).version
+    b_record = bond.store.get((bond.workspace.id, "records", b))
+    assert b_record is not None
+    overwrite(bond.store, (bond.workspace.id, "records", a), b_record)  # an intact record, under the wrong key
+    with pytest.raises(BondError, match="corrupt"):
+        bond.blob(a)
+    assert IssueCode.ID_MISMATCH in {i.code for i in bond.verify(a)}

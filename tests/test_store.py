@@ -181,3 +181,40 @@ def test_documents_and_versions_list_oldest_first():
         assert isinstance(file_in(ws, v, name, None), Filed)
     assert [d.name for d in ws.filing.documents()] == names
     assert [v.id for v in ws.index.versions()] == versions
+
+
+class CountingStore(MemoryStore):
+    """A MemoryStore that counts the calls made of it."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.calls = 0
+
+    def get(self, key):
+        self.calls += 1
+        return super().get(key)
+
+    def list(self, prefix, after=None):
+        self.calls += 1
+        return super().list(prefix, after)
+
+    def last(self, prefix):
+        self.calls += 1
+        return super().last(prefix)
+
+
+@pytest.mark.parametrize("n", [10, 100])
+def test_a_search_reads_the_store_a_number_of_times_linear_in_the_documents(n):
+    from bond import Format
+
+    store = CountingStore()
+    bond = Bond(store, MemoryBlobs(), "ws")
+    for i in range(n):
+        bond.ingest(f"doc{i}", f"Note {i}.".encode(), format=Format.MARKDOWN)
+    bond.search("absent")  # warm the caches
+    store.calls = 0
+    assert bond.search("absent") == []
+    assert store.calls <= 6 * n + 10, store.calls  # one catch-up, and each head once: linear, not quadratic
+    store.calls = 0
+    assert len(bond.search("Note 7.")) == 1
+    assert store.calls <= 6 * n + 20, store.calls

@@ -14,7 +14,7 @@ no entries yet (a writer stopped between the two) is not a document, and the nex
 from __future__ import annotations
 
 import uuid
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Container, Mapping
 from dataclasses import dataclass, replace
 
 from ..jsonvalue import JsonObject, JsonValue
@@ -98,6 +98,14 @@ class Filing:
             if data is not None:
                 found.append(_claim(decode(data, "a document's name")))
         return sorted(found, key=lambda c: (c.created_at, c.id))
+
+    def new_claims(self, known: Container[Key]) -> dict[Key, Claim]:
+        """The name claims whose keys aren't in known, by key: what an index hasn't read yet."""
+        found = {}
+        for key in self.store.list((self.ws, "names")):
+            if key not in known and (data := self.store.get(key)) is not None:
+                found[key] = _claim(decode(data, "a document's name"))
+        return found
 
     def head(self, claim: Claim) -> Head | None:
         """The document claim names, with its head; None if it has no entries yet."""

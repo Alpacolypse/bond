@@ -11,11 +11,13 @@ reads for the viewer in bond.http.viewer, both on top of these."""
 
 from __future__ import annotations
 
+import functools
 import os
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from functools import lru_cache, partial
 from pathlib import Path
+from typing import Concatenate
 
 from . import kinds
 from .formats import from_suffix, parse, sniff, spec
@@ -62,6 +64,17 @@ from .support import check_support, partition
 # Parsed documents kept in memory by default. Versions are immutable, so any eviction is safe.
 DEFAULT_PARSED_CACHE_SIZE = 256
 
+
+
+def _one_view[**P, R](method: Callable[Concatenate[Bond, P], R]) -> Callable[Concatenate[Bond, P], R]:
+    """Run a query against one catch-up of the index, however many lookups it makes."""
+
+    @functools.wraps(method)
+    def wrapper(self: Bond, *args: P.args, **kwargs: P.kwargs) -> R:
+        with self.index.view():
+            return method(self, *args, **kwargs)
+
+    return wrapper
 
 class Bond:
     """One provenance-enforcing workspace: its keys in a store, its bytes in blobs.
@@ -187,6 +200,7 @@ class Bond:
 
     # --- search --------------------------------------------------------------
 
+    @_one_view
     def search(
         self, phrase: str, *, documents: list[str] | None = None, within: Ref | None = None, limit: int = 50,
     ) -> list[Hit]:
@@ -222,12 +236,15 @@ class Bond:
         return [v for v in self.index.versions() if v.id in heads]
 
     def _search_version(self, version: Version, phrase: str) -> list[Hit]:
+        matches = self._doc(version.id).search(phrase)
+        if not matches:
+            return []
         owned = self.records.citations(version.id)
         names = [d.name for d in self.index.holding(version.id)]
         return [
             Hit(Ref(version.id, m.locator), list(names), version.format, m.snippet, m.context,
                 self._declarations(Ref(version.id, m.locator), owned))
-            for m in self._doc(version.id).search(phrase)
+            for m in matches
         ]
 
     def declarations(self, ref: Ref) -> Declarations:
@@ -527,6 +544,7 @@ class Bond:
         doc = self._doc(version)
         return sorted(self.records.citations(version), key=lambda c: (doc.position(c.claim), c.id))
 
+    @_one_view
     def trace(self, ref: Ref, max_depth: int | None = None, limit: int | None = None) -> Trace:
         """Follow provenance from ref down to its sources, as a DAG.
 
@@ -556,6 +574,7 @@ class Bond:
         outside |= {n.version for n in nodes if n.version not in owned and self.records.version(n.version) is None}
         return Trace(ref, nodes, edges, complete, frozenset(outside))
 
+    @_one_view
     def cited_by(self, ref: Ref) -> list[StoredCitation]:
         """Citations, from any version, with a support in ref.version that overlaps ref.locator.
 
@@ -591,7 +610,8 @@ class Bond:
         beneath version was checked. Raises UnknownVersion if version itself
         isn't in this workspace.
         """
-        self._version(version)
+        if self.records.as_stored(version) is None:
+            raise UnknownVersion(version)
         issues: list[Issue] = []
         seen: set[VersionId] = set()
         outside: dict[VersionId, None] = {}
@@ -601,11 +621,11 @@ class Bond:
             if v in seen:
                 continue
             seen.add(v)
-            stored = self.records.version(v)
-            if stored is None:
+            record = self.records.as_stored(v)  # checked against v itself, whatever version it names
+            if record is None:
                 outside[v] = None
                 continue
-            cited = self.records.citations(v)
+            stored, cited = record.version, record.citations
             beneath = [s.version for c in cited for s in c.supports if s.version != v]
             unchecked = frozenset(s for s in set(beneath) if not self._intact(s))
             issues += [replace(i, version=v) for i in self._verify_one(stored, cited, policy, unchecked)]
@@ -639,9 +659,10 @@ class Bond:
     def _intact(self, version: VersionId) -> bool:
         """Whether what rests on a version can be checked against it: it is here, and its bytes are there, hash to
         its content hash and are well-formed."""
-        stored = self.records.version(version)
-        if stored is None:
+        record = self.records.as_stored(version)
+        if record is None or record.stored_id != version:
             return False
+        stored = record.version
         data = self.blobs.get(stored.content_hash)
         return (data is not None and hash_bytes(data) == stored.content_hash
                 and not isinstance(self._load(version), Malformed))
