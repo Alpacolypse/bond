@@ -2,14 +2,14 @@
 
 A handle is the version's id prefix followed by its locator, written out:
 
-    88dd9008                                         the whole version
-    88dd9008@305-393                                 code points [305, 393) of a text version
-    c3a863cb/result/chunks/1/blocks/4/content        a JSON value
-    c3a863cb/result/chunks/1/blocks/4/content@6-33   code points [6, 33) inside that string
-    9f1e2a7c:p2:0.114,0.294,0.581,0.352               a region of a PDF page (pages from 1)
-    4b7e0d21:r3:c2                                   a table's cell: row 3, column 2 (both from 1)
-    4b7e0d21:r3:c2@0-5                               code points [0, 5) inside that cell
-    4b7e0d21:r3  4b7e0d21:c2                          a whole row; a whole column
+    88dd9008a1f3                                        the whole version
+    88dd9008a1f3@305-393                                code points [305, 393) of a text version
+    c3a863cb52e0/result/chunks/1/blocks/4/content       a JSON value
+    c3a863cb52e0/result/chunks/1/blocks/4/content@6-33  code points [6, 33) inside that string
+    9f1e2a7c04bd:p2:0.114,0.294,0.581,0.352             a region of a PDF page (pages from 1)
+    4b7e0d21c96a:r3:c2                                  a table's cell: row 3, column 2 (both from 1)
+    4b7e0d21c96a:r3:c2@0-5                              code points [0, 5) inside that cell
+    4b7e0d21c96a:r3  4b7e0d21c96a:c2                    a whole row; a whole column
 
 A JSON value is named by its JSON Pointer, written in its URI form (RFC 6901, section 6): characters outside
 a safe set are percent-encoded, so a handle never contains a space, a quote or an unescaped "@". Bond stores

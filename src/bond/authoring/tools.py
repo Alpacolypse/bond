@@ -404,7 +404,7 @@ def draft(bond: Bond, document: str) -> Draft:
     text = _render(bond, document, head)
     if isinstance(text, Problem):
         raise ToolError(text.message)
-    return Draft(document, text, _evidence_of(bond, head), _prefix(bond, head))
+    return Draft(document, text, _evidence_of(bond, head), _prefix(head))
 
 
 def _render(bond: Bond, document: str, version: VersionId) -> str | Problem:
@@ -603,7 +603,7 @@ def _handle(bond: Bond, ref: Ref) -> str:
     locator holds no keys."""
     locator = ref.locator
     named = Pointer(details.pointer(bond, ref), locator.span) if isinstance(locator, JsonLocator) else locator
-    return format_handle(_prefix(bond, ref.version), named)
+    return format_handle(_prefix(ref.version), named)
 
 
 def _ref_handle(bond: Bond, ref: Ref) -> str:
@@ -618,13 +618,15 @@ def _ids(bond: Bond) -> list[VersionId]:
     return list(dict.fromkeys(v.id for b in [bond, *bond.reachable()] for v in details.versions(b)))
 
 
-def _prefix(bond: Bond, version: VersionId) -> str:
-    """The shortest prefix of a version's id, at least 8 characters, that no other version it can read shares."""
-    ids = _ids(bond)
-    for n in range(8, len(version)):
-        if sum(i.startswith(version[:n]) for i in ids) == 1:
-            return version[:n]
-    return version
+# How much of a version's id a handle shows: 48 bits, so two versions a workspace can read sharing a prefix is a
+# one-in-many-billions event even at a million versions; resolving refuses an ambiguous one rather than guess.
+HANDLE_PREFIX = 12
+
+
+def _prefix(version: VersionId) -> str:
+    """The prefix of a version's id a handle shows: always the same, whatever else is stored, so a handle given out
+    once never changes."""
+    return version[:HANDLE_PREFIX]
 
 
 def _resolve(bond: Bond, token: str) -> Ref | Problem:

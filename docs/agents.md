@@ -14,7 +14,7 @@ tools.read("fax_case_001.reducto")                    # the whole document as it
 
 hits = tools.search("No significant damage to other rooms.", document="fax_case_001.reducto")
 hit = next(h for h in hits if h.support is SupportStatus.SUPPORTED)
-# hit.handle "d246983a/result/chunks/1/blocks/4/content@131-168" (the exact span), hit.kinds ["transcription"],
+# hit.handle "d246983a71c5/result/chunks/1/blocks/4/content@131-168" (the exact span), hit.kinds ["transcription"],
 # hit.where "page 2 · /result/chunks/1/blocks/4/content", the text around it, and the handle of its passage.
 # The same words also appear, unsourced, in Reducto's chunk-level text: those hits come back "unsupported".
 
@@ -41,7 +41,7 @@ tools.edit("notes", [Edit(old="…", new="…")], draft.base)     # find-and-rep
 Citations are inline tags around the text they cite. Supports are handles from a search or draft, or `#id`: the text of another tag, or of a `<bond:anchor id="…">`, in the same draft. An anchor names part of a sentence without citing it, so a conclusion can rest on just that part:
 
 ```
-<bond:cite kind="quote" from="d246983a/result/chunks/1/blocks/4/content@12-63"><bond:anchor id="drip">Active drip</bond:anchor> from the bathroom ceiling light fixture</bond:cite>.
+<bond:cite kind="quote" from="d246983a71c5/result/chunks/1/blocks/4/content@12-63"><bond:anchor id="drip">Active drip</bond:anchor> from the bathroom ceiling light fixture</bond:cite>.
 
 <bond:cite kind="paraphrase" from="#drip">The leak is still active.</bond:cite>
 ```
@@ -69,15 +69,15 @@ A quote's text must match its support, so the full stop sits outside the tag: pu
 
 ## Handles
 
-Handles are readable and self-contained: a version's id prefix (the shortest unique one, at least 8 characters, as git abbreviates commits) and the locator written out. Nothing is stored to resolve one, and a prefix that names no version, or more than one, is refused. Handles resolve in the workspace and in the workspaces it links to. An unreachable version (one no linked workspace holds now) is named by its whole id, which can't be resolved until the link is made again.
+Handles are readable and self-contained: the first 12 characters of a version's id and the locator written out. The prefix is always 12 characters, so a handle given out once never changes as more versions arrive. Nothing is stored to resolve one, and a prefix that names no version, or more than one, is refused. Handles resolve in the workspace and in the workspaces it links to. An unreachable version (one no linked workspace holds now) is named by its whole id, which can't be resolved until the link is made again.
 
 | Addresses | Handle |
 |---|---|
-| A whole version | `88dd9008` |
-| A range of text | `88dd9008@305-393` |
-| A range in a JSON value (pointer percent-encoded, so a handle never holds a space or a quote) | `c3a863cb/result/chunks/1/blocks/4/content@6-33` |
-| A PDF region | `9f1e2a7c:p2:0.114,0.294,0.601,0.352` |
-| A table's cell, part of a cell, row or column | `4b7e0d21:r3:c2`, `4b7e0d21:r3:c2@0-5`, `4b7e0d21:r3`, `4b7e0d21:c2` |
+| A whole version | `88dd9008a1f3` |
+| A range of text | `88dd9008a1f3@305-393` |
+| A range in a JSON value (pointer percent-encoded, so a handle never holds a space or a quote) | `c3a863cb52e0/result/chunks/1/blocks/4/content@6-33` |
+| A PDF region | `9f1e2a7c04bd:p2:0.114,0.294,0.601,0.352` |
+| A table's cell, part of a cell, row or column | `4b7e0d21c96a:r3:c2`, `4b7e0d21c96a:r3:c2@0-5`, `4b7e0d21c96a:r3`, `4b7e0d21c96a:c2` |
 
 Pages, rows and columns in handles count from 1.
 
