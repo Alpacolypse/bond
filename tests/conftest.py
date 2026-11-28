@@ -98,7 +98,7 @@ def rewrite_record(bond: Bond, version: VersionId, change: Callable[[dict[str, A
     record = json.loads(data)
     change(record)
     overwrite(bond.store, key, dumps(record).encode())
-    bond.index = MemoryIndex(bond.records, bond.filing)  # read what was rewritten
+    bond._index = MemoryIndex(bond._records, bond._filing)  # read what was rewritten
 
 
 def store_unchecked(bond: Bond, content: str, citations: list[Citation], document: str) -> VersionId:
@@ -107,7 +107,7 @@ def store_unchecked(bond: Bond, content: str, citations: list[Citation], documen
     version = version_id(hash_bytes(data), Format.MARKDOWN, citations)
     bond.blobs.put(hash_bytes(data), data)
     new = NewVersion(version, hash_bytes(data), Format.MARKDOWN, data, citations)
-    bond.filing.file(version, document, None, before=lambda: bond.records.put(new))
+    bond._filing.file(version, document, None, before=lambda: bond._records.put(new))
     return version
 
 

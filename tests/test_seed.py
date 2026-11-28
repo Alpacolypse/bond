@@ -160,6 +160,6 @@ def test_clients_are_isolated_and_only_the_policy_is_shared(seeded, root):
     policy = policies.document("policy_ip112").head
     assert len(policies.documents()) == 1
     for bond in (a, b):
-        assert bond.filing.document("policy_ip112") is None and details.owner(bond, policy) is policies
+        assert bond.find("policy_ip112") is None and details.owner(bond, policy) is policies
         assert any(policy in {s.version for c in bond.citations(d.head) for s in c.supports} for d in bond.documents())
         assert all(not bond.verify(doc.head, policy=ALLOW_GAPS) for doc in bond.documents())

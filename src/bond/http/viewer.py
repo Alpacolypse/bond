@@ -261,7 +261,7 @@ class Summaries:
         """A document's versions, each once at its latest entry, oldest first: the head is last. The document is
         one of the workspace that holds version of."""
         if doc.id not in self._lineage:
-            entries = [e.version for e in details.held_by(self.bond, of).filing.history(doc.id)]
+            entries = [e.version for e in details.history(details.held_by(self.bond, of), doc)]
             self._lineage[doc.id] = list(reversed(dict.fromkeys(reversed(entries))))
         return self._lineage[doc.id]
 
@@ -309,12 +309,6 @@ def read_node(bond: Bond, summaries: Summaries, v: VersionId, cited: list[Stored
     return node(summaries.summary(details.version(bond, v)), len(cited),
                 sum(any(s.version == v for s in c.supports) for c in cited),
                 any(c.kind is CitationKind.SOURCE and isinstance(c.claim, VersionLocator) for c in cited))
-
-
-def citations_of(bond: Bond, v: VersionId) -> list[StoredCitation]:
-    """The citations a version was written with, wherever bond reads it from; none if it is unreachable."""
-    owner = details.owner(bond, v)
-    return [] if owner is None else owner.records.citations(v)
 
 
 def shown(bond: Bond, ref: Ref) -> JsonObject:
@@ -391,18 +385,18 @@ def graph(bond: Bond) -> Graph:
 
     Computed from citation rows alone, without parsing any version.
     """
-    counts = bond.index.counts()
+    counts = details.citation_counts(bond)
     summaries = Summaries(bond)
     nodes = []
     for version in details.versions(bond):
         c = counts.get(version.id)
         nodes.append(node(summaries.summary(version), c.citations if c else 0, c.self_supported if c else 0,
                           c.whole_source if c else False))
-    for v in bond.index.outside():  # cited here, held by a workspace this one links to or by none
+    for v in details.cited_elsewhere(bond):  # cited here, held by a workspace this one links to or by none
         nodes.append(unreachable_node(v) if details.owner(bond, v) is None else
-                     read_node(bond, summaries, v, citations_of(bond, v)))
+                     read_node(bond, summaries, v, details.stored_citations(bond, v)))
     edges: dict[tuple[str, str], GraphEdge] = {}
-    for edge in bond.index.edges():
+    for edge in details.citation_edges(bond):
         a, b = edge.citing, edge.cited
         e = edges.setdefault((a, b), {"id": f"{a}->{b}", "from": a, "to": b, "count": 0, "kinds": {}})
         e["count"] += edge.citations
@@ -414,7 +408,7 @@ def overview(bond: Bond, graph_limit: int) -> Overview:
     """Which workspace this is and how big, so a viewer can choose between the whole graph and browsing
     documents. Only versions stored in the workspace itself are counted, besides the unreachable ones it cites."""
     ws = bond.workspace
-    unreachable = [v for v in bond.index.outside() if details.owner(bond, v) is None]
+    unreachable = [v for v in details.cited_elsewhere(bond) if details.owner(bond, v) is None]
     return {"workspace": {"id": ws.id, "name": ws.name, "created_at": ws.created_at},
             "version_count": len(details.versions(bond)), "document_count": len(bond.documents()),
             "unreachable_count": len(unreachable), "graph_limit": graph_limit}
@@ -429,7 +423,7 @@ def documents(bond: Bond, q: str = "", offset: int = 0, limit: int = 50) -> Docu
     )
     page: list[DocumentRow] = []
     for d in matching[offset:offset + limit]:
-        history = bond.filing.history(d.id)
+        history = details.history(bond, d)
         page.append({
             "id": d.id, "name": d.name, "title": d.title, "head": d.head, "created_at": d.created_at,
             "format": details.version(bond, d.head).format.value, "version_count": len({e.version for e in history}),
@@ -456,7 +450,7 @@ def neighborhood(
 
     def cited_by_v(v: VersionId) -> list[StoredCitation]:
         if v not in owned:
-            owned[v] = citations_of(bond, v)
+            owned[v] = details.stored_citations(bond, v)
         return owned[v]
 
     included, frontier, truncated = [center], [center], False
@@ -465,7 +459,7 @@ def neighborhood(
         next_frontier = []
         for v in frontier:
             near = [s.version for c in cited_by_v(v) for s in c.supports]
-            near += [c.owner_version for c in bond.index.supported_by(v)]
+            near += [c.owner_version for c in details.citing(bond, v)]
             brought = 0
             for n in dict.fromkeys(near):
                 if n in seen:

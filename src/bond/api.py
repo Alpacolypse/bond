@@ -73,7 +73,7 @@ def _one_view[**P, R](method: Callable[Concatenate[Bond, P], R]) -> Callable[Con
 
     @functools.wraps(method)
     def wrapper(self: Bond, *args: P.args, **kwargs: P.kwargs) -> R:
-        with self.index.view():
+        with self._index.view():
             return method(self, *args, **kwargs)
 
     return wrapper
@@ -98,9 +98,9 @@ class Bond:
         self.store = store
         self.blobs = blobs
         self.workspace: Workspace = open_workspace(store, workspace, create)  # the workspace this Bond reads and writes
-        self.records = Records(store, self.workspace.id)  # its versions
-        self.filing = Filing(store, self.workspace.id)  # its documents
-        self.index = MemoryIndex(self.records, self.filing)  # reverse lookups, derived from both
+        self._records = Records(store, self.workspace.id)  # its versions
+        self._filing = Filing(store, self.workspace.id)  # its documents
+        self._index = MemoryIndex(self._records, self._filing)  # reverse lookups, derived from both
         self._owned: list[object] = []  # what this Bond opened itself, and closes
         self.set_links(links)
         # Per instance, so the cache doesn't keep this Bond alive after it is closed.
@@ -182,9 +182,9 @@ class Bond:
     def _owner(self, version: VersionId) -> Bond | None:
         """The workspace a version is read from: this one if it holds it, else the nearest reachable one that
         does; None if none does."""
-        if self.records.as_stored(version) is not None:
+        if self._records.as_stored(version) is not None:
             return self
-        return next((b for b in self.reachable() if b.records.as_stored(version) is not None), None)
+        return next((b for b in self.reachable() if b._records.as_stored(version) is not None), None)
 
     def _held(self, version: VersionId) -> Bond:
         """The workspace a version is read from; raises UnknownVersion if none reachable holds it."""
@@ -196,7 +196,7 @@ class Bond:
     def _citations_of(self, version: VersionId) -> list[StoredCitation]:
         """The citations a version was written with, wherever it is held; none if it is unreachable."""
         owner = self._owner(version)
-        return [] if owner is None else owner.records.citations(version)
+        return [] if owner is None else owner._records.citations(version)
 
     # --- ingest --------------------------------------------------------------
 
@@ -234,7 +234,7 @@ class Bond:
             fmt = format or from_suffix(path.suffix) or sniff(data)
         whole = [Citation(CitationKind.SOURCE, VersionLocator(), [])]
         version = version_id(hash_bytes(data), fmt, whole)
-        if self.records.version(version):  # stored already: only filing it is left, so skip parsing it again
+        if self._records.version(version):  # stored already: only filing it is left, so skip parsing it again
             return self._plan_filing(None, FilingChange(document, version, base, origin, title))
         return self._plan_written(data, fmt, document, whole, base, STRICT, title, origin)
 
@@ -257,9 +257,9 @@ class Bond:
 
     def _version(self, version: VersionId) -> Version:
         """A version's record, here or in a reachable workspace; raises UnknownVersion if there is none."""
-        stored = self.records.version(version)
+        stored = self._records.version(version)
         if stored is None:
-            stored = self._held(version).records.version(version)
+            stored = self._held(version)._records.version(version)
         if stored is None:
             raise UnknownVersion(version)
         return stored
@@ -300,16 +300,16 @@ class Bond:
             return [self._version(within.version)]
         if documents is not None:
             return [self._version(v) for v in dict.fromkeys(self.document(d).head for d in documents)]
-        heads = {d.head for d in self.filing.documents()}
-        return [v for v in self.index.versions() if v.id in heads]
+        heads = {d.head for d in self._filing.documents()}
+        return [v for v in self._index.versions() if v.id in heads]
 
     def _search_version(self, version: Version, phrase: str) -> list[Hit]:
         matches = self._doc(version.id).search(phrase)
         if not matches:
             return []
         owner = self._held(version.id)
-        owned = owner.records.citations(version.id)
-        holding = owner.index.holding(version.id)
+        owned = owner._records.citations(version.id)
+        holding = owner._index.holding(version.id)
         names = [d.name for d in holding]
         newer = {d.name: d.head for d in holding if d.head != version.id}
         return [
@@ -405,7 +405,7 @@ class Bond:
     ) -> list[Issue]:
         issues = _label_issues(document, title) + self._check(content, format, citations, policy, frozenset())
         version = version_id(hash_bytes(content), format, list(citations))
-        if conflict := filing_problem(self.filing.document(document), document, base, version):
+        if conflict := filing_problem(self._filing.document(document), document, base, version):
             issues.append(_conflict_issue(conflict))
         return issues
 
@@ -424,7 +424,7 @@ class Bond:
     def _plan_filing(self, new: NewVersion | None, filing: FilingChange) -> WritePlan:
         """A plan that files a version stored already, checked for its label and filing."""
         issues = _label_issues(filing.document, filing.title)
-        conflict = filing_problem(self.filing.document(filing.document), filing.document, filing.base, filing.version)
+        conflict = filing_problem(self._filing.document(filing.document), filing.document, filing.base, filing.version)
         if conflict:
             issues.append(_conflict_issue(conflict))
         if issues:
@@ -452,21 +452,21 @@ class Bond:
         before = None
         if new is not None:
             self.blobs.put(new.content_hash, new.data)  # before any record names it
-            before = partial(self.records.put, new)  # stored with its filing, only if that goes through
+            before = partial(self._records.put, new)  # stored with its filing, only if that goes through
         f = plan.filing
-        filed = self.filing.file(f.version, f.document, f.base, origin=f.origin, before=before)
+        filed = self._filing.file(f.version, f.document, f.base, origin=f.origin, before=before)
         if isinstance(filed, Conflict):  # another write moved the document since the plan was made
             raise WriteError([_conflict_issue(filed)])
         if f.title is not None and (filed.advanced or f.base == f.version or self._untitled_since_filed(f.document)):
-            self.filing.retitle(f.document, f.title)
+            self._filing.retitle(f.document, f.title)
         return WriteResult(f.version, filed.advanced, plan.warnings)
 
     def _untitled_since_filed(self, document: str) -> bool:
         """For a plan committed again, its version already the head: whether no title came since it was filed, so
         its title is still to apply (as after a crash between filing and titling). A later title wins over a
         replay; a plan made to relabel the head (its base its version) applies its title whatever came before."""
-        head = self.filing.get(document)
-        return head is not None and self.filing.titled_after(head.ref.id) < head.seq
+        head = self._filing.get(document)
+        return head is not None and self._filing.titled_after(head.ref.id) < head.seq
 
     def _check(
         self, content: bytes, format: Format, citations: Sequence[Citation], policy: Policy,
@@ -537,22 +537,30 @@ class Bond:
     # --- filing --------------------------------------------------------------
 
     def document(self, name: str) -> DocumentRef:
-        """The document with this name, with its head; raises UnknownDocument if there is none.
-
-        To ask whether there is one, filing.document(name) returns None instead.
-        """
-        doc = self.filing.document(name)
+        """The document with this name, with its head; raises UnknownDocument if there is none (find doesn't)."""
+        doc = self._filing.document(name)
         if doc is None:
             raise UnknownDocument(name)
         return doc
 
+    def find(self, name: str) -> DocumentRef | None:
+        """The document with this name, with its head; None if there is none."""
+        return self._filing.document(name)
+
+    def retitle(self, name: str, title: str | None) -> DocumentRef:
+        """Give a document a new title for people to read it by (None for none), changing no version or provenance.
+        The latest title wins. Raises UnknownDocument; ValueError for a blank title."""
+        if title is not None and not title.strip():
+            raise ValueError("a document's title must be a non-empty string, or None")
+        return self._filing.retitle(name, title)
+
     def documents(self) -> list[DocumentRef]:
         """Every document, oldest first."""
-        return self.filing.documents()
+        return self._filing.documents()
 
     def history(self, name: str) -> list[HistoryEntry]:
         """A document's history, oldest first: the versions it pointed at, and the base each was written from."""
-        return self.filing.history(self.document(name).id)
+        return self._filing.history(self.document(name).id)
 
     # --- citations / trace ---------------------------------------------------
 
@@ -588,7 +596,7 @@ class Bond:
 
         def down(node: Ref) -> list[tuple[StoredCitation, list[Ref]]]:
             held = owner(node.version)
-            cited = [] if held is None else held.records.citations(node.version)
+            cited = [] if held is None else held._records.citations(node.version)
             return [(c, c.supports) for c in _edges_at(cited, node.locator)]
 
         nodes, edges, complete = _walk(ref, down, max_depth, limit)
@@ -597,7 +605,7 @@ class Bond:
         newer: dict[VersionId, dict[str, VersionId]] = {}
         for v in versions:
             held = owner(v)
-            if held is not None and (moved := {d.name: d.head for d in held.index.holding(v) if d.head != v}):
+            if held is not None and (moved := {d.name: d.head for d in held._index.holding(v) if d.head != v}):
                 newer[v] = moved
         return Trace(ref, nodes, edges, complete, unreachable, newer)
 
@@ -611,7 +619,7 @@ class Bond:
         """
         self._check_ref(ref)
         return [
-            c for c in self.index.supported_by(ref.version)
+            c for c in self._index.supported_by(ref.version)
             if any(s.version == ref.version and overlaps(s.locator, ref.locator) for s in c.supports)
         ]
 
@@ -628,7 +636,7 @@ class Bond:
                 found.setdefault(c.owner_version, c.producer)
         transcriptions = []
         for v, producer in found.items():
-            holding = self.index.holding(v)
+            holding = self._index.holding(v)
             transcriptions.append(TranscriptionOf(v, producer, [d.name for d in holding],
                                                   [d.name for d in holding if d.head == v]))
         return transcriptions
@@ -646,7 +654,7 @@ class Bond:
             for j, s in enumerate(c.supports):
                 if not isinstance(s, Ref) or (owner := self._owner(s.version)) is None or self._locator_problem(s):
                     continue
-                holding = owner.index.holding(s.version)
+                holding = owner._index.holding(s.version)
                 if holding and all(d.head != s.version for d in holding):
                     moved = "; ".join(f"{d.name!r} has moved past it to {d.head[:12]}…" for d in holding)
                     found.append(Issue(
@@ -692,7 +700,7 @@ class Bond:
                 continue
             seen.add(v)
             owner = self._owner(v)
-            record = None if owner is None else owner.records.as_stored(v)  # checked against v, whatever it names
+            record = None if owner is None else owner._records.as_stored(v)  # checked against v, whatever it names
             if owner is None or record is None:
                 unreachable[v] = None
                 continue
@@ -731,7 +739,7 @@ class Bond:
         """Whether what rests on a version can be checked against it: it is reachable, and its bytes are there,
         hash to its content hash and are well-formed."""
         owner = self._owner(version)
-        record = None if owner is None else owner.records.as_stored(version)
+        record = None if owner is None else owner._records.as_stored(version)
         if owner is None or record is None or record.stored_id != version:
             return False
         stored = record.version

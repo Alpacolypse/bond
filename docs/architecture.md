@@ -20,7 +20,7 @@ Changes must also keep the [invariants](concepts.md#invariants).
 src/bond/
   api.py          the Bond class: the core API
   models.py       plain data types passed in and out of the core API
-  details.py      lower-level reads for tools built on the core: version records, places, JSON Pointers
+  details.py      lower-level reads for tools built on the core: version records, places, JSON Pointers, reverse lookups
   formats.py      the format registry: each format's media type, suffixes, sniffing, parser and whether it has text
   locators.py     locator types (and what each addresses), validation, containment and overlap
   kinds.py        citation kinds and their validators

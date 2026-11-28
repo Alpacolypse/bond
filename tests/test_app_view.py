@@ -251,7 +251,7 @@ def test_a_big_file_comes_in_parts_and_is_added_as_one(bond):
     assert len(parts) > 2 and offset == len(big)
     assert f"next part goes at offset {len(big)}, not 0" in out_of_order and "can't name an upload" in bad_name
     assert added["added"] == [{"document": "notes.md", "added": True}]
-    assert bond.blob(bond.filing.document("notes.md").head) == big  # the parts, in order, as one file
+    assert bond.blob(bond.find("notes.md").head) == big  # the parts, in order, as one file
     assert "has no parts here" in gone  # an upload is added once
 
 

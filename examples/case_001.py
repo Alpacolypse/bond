@@ -65,7 +65,7 @@ def retitle(bond: Bond) -> None:
     """
     for doc in bond.documents():
         if doc.name in TITLES:
-            bond.filing.retitle(doc.name, TITLES[doc.name])
+            bond.retitle(doc.name, TITLES[doc.name])
 
 
 # --- citations, as the examples write them ----------------------------------------------
