@@ -1,9 +1,9 @@
-"""The authoring tools: search, read, draft, write and edit a document as text with inline citations, citing
+"""The authoring tools: search, read, write and edit a document as text with inline citations, citing
 what is in the workspace and in the workspaces it links to.
 
 Each tool is a plain function of a workspace and its arguments; nothing is remembered between calls.
 Handles name their spans outright (see handles.py), and the base a write or edit starts from is passed
-in explicitly: draft returns it, and a successful write returns the next one. The tools translate; the
+in explicitly: read returns it, and a successful write returns the next one. The tools translate; the
 core enforces: every write goes through write_document under the policy given.
 
 A write the core would refuse is an Outcome (Refused, with every issue in the writer's terms), never an
@@ -100,22 +100,15 @@ class Listing:
 
 @dataclass(frozen=True)
 class Reading:
-    """A document as it is, to read in full before citing it: nothing hidden, nothing added."""
+    """A document's current version: as it is, to read in full before citing it, or with its citations written
+    in, to edit it; and the base a write or edit of it starts from."""
 
     workspace: str  # the workspace it is in: this one, or one it links to
     document: str
     format: Format
-    text: str
-
-
-@dataclass(frozen=True)
-class Draft:
-    """A document as text to edit: its citations as tags, and the base a write or edit of it starts from."""
-
-    document: str
-    text: str  # its draft: its content with its citations written in (tags in text; $bond wrappers in JSON)
-    evidence: list[Evidence]  # what the tags' handles point at
+    text: str  # as it is; or, read with citations, with them written in (tags in text; $bond wrappers in JSON)
     base: str  # the handle of the version read; pass it to write or edit
+    evidence: list[Evidence] = field(default_factory=list)  # read with citations: what the tags' handles point at
 
 
 @dataclass(frozen=True)
@@ -358,12 +351,14 @@ def _grounds(bond: Bond, trace: Trace, node: Ref) -> Grounds:
 # --- read -----------------------------------------------------------------------
 
 
-def read(bond: Bond, document: str) -> Reading:
-    """A document's current version exactly as it is, to read in full: every heading, label and field.
+def read(bond: Bond, document: str, citations: bool = False) -> Reading:
+    """A document's current version, and the base a write or edit of it starts from.
 
-    Nothing in it is a handle: to cite part of it, search for that text (with document=, or within= a
-    passage) and cite the handle of the match. A format with no text of its own (a PDF) points to the
-    documents that transcribe it instead.
+    As it is by default, to read in full: every heading, label and field, and nothing in it a handle. To cite
+    part of it, search for that text (with document=, or within= a passage) and cite the handle of the match.
+    With citations, its citations are written in as tags, with the evidence their handles point at: the text
+    edit() changes and write() takes back. A format with no text of its own (a PDF) points to the documents
+    that transcribe it instead.
     """
     version = details.version(bond, _head(bond, document))
     if not spec(version.format).has_text:
@@ -381,7 +376,18 @@ def read(bond: Bond, document: str) -> Reading:
                 where += (f" (these transcribe an earlier version of it, and may not match it now: "
                           f"{', '.join(map(repr, earlier))})")
         raise ToolError(f"{document!r} is {version.format.value}, which has no text of its own{where}")
-    return Reading(bond.workspace.name, document, version.format, bond.text(Ref(version.id, VersionLocator())) or "")
+    base = _prefix(version.id)
+    if not citations:
+        return Reading(bond.workspace.name, document, version.format,
+                       bond.text(Ref(version.id, VersionLocator())) or "", base)
+    if unreachable := [s.version for c in bond.citations(version.id) for s in c.supports
+                       if details.owner(bond, s.version) is None]:
+        raise ToolError(f"{document!r} rests on {len(set(unreachable))} version(s) in workspaces this one doesn't "
+                        "link to, so its citations can't be written out; read it without citations to see it as it is")
+    text = _render(bond, document, version.id)
+    if isinstance(text, Problem):
+        raise ToolError(text.message)
+    return Reading(bond.workspace.name, document, version.format, text, base, _evidence_of(bond, version.id))
 
 
 def _head(bond: Bond, document: str) -> VersionId:
@@ -391,24 +397,8 @@ def _head(bond: Bond, document: str) -> VersionId:
     return doc.head
 
 
-# --- draft ----------------------------------------------------------------------
-
-
-def draft(bond: Bond, document: str) -> Draft:
-    """A document's current version as a draft to edit; its base is what a write or edit starts from."""
-    head = _head(bond, document)
-    if unreachable := [s.version for c in bond.citations(head) for s in c.supports
-                       if details.owner(bond, s.version) is None]:
-        raise ToolError(f"{document!r} rests on {len(set(unreachable))} version(s) in workspaces this one doesn't "
-                        "link to, so its citations can't be written out for editing; read() shows it as it is")
-    text = _render(bond, document, head)
-    if isinstance(text, Problem):
-        raise ToolError(text.message)
-    return Draft(document, text, _evidence_of(bond, head), _prefix(head))
-
-
 def _render(bond: Bond, document: str, version: VersionId) -> str | Problem:
-    """The draft of a version, or why it has none."""
+    """A version's text with its citations written in, or why it can't be written out."""
     fmt = details.version(bond, version).format
     codec = CODECS.get(fmt)
     if codec is None:
@@ -435,9 +425,10 @@ def write(
     bond: Bond, document: str, draft: str, base: str | None = None, *, policy: Policy, dry_run: bool = False,
     format: Format | None = None,
 ) -> Outcome:
-    """Write draft (the whole document, as draft() shows it) as document's next version, starting from base.
+    """Write draft (the whole document, citations written in, as read(citations=True) shows it) as document's next
+    version, starting from base.
 
-    base is the handle draft() returned for the document, or the base of the last write's outcome; leave it
+    base is the handle read() returned for the document, or the base of the last write's outcome; leave it
     out only to create a new document, in format (DEFAULT_FORMAT unless given). A document keeps its format.
     JSON is stored in one layout (see jsonmarkup.canonical), so a document laid out otherwise is reformatted
     by its first write. With dry_run, nothing is written: the issues are what a write would find.
@@ -445,7 +436,7 @@ def write(
     base_version: VersionId | None = None
     if base is None:
         if bond.filing.document(document) is not None:
-            return Refused([f"{document!r} already exists; pass the base draft() returned for it, so your change is "
+            return Refused([f"{document!r} already exists; pass the base read() returned for it, so your change is "
                             "based on it"])
         fmt = format or DEFAULT_FORMAT
     else:
@@ -500,7 +491,7 @@ def edit(
 ) -> Outcome:
     """Apply find-and-replace edits, in order, to the draft of document's base version, and write the result.
 
-    The edits apply to what draft() showed for that base. Every edit must apply and the result must pass the
+    The edits apply to what read(citations=True) showed for that base. Every edit must apply and the result must pass the
     policy, or nothing is written.
     """
     started = _whole_version(bond, base)
@@ -527,7 +518,7 @@ def _whole_version(bond: Bond, base: str) -> VersionId | Problem:
     if isinstance(ref, Problem):
         return Problem(f"base {ref.message}")
     if ref.locator.addresses is not Addresses.WHOLE:
-        return Problem(f"base {base!r} names part of a version; pass the base draft() returned, which names a whole one")
+        return Problem(f"base {base!r} names part of a version; pass the base read() returned, which names a whole one")
     return ref.version
 
 
@@ -569,7 +560,7 @@ def _explain(issues: Sequence[Issue], draft: Compiled, codec: Codec, document: s
 
 def _explain_one(issue: Issue, draft: Compiled, codec: Codec, document: str) -> str:
     if issue.code is IssueCode.STALE_BASE:
-        return f"{document!r} changed since the base you started from; draft it again and redo your change"
+        return f"{document!r} changed since the base you started from; read it again (with citations) and redo your change"
     if issue.code is IssueCode.UNCOVERED_CLAIM:
         where = f" at {at}" if issue.locator is not None and (at := codec.where(draft.content, issue.locator)) else ""
         return (f"{issue.message}{where} ({codec.how_to_cite}: a quote or paraphrase citing a handle from "
@@ -663,7 +654,7 @@ def _apply(text: str, edit: Edit, n: int) -> str | Problem:
         return Problem(f"edit {n}: old is empty; give the exact text to replace")
     starts = [m.start() for m in re.finditer(re.escape(edit.old), text)]
     if not starts:
-        return Problem(f"edit {n}: {clip(edit.old)!r} isn't in the text; copy it exactly from what draft() returned")
+        return Problem(f"edit {n}: {clip(edit.old)!r} isn't in the text; copy it exactly from what read(citations=True) returned, tags included")
     if len(starts) > 1 and not edit.replace_all:
         shown = "; ".join(f"line {text.count(chr(10), 0, s) + 1}: …{clip(text[max(0, s - 30):s + len(edit.old) + 30])}…"
                           for s in starts)
@@ -694,14 +685,11 @@ class Tools:
     def documents(self, workspace: str | None = None) -> list[Listing]:
         return documents(self.bond if workspace is None else linked(self.bond, workspace))
 
-    def read(self, document: str, workspace: str | None = None) -> Reading:
-        return read(self.bond if workspace is None else linked(self.bond, workspace), document)
+    def read(self, document: str, workspace: str | None = None, citations: bool = False) -> Reading:
+        return read(self.bond if workspace is None else linked(self.bond, workspace), document, citations)
 
     def trace(self, handle: str, limit: int = 30) -> Chain:
         return trace(self.bond, handle, limit)
-
-    def draft(self, document: str) -> Draft:
-        return draft(self.bond, document)
 
     def write(self, document: str, draft: str, base: str | None = None, dry_run: bool = False,
               format: Format | None = None) -> Outcome:

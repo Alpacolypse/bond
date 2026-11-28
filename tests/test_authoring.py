@@ -64,7 +64,7 @@ def test_tools_only_binds_a_workspace_policy_and_sources(bond, case):
     draft = summary(tools)
     written(tools.write("a", draft)), written(tools.write("b", draft))
     assert head(bond, "a") == head(bond, "b")  # same bytes and citations
-    assert tools.draft("a") == dataclasses.replace(tools.draft("b"), document="a")
+    assert tools.read("a", citations=True) == dataclasses.replace(tools.read("b", citations=True), document="a")
 
 
 # --- writing --------------------------------------------------------------------------
@@ -163,7 +163,7 @@ def test_an_anchor_lets_a_conclusion_rest_on_part_of_a_sentence(bond, case):
     # The anchor marks its place: the same words elsewhere (here, in the conclusion itself) don't confuse it.
     assert content(bond, version).count(phrase) == 2
     # Draft it back shows the anchor where it was.
-    assert f'<bond:anchor id="a1">{phrase}</bond:anchor>' in tools.draft("x").text
+    assert f'<bond:anchor id="a1">{phrase}</bond:anchor>' in tools.read("x", citations=True).text
 
 
 def test_removing_an_anchor_that_a_tag_rests_on_is_refused(bond, case):
@@ -173,7 +173,7 @@ def test_removing_an_anchor_that_a_tag_rests_on_is_refused(bond, case):
              f'{FIRST[len(phrase):]}</bond:cite>\n\n'
              f'<bond:cite kind="paraphrase" from="#pain">Back pain dominates.</bond:cite>\n')
     written(tools.write("x", draft))
-    base = tools.draft("x").base
+    base = tools.read("x", citations=True).base
     [issue] = refused(tools.edit("x", [Edit(f'<bond:anchor id="a1">{phrase}</bond:anchor>', phrase)], base))
     assert "#a1" in issue and "bond:anchor" in issue
 
@@ -194,7 +194,7 @@ def test_changing_a_document_that_exists_needs_its_base(bond, case):
     tools = Tools(bond)
     first = written(tools.write("findings", summary(tools)))
     [issue] = refused(tools.write("findings", summary(tools)))
-    assert "pass the base draft() returned" in issue
+    assert "pass the base read() returned" in issue
     # The base names a whole version; a span, or a prefix that names nothing, isn't one.
     [issue] = refused(tools.write("findings", summary(tools), base=cite(tools, FIRST)))
     assert "names part of a version" in issue
@@ -207,7 +207,7 @@ def test_changing_a_document_that_exists_needs_its_base(bond, case):
 def test_a_change_from_a_stale_base_is_refused(bond, case):
     tools = Tools(bond)
     tools.write("findings", summary(tools))
-    base = tools.draft("findings").base  # two writers both start here
+    base = tools.read("findings", citations=True).base  # two writers both start here
     written(tools.edit("findings", [Edit("Findings", "Results")], base))
     [issue] = refused(tools.edit("findings", [Edit("Findings", "Summary")], base))
     assert "changed since the base you started from" in issue
@@ -228,7 +228,7 @@ def test_an_edit_carries_untouched_citations_forward(bond, case):
     tools = Tools(bond)
     written(tools.write("findings", summary(tools)))
     first = head(bond, "findings")
-    reading = tools.draft("findings")
+    reading = tools.read("findings", citations=True)
     assert reading.text.count("<bond:cite") == 3
     assert [e.documents for e in reading.evidence] == [["fax_case_001.reducto"]] * 2  # OCR text, ligatures and all
     new = "Active drip from the bathroom ceiling light fixture."
@@ -345,9 +345,9 @@ def test_repeated_text_comes_back_as_separate_hits_to_choose_from(bond, case):
 def test_reading_errors_are_tool_errors(bond, case):
     tools = Tools(bond)
     with pytest.raises(ToolError, match="no document"):
-        tools.draft("missing")
-    with pytest.raises(ToolError, match=r"is pdf, which can't be read for editing yet \(only markdown, json, csv, tsv\)"):
-        tools.draft("fax_case_001")
+        tools.read("missing", citations=True)
+    with pytest.raises(ToolError, match=r"is pdf, which has no text of its own"):  # with citations or not
+        tools.read("fax_case_001", citations=True)
 
 
 def test_only_formats_with_a_codec_can_be_written_and_a_document_keeps_its_format(bond, case):
@@ -367,7 +367,7 @@ def test_every_seeded_markdown_document_round_trips(tmp_path, case_id):
         markdown = [d for d in bond.documents() if details.version(bond, d.head).format is Format.MARKDOWN]
         assert len(markdown) >= 3
         for doc in markdown:
-            reading = tools.draft(doc.name)
+            reading = tools.read(doc.name, citations=True)
             out = written(tools.write(doc.name, reading.text, reading.base))
             assert (head(bond, doc.name), out.advanced) == (doc.head, False), doc.name
 
@@ -484,7 +484,7 @@ def test_an_assessment_rests_on_text_in_the_document(bond, case):
     quote, assessment = bond.citations(version)
     assert assessment.supports == [Ref(version, quote.claim)]
     assert assessment.id in [c.id for c in bond.cited_by(Ref(version, quote.claim))]
-    reading = tools.draft("graded")
+    reading = tools.read("graded", citations=True)
     again = written(tools.write("graded", reading.text, reading.base))
     assert (head(bond, "graded"), again.advanced) == (version, False)
     # There is no way to name a citation itself.

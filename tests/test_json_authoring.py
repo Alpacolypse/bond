@@ -150,7 +150,7 @@ def test_an_agent_writes_a_cited_json_document(bond, case):
     weeks = next(c for c in bond.citations(version) if Ref(version, c.claim) == details.locate_pointer(bond, version, "/weeks"))
     assert weeks.supports == [details.locate_pointer(bond, version, "/complaint", (0, len(FIRST)))]
     # Read back, the draft writes the same version.
-    reading = tools.draft("intake")
+    reading = tools.read("intake", citations=True)
     again = written(tools.write("intake", reading.text, reading.base))
     assert (head(bond, "intake"), again.advanced) == (version, False)
 
@@ -169,7 +169,7 @@ def test_a_json_document_laid_out_otherwise_is_reformatted_by_its_first_write(bo
     citations = [Citation(CitationKind.UNSOURCED, JsonLocator(()), [])]
     first = bond.write_document("compact", b'{"a":"x","b":[1,2]}', citations, format=Format.JSON).version
     tools = Tools(bond)
-    reading = tools.draft("compact")
+    reading = tools.read("compact", citations=True)
     out = written(tools.write("compact", reading.text, reading.base))
     version = head(bond, "compact")
     assert out.advanced and version != first
@@ -189,6 +189,6 @@ def test_every_seeded_json_document_round_trips(tmp_path, case_id):
         documents = [d for d in bond.documents() if details.version(bond, d.head).format is Format.JSON]
         assert len(documents) >= 1
         for doc in documents:
-            reading = tools.draft(doc.name)
+            reading = tools.read(doc.name, citations=True)
             out = written(tools.write(doc.name, reading.text, reading.base))
             assert (head(bond, doc.name), out.advanced) == (doc.head, False), doc.name

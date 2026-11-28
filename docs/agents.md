@@ -23,22 +23,21 @@ out = tools.write("notes", f'<bond:cite kind="quote" from="{hit.handle}">No sign
 # rests on sources; or Refused(issues=[…]), every issue in the agent's terms, with nothing written
 
 tools.trace(hit.handle)            # support status and reasons, then what it rests on, hop by hop: the OCR's text, a region of page 2
-draft = tools.draft("notes")       # the text with its citations as tags, and its base
-tools.edit("notes", [Edit(old="…", new="…")], draft.base)     # find-and-replace on draft.text
+tagged = tools.read("notes", citations=True)   # the text with its citations as tags, the evidence, and its base
+tools.edit("notes", [Edit(old="…", new="…")], tagged.base)    # find-and-replace on tagged.text
 ```
 
 | Tool | Does |
 |---|---|
 | `documents(workspace=None)` | The documents in this workspace, or in one it links to (directly or not). |
-| `read(document, workspace=None)` | A document exactly as it is, to read before citing; with `workspace`, one of a workspace it links to. |
+| `read(document, workspace=None, citations=False)` | A document and its `base`; with `workspace`, one of a workspace it links to. By default exactly as it is, to read in full before citing. With `citations`, its citations written in as tags and the `evidence` they point at: the text `edit` changes and `write` takes back. |
 | `search(phrases, document=None, within=None, limit=20, workspace=None)` | Matches with exact handles, in this workspace and every workspace it links to (or only `workspace`), each with the `workspace` it is in, its `support` status, the `kinds` of citation over it, where it is, the text around it, and its passage's handle. Every match is returned; the agent prefers supported ones. A linked workspace's handles are cited as they are. |
 | `trace(handle, limit=30)` | The span's support `status` and `issues`, then what it rests on, nearest first, down to a page region, a declared source or unsourced text: each span with its handle, its citations and its `undeclared` parts. |
-| `draft(document)` | The document as a draft to edit: its text with its citations as tags, the evidence they point at, and its `base`. |
-| `write(document, draft, base=None, dry_run=False, format=None)`, `edit(document, edits, base, dry_run=False)` | Write a whole draft, or find-and-replace on the draft `draft` returned. The outcome's `status` says what happened: `written`, with the next `base` and the `support` status of what was written; `refused`, with `issues` in the agent's terms and nothing written; or, with `dry_run`, `checked` if nothing would stop the write. |
+| `write(document, draft, base=None, dry_run=False, format=None)`, `edit(document, edits, base, dry_run=False)` | Write a whole draft, or find-and-replace on the text `read(…, citations=True)` returned. The outcome's `status` says what happened: `written`, with the next `base` and the `support` status of what was written; `refused`, with `issues` in the agent's terms and nothing written; or, with `dry_run`, `checked` if nothing would stop the write. |
 
 ## Citation markup
 
-Citations are inline tags around the text they cite. Supports are handles from a search or draft, or `#id`: the text of another tag, or of a `<bond:anchor id="…">`, in the same draft. An anchor names part of a sentence without citing it, so a conclusion can rest on just that part:
+Citations are inline tags around the text they cite. Supports are handles from a search or a read with citations, or `#id`: the text of another tag, or of a `<bond:anchor id="…">`, in the same draft. An anchor names part of a sentence without citing it, so a conclusion can rest on just that part:
 
 ```
 <bond:cite kind="quote" from="d246983a71c5/result/chunks/1/blocks/4/content@12-63"><bond:anchor id="drip">Active drip</bond:anchor> from the bathroom ceiling light fixture</bond:cite>.
@@ -60,9 +59,9 @@ A quote's text must match its support, so the full stop sits outside the tag: pu
 ## Rules the layer keeps
 
 - **The core still enforces everything.** The tools compile tags into citations and write through `write_document`; tags are never stored. `AGENT_POLICY` requires every word covered and allows only `quote`, `paraphrase` and `unsourced`, so an agent can't mark its own text `source`, nor declare a linked workspace's text one.
-- **Edits carry citations forward.** An agent edits the draft it was given, so untouched sentences keep their tags. An edit's `old` must occur exactly once (or set `replace_all`); a batch of edits is written all or nothing.
+- **Edits carry citations forward.** An agent edits the text a read with citations gave it, so untouched sentences keep their tags. Editing plain text instead fails to match (the tags are missing) and is refused, saying to read with citations. An edit's `old` must occur exactly once (or set `replace_all`); a batch of edits is written all or nothing.
 - **The layer stores nothing and decides nothing.** It is a translator built only on the core, so every write must meet the core's structural checks and selected policy. This does not guarantee correct evidence selection or semantic support. Nothing in it is specific to agents beyond the default policy: a human editor can use the same form.
-- **Rendering and compiling are inverses.** Compiling what `draft` rendered gives back the same bytes and citations, so the same version id. Tag ids (`#c1`, `#c2`) are names within one draft and never stored; `draft` places anchors (`a1`, `a2`, …) wherever a stored citation rests on a span no citation claims.
+- **Rendering and compiling are inverses.** Compiling what a read with citations rendered gives back the same bytes and citations, so the same version id. Tag ids (`#c1`, `#c2`) are names within one draft and never stored; the rendering places anchors (`a1`, `a2`, …) wherever a stored citation rests on a span no citation claims.
 - **A citation never silently moves.** Nothing re-points a citation at newer evidence.
 - **Changes start from an explicit base.** `draft` returns the base (the version drafted from, as a handle), and each successful write returns the next one. A document that exists can't be changed without one, and if it changed since, the write is refused as stale.
 - **`<bond:` and `$bond` are reserved.** Other HTML in Markdown is ordinary content. Tags and anchors nest but can't partly overlap, so a version whose citations' claims partly overlap (nothing writes one today) can be viewed, searched and cited, but not read for editing.
@@ -102,8 +101,8 @@ The server keeps no current workspace, since it may restart or serve several cha
 | Tool over MCP | Does |
 |---|---|
 | `documents(workspace, from_workspace=None)` | The documents in `workspace`, or in `from_workspace`, a workspace it links to; refused, naming the links, when it isn't one. |
-| `read(workspace, document, from_workspace=None)`, `search(workspace, phrases, …, from_workspace=None)` | As above, with `from_workspace` for `Tools`' `workspace`. |
-| `trace`, `draft`, `write`, `edit` | As above, with `workspace` first: `trace(workspace, handle)` and so on. |
+| `read(workspace, document, from_workspace=None, citations=False)`, `search(workspace, phrases, …, from_workspace=None)` | As above, with `from_workspace` for `Tools`' `workspace`. |
+| `trace`, `write`, `edit` | As above, with `workspace` first: `trace(workspace, handle)` and so on. |
 | `show(workspace, document)` | Present a document in the app view; offered only to clients that render apps. |
 | `workspaces()` | In grant mode: list the granted workspaces and show the person a picker to grant another. |
 

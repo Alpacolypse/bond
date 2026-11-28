@@ -189,7 +189,7 @@ def test_trace_stops_at_an_unreachable_version_and_says_so(spaces, policies):
     assert why.spans[-1] == Grounds(summary, None, [], None, "", [], [], unreachable=True)
     assert [link.handles for link in why.spans[0].rests_on] == [[summary]]
     with pytest.raises(ToolError, match="rests on 1 version.*doesn't link to.*read"):
-        tools.draft("determination")
+        tools.read("determination", citations=True)
     assert CRITERION in tools.read("determination").text
 
 

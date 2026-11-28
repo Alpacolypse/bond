@@ -63,7 +63,7 @@ async def offered(client: Client) -> tuple[str | None, list[Any]]:
 def test_the_server_offers_the_authoring_tools_and_says_how_to_cite(bond):
     instructions, tools = session(bond, offered)
     assert instructions is not None
-    assert sorted(t.name for t in tools) == ["documents", "draft", "edit", "read", "search", "trace", "write"]
+    assert sorted(t.name for t in tools) == ["documents", "edit", "read", "search", "trace", "write"]
     assert "<bond:cite" in instructions and "pass it on every call" in instructions
     assert "PDF" in instructions and "transcription" in instructions
     assert instructions.endswith(f"Workspaces you can work in:\n- {CASE!r}\n")
@@ -73,8 +73,8 @@ def test_the_server_offers_the_authoring_tools_and_says_how_to_cite(bond):
     assert all("workspace" in t.input_schema["required"] for t in tools)
     assert set(by_name["search"].input_schema["properties"]) == {"workspace", "phrases", "document", "within", "limit",
                                                                  "from_workspace"}
-    assert list(by_name["read"].input_schema["properties"]) == ["workspace", "document", "from_workspace"]
-    assert all(by_name[n].annotations.read_only_hint for n in ("documents", "read", "search", "trace", "draft"))
+    assert list(by_name["read"].input_schema["properties"]) == ["workspace", "document", "from_workspace", "citations"]
+    assert all(by_name[n].annotations.read_only_hint for n in ("documents", "read", "search", "trace"))
     assert not by_name["write"].annotations.read_only_hint and not by_name["write"].annotations.destructive_hint
 
 
@@ -101,13 +101,14 @@ def test_an_agent_finds_evidence_writes_reads_and_edits(bond, case):
         refused = await call(client, "write", workspace=CASE, document="note", draft=f"{quote} Made up.")
         written = await call(client, "write", workspace=CASE, document="note", draft=quote)
         why = await call(client, "trace", workspace=CASE, handle=hit["handle"])
-        reading = await call(client, "draft", workspace=CASE, document="note")
+        plain = await call(client, "read", workspace=CASE, document="note")
+        reading = await call(client, "read", workspace=CASE, document="note", citations=True)
         edited = await call(client, "edit", workspace=CASE, document="note", base=reading["base"], edits=[
             {"old": "</bond:cite>", "new": '</bond:cite> <bond:cite kind="unsourced">Proceed.</bond:cite>'},
         ])
-        return listed, hits, hit, refused, written, why, reading, edited
+        return listed, hits, hit, refused, written, why, plain, reading, edited
 
-    listed, hits, hit, refused, written, why, reading, edited = session(bond, steps)
+    listed, hits, hit, refused, written, why, plain, reading, edited = session(bond, steps)
     assert {"document": "fax_case_001.reducto", "format": "json"} in listed
     assert {"document": "fax_case_001", "format": "pdf"} in listed  # a PDF says so, so it's read through its transcription
     assert {h["support"] for h in hits} == {"supported", "unsupported"}  # every match comes back, annotated
@@ -118,7 +119,8 @@ def test_an_agent_finds_evidence_writes_reads_and_edits(bond, case):
     assert why["status"] == "supported" and why["issues"] == [] and not why["truncated"]
     assert [link["kind"] for s in why["spans"] for link in s["rests_on"]] == [
         "transcription", "source"]  # the OCR's text, read from a region of a page
-    assert reading["base"] == written["base"] and hit["handle"] in reading["text"]
+    assert plain["base"] == reading["base"] == written["base"] and hit["handle"] in reading["text"]
+    assert plain["text"] == FINDING and plain["evidence"] == []  # as it is: no tags, no handles
     assert edited["status"] == "written" and edited["advanced"]
     assert edited["support"] == "partially_supported"  # "Proceed." is unsourced
     version = bond.document("note").head
@@ -314,7 +316,7 @@ def test_search_and_trace_report_support_over_mcp(bond):
     assert [i["reason"] for i in why["issues"]] == ["unsourced"]
     assert "limit" in bad_limit
     # What a draft's handles point at says how well supported it is too.
-    [evidence] = tools.draft("mixed").evidence
+    [evidence] = tools.read("mixed", citations=True).evidence
     assert evidence.kinds == [CitationKind.SOURCE] and evidence.support == "supported"
 
 
