@@ -123,7 +123,7 @@ class Link:
     """A citation a span rests on: its kind, its producer, if any, and the spans it rests on in turn."""
 
     kind: CitationKind
-    attrs: dict[str, str]  # the tool that produced it (transcriber, classifier, assessor), by id
+    producer: str | None  # the tool whose output it is (a transcriber, classifier or assessor), by id
     handles: list[str]  # what it rests on; none for a source or unsourced text
 
 
@@ -345,7 +345,7 @@ def _grounds(bond: Bond, trace: Trace, node: Ref) -> Grounds:
         return Grounds(node.version, None, [], None, "", [], [], unreachable=True)
     text = bond.text(node)
     links = [
-        Link(e.citation.kind, e.citation.attrs, [_ref_handle(bond, s) for s in e.citation.supports])
+        Link(e.citation.kind, e.citation.producer, [_ref_handle(bond, s) for s in e.citation.supports])
         for e in trace.edges_at(node)
     ]
     newer = {name: _handle(bond, Ref(head, VersionLocator())) for name, head in trace.newer.get(node.version, {}).items()}
@@ -546,7 +546,7 @@ def _citations(bond: Bond, draft: Compiled) -> list[Citation] | Refused:
                 issues.append(f"{entry.label}: {support.message}")
             else:
                 supports.append(support)
-        citations.append(Citation(entry.kind, entry.claim, supports, dict(entry.attrs)))
+        citations.append(Citation(entry.kind, entry.claim, supports, entry.producer))
     return Refused(issues) if issues else citations
 
 

@@ -191,7 +191,9 @@ def compile(draft: str, delimiter: str) -> Compiled:
                                       f"{ON}='row' or {ON}='column' its row or column")
                         continue
                     claim = located
-                entries.append(Entry(tag.kind, claim, list(tag.sources), dict(tag.attrs), label, tag.id))
+                if (problem := markup.stray(tag, label)) is not None:
+                    issues.append(problem)
+                entries.append(Entry(tag.kind, claim, list(tag.sources), tag.producer, label, tag.id))
                 if tag.id is not None:
                     ids.append(tag.id)
                     names.setdefault(tag.id, claim)

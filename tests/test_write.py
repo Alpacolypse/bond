@@ -22,7 +22,6 @@ from bond import (
     IssueCode as E,
 )
 from bond.ids import citation_id
-from bond.policies import PRODUCERS, Policy
 from case_001 import SUMMARY, build_citations, claim_locator
 from conftest import planned_issues
 
@@ -62,8 +61,8 @@ def test_fixture_summary_is_written_and_read_back(bond, case):
     ids = [citation_id(c) for c in citations]
     assert sorted(stored) == sorted(ids)
     # Supports are a set too: they are stored in a canonical order.
-    assert [(stored[i].kind, stored[i].claim, set(stored[i].supports), stored[i].attrs) for i in ids] == [
-        (c.kind, c.claim, set(c.supports), c.attrs) for c in citations
+    assert [(stored[i].kind, stored[i].claim, set(stored[i].supports), stored[i].producer) for i in ids] == [
+        (c.kind, c.claim, set(c.supports), c.producer) for c in citations
     ]
     assert gaps(bond, result.version) == []
     assert [c.kind for c in bond.citations(case["policy"])] == [CitationKind.SOURCE]
@@ -138,15 +137,15 @@ def test_kind_validators(bond, case):
         return [(e.code, e.message) for e in exc.value.errors]
 
     # transcription: one PDF support and a transcriber
-    assert any("requires attrs ['transcriber']" in m for _, m in problems(Citation(CitationKind.TRANSCRIPTION, claim, [pdf])))
+    assert any("transcription needs a producer" in m for _, m in problems(Citation(CitationKind.TRANSCRIPTION, claim, [pdf])))
     assert any("must be a region of a page (a pdf locator)" in m for _, m in problems(
-        Citation(CitationKind.TRANSCRIPTION, claim, [support], {"transcriber": "x"})))
+        Citation(CitationKind.TRANSCRIPTION, claim, [support], "x")))
     # quote: exactly one support
     assert any("exactly 1 support" in m for _, m in problems(Citation(CitationKind.QUOTE, claim, [support, support])))
-    # paraphrase: at least one support, no PDFs, no unknown attrs
+    # paraphrase: at least one support, no PDFs, no producer
     assert any("at least 1 support" in m for _, m in problems(Citation(CitationKind.PARAPHRASE, claim, [])))
-    assert any("does not accept attrs" in m for _, m in problems(
-        Citation(CitationKind.PARAPHRASE, claim, [support], {"why": "x"})))
+    assert any("paraphrase takes no producer" in m for _, m in problems(
+        Citation(CitationKind.PARAPHRASE, claim, [support], "x")))
     assert any("text, json or csv locator" in m for _, m in problems(Citation(CitationKind.PARAPHRASE, claim, [pdf])))
     # claims must address text
     assert any("claim must be a text, json or csv locator" in m for _, m in problems(
@@ -278,9 +277,9 @@ def test_unsourced_validator(bond, case):
 
     assert bond.write_document("u", content.encode(), [Citation(CitationKind.UNSOURCED, claim, [])],
                                format=Format.MARKDOWN).advanced
-    # Attrs are stored with the citation, so they hold no free text: an unsourced claim says nothing about why.
-    assert any("does not accept attrs ['reason']" in m for m in problems(
-        Citation(CitationKind.UNSOURCED, claim, [], {"reason": "the tenant's unit number, from the intake call"})))
+    # A producer is stored with the citation, so no free text rides along: an unsourced claim says nothing about why.
+    assert any("unsourced takes no producer" in m for m in problems(
+        Citation(CitationKind.UNSOURCED, claim, [], "the tenant's unit number, from the intake call")))
     assert any("takes no supports" in m for m in problems(Citation(CitationKind.UNSOURCED, claim, [support])))
     assert any("cannot be the whole version" in m for m in problems(
         Citation(CitationKind.UNSOURCED, VersionLocator(), [])))
@@ -339,7 +338,7 @@ def test_a_versions_citations_are_a_set(bond, case):
     citations = build_citations(bond, case)
     first = write_summary(bond, case, citations=citations)
     # Another order, supports reordered, and a citation listed twice: the same citations, so the same version.
-    shuffled = [Citation(c.kind, c.claim, list(reversed(c.supports)), c.attrs) for c in reversed(citations)]
+    shuffled = [Citation(c.kind, c.claim, list(reversed(c.supports)), c.producer) for c in reversed(citations)]
     again = write_summary(bond, case, citations=shuffled + [citations[0]], base=first.version)
     assert again.version == first.version and not again.advanced
     assert len(bond.citations(first.version)) == len(citations)
@@ -492,10 +491,10 @@ def test_classification_and_assessment_validators(bond, case):
     pdf = Ref(case["pdf"], PdfLocator(0, (0.1, 0.1, 0.4, 0.2)))
     label, text, score = JsonLocator((0,)), JsonLocator((1,)), JsonLocator((2,))
     good = [
-        Citation(CitationKind.TRANSCRIPTION, text, [pdf], {"transcriber": "reducto"}),
-        Citation(CitationKind.CLASSIFICATION, label, [pdf], {"classifier": "reducto"}),
+        Citation(CitationKind.TRANSCRIPTION, text, [pdf], "reducto"),
+        Citation(CitationKind.CLASSIFICATION, label, [pdf], "reducto"),
     ]
-    good.append(Citation(CitationKind.ASSESSMENT, score, [SelfRef(text)], {"assessor": "reducto"}))
+    good.append(Citation(CitationKind.ASSESSMENT, score, [SelfRef(text)], "reducto"))
     assert gaps(bond, bond.write_document("v", content.encode(), good, format=Format.JSON).version) == []
 
     def problems(i, c):
@@ -505,38 +504,27 @@ def test_classification_and_assessment_validators(bond, case):
             bond.write_document("v2", content.encode(), citations, format=Format.JSON)
         return [(e.code, e.message) for e in exc.value.errors]
 
-    assert any("requires attrs ['classifier']" in m for _, m in problems(
+    assert any("classification needs a producer" in m for _, m in problems(
         1, Citation(CitationKind.CLASSIFICATION, label, [pdf])))
     assert any("must be a region of a page (a pdf locator)" in m for _, m in problems(
-        1, Citation(CitationKind.CLASSIFICATION, label, [SelfRef(text)], {"classifier": "reducto"})))
+        1, Citation(CitationKind.CLASSIFICATION, label, [SelfRef(text)], "reducto")))
     assert any("assessment support 0 must be a text, json or csv locator, got pdf" in m for _, m in problems(
-        2, Citation(CitationKind.ASSESSMENT, score, [pdf], {"assessor": "reducto"})))
+        2, Citation(CitationKind.ASSESSMENT, score, [pdf], "reducto")))
     assert any(c is E.CIRCULAR_SUPPORT for c, _ in problems(
-        2, Citation(CitationKind.ASSESSMENT, score, [SelfRef(score)], {"assessor": "reducto"})))
-    # Vendor values are cited where they sit, never copied into attrs.
-    assert any("does not accept attrs ['confidence']" in m for _, m in problems(
-        0, Citation(CitationKind.TRANSCRIPTION, text, [pdf], {"transcriber": "reducto", "confidence": "0.9"})))
-    # A producer is a tool's id, never free text; and one the policy knows.
+        2, Citation(CitationKind.ASSESSMENT, score, [SelfRef(score)], "reducto")))
+    # A producer is a tool's id, never free text.
     for producer in ["Dr. Okoro's OCR", "Acme OCR", "", "-acme", "a" * 64]:
-        assert any(c is E.INVALID_CITATION and m.startswith("attrs.transcriber must be a producer id, got ")
-                   for c, m in problems(0, Citation(CitationKind.TRANSCRIPTION, text, [pdf], {"transcriber": producer})))
-    assert [c for c, _ in problems(0, Citation(CitationKind.TRANSCRIPTION, text, [pdf], {"transcriber": "t"}))] == [
-        E.UNKNOWN_PRODUCER]
+        assert any(c is E.INVALID_CITATION and m.startswith("a producer is a tool's id, got ")
+                   for c, m in problems(0, Citation(CitationKind.TRANSCRIPTION, text, [pdf], producer)))
 
 
-def test_a_policy_names_the_producers_it_knows(bond, case):
+def test_any_tools_id_is_a_producer_with_nothing_to_register(bond, case):
     content = json.dumps({"text": "FAX COVER SHEET"})
     read = [Citation(CitationKind.TRANSCRIPTION, JsonLocator((0,)), [Ref(case["pdf"], PdfLocator(0, (0.1, 0.1, 0.4, 0.2)))],
-                     {"transcriber": "acme-ocr"})]
-    with pytest.raises(WriteError) as exc:
-        bond.write_document("ocr", content, read, format=Format.JSON)
-    [issue] = exc.value.errors
-    assert (issue.code, issue.citation_index, issue.hint) == (E.UNKNOWN_PRODUCER, 0, "known producers: pypdf, reducto")
-    acme = Policy(producers=PRODUCERS | {"acme-ocr"})  # an importer of another vendor's output
-    written = bond.write_document("ocr", content, read, format=Format.JSON, policy=acme)
-    assert written.advanced and bond.verify(written.version, acme) == []
-    # Verify checks against the policy supplied now, which may not know the producer.
-    assert [i.code for i in bond.verify(written.version)] == [E.UNKNOWN_PRODUCER]
+                     "acme-ocr")]  # an importer of another vendor's output
+    written = bond.write_document("ocr", content, read, format=Format.JSON)
+    assert written.advanced and bond.verify(written.version) == []
+    assert [c.producer for c in bond.citations(written.version)] == ["acme-ocr"]
 
 
 # --- source regions -------------------------------------------------------------
@@ -598,9 +586,8 @@ def test_source_validator(bond, case):
     # A whole-version source is exactly what ingest writes.
     whole = bond.write_document("n", b"A note.", [Citation(CitationKind.SOURCE, VersionLocator(), [])], format=Format.MARKDOWN)
     assert bond.ingest("n", b"A note.").version == whole.version
-    for attr in ["reason", "author"]:  # who stands behind a source is a signer's business, not an attr's
-        assert any(f"does not accept attrs ['{attr}']" in m for m in problems(
-            Citation(CitationKind.SOURCE, claim, [], {attr: "Dr. Reviewer"})))
+    # Who stands behind a source is a signer's business; a source names no producer.
+    assert any("source takes no producer" in m for m in problems(Citation(CitationKind.SOURCE, claim, [], "dr-reviewer")))
 
 
 def test_a_source_can_cite_the_parts_it_got_from_elsewhere(bond, case):

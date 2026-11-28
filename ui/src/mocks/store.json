@@ -2151,7 +2151,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "54a5e79547888d7a57612c16cdd5986de6bc720f2891db34fc57f42625816b2e",
@@ -2163,7 +2163,7 @@
    },
    "claim_text": "synthetic-0001",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "7cd66ba26c0db1c41720ead620358b83c787ad47a667642a57d5475a0b6f1edc",
@@ -2175,7 +2175,7 @@
    },
    "claim_text": "2.81",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "c9e79053339cd91ae8faa775962042f04e09b4cafe0c7ecbf6a996cbcad1b57a",
@@ -2187,7 +2187,7 @@
    },
    "claim_text": "full",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "34f0ebc71e57addded5f85403bec84c99eca73fa6b8eae437209fdfacc73957d",
@@ -2199,7 +2199,7 @@
    },
    "claim_text": "FAX COVER SHEET\n\nTo: Intake Unit, Northwind Legal Aid\n\nFrom: Riverside Tenants Union, Elena Marsh\n\nDate: 09/28/2026    Pages: 2\n\nRE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)\n\nClient: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902\n\nCONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "06ec07f0e5e3d99beb8f577e838b23aa9154e8022fa53642c2a79396044f549f",
@@ -2211,7 +2211,7 @@
    },
    "claim_text": "FAX COVER SHEET\n\nTo: Intake Unit, Northwind Legal Aid\n\nFrom: Riverside Tenants Union, Elena Marsh\n\nDate: 09/28/2026    Pages: 2\n\nRE: Request for representation, repair and deduct for a\nbathroom ceiling leak (HC 12.4)\n\nClient: Jordan Avery    Unit: 4B    Matter ID: NWL-4471902\n\nCONFIDENTIAL: This fax contains privileged information intended\nonly for the recipient named above.",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "d6dee9f9d0150b49a0846b7918162399528837ddc799b93223038c8efa2a8928",
@@ -2223,7 +2223,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "efc46219ade1ac2325cce07e46bc6577e33544fe4e59062422b9db7c5f0dbf68",
@@ -2253,9 +2253,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "6042512749977d343eac273bef846af087e7589c4892a8f1df1c78865371002d",
@@ -2267,7 +2265,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "e121e6ea08cc860bfcc8776c84a2a8e62a4308489f85ac5bb943235618f77693",
@@ -2297,9 +2295,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "c4b907851bdf737bbde39614e716a820298271ff210babb77893872264aa9f85",
@@ -2323,9 +2319,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "e4a8b9aaec5b13a5cfa888b82113082fa839b492f3ed4c7a1789e0e1b18bc575",
@@ -2355,9 +2349,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "bf7d84266737ea9e38692fd3a648a53d94c73403045600c7f539410da0f19148",
@@ -2369,7 +2361,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "fd10032be4ac340b0d0f8d44c9e9a54a0650ea01cd1e4df54f44fc066e2f1956",
@@ -2399,9 +2391,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "7ededb33d88bcb7a2a979c32f83ac410d40ea3deee481180130db86adf65e7d8",
@@ -2425,9 +2415,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "66aa49b4bedc5bc55efe2f5692686c63cf970d556d16eb70a441f5f25ea9a7c8",
@@ -2457,9 +2445,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "5d1d8db7d47d4ee6e44fe77e6e515f173a0c6fb5dd64a5737d4d646f75c869e8",
@@ -2471,7 +2457,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "cb496966ae4b35c54dd6b5878e4fae5250dd67d287c58e2e71447be777007d23",
@@ -2501,9 +2487,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "8c3b735d86831e7d85ef4a83cacb60eaf4a7c455b1302e4136517f8b69f8face",
@@ -2527,9 +2511,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "68a4ce7a2dff432fc0c5497c8a68fdb889302e6fe14cec46e6b32e97f4833db9",
@@ -2559,9 +2541,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "e07caa3b3830b71662e74e98b9b28bd522014aa8c551859f8003868b4124866a",
@@ -2573,7 +2553,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "7e36a2aed61b115cf3161764d2d4f3b5eaca11a2d7a4c1f6ac4c96af90b4a7f1",
@@ -2603,9 +2583,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "d5232e027628766ae71eab0fa113437ecc889339faffbbf63584c5f510ed6e56",
@@ -2629,9 +2607,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "e928f1716b3ae7ac46372ff605c0778c09857247ad2cc9de2362a3f8005c6fc4",
@@ -2661,9 +2637,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "b17d88d3c281b1d1a0fb539ef6272214515a0612231ee76c5e8131bacf3e2a74",
@@ -2675,7 +2649,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "41220a1695727cbe50284fd546ff3470f5bda285aa597048fbe5726663a0980c",
@@ -2705,9 +2679,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "46c2b75545d52eddfa16871f1c9987386dcea6a8aa3c131bb7ae22ebb71bc106",
@@ -2731,9 +2703,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "8df27d19e059a9ddcc4242ff2bf750635cabd6e429fd261146f4d3361c055b66",
@@ -2763,9 +2733,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "f52ad6be91a71daa8e83a965f642872e23617105200e435e15a187f010565d21",
@@ -2777,7 +2745,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "c8c3a217142e8b74f21c6137f25bdc6f17d4d1f88d06e0e6b9f9bc0e8e297e2c",
@@ -2807,9 +2775,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "dcfcc0840e0774970db23823513d842741dd13c6ca3c4982a95ade6fbbd0912f",
@@ -2833,9 +2799,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "b5b90a2b118c6fc78c95356c235b9d1c51b3630f571f23b5766427ca019b2ed2",
@@ -2865,9 +2829,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "f6b93a02aee177e89f13f91eb1f2b7f778b4fa9bd49cb7ef3dc6df0b237a0257",
@@ -2879,7 +2841,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "121c3639a5e45d574c04786a5c4f94ed6abebf532aa9579aeb9601f67a6fd7fa",
@@ -2909,9 +2871,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "cebd2b4ffb7e02f89c1120988a72400a1a234a5dd4b68e211727a53bd6cb0685",
@@ -2935,9 +2895,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "947f56eb175dafdca2cb97d335e702aa980e62ccd20a22c17d312e7c3c346428",
@@ -2949,7 +2907,7 @@
    },
    "claim_text": "Intake Note - 09/26/2026\n\nProblem: Water leaking through the bathroom ceiling for 8 weeks.\n\nHistory: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.\n\nNotice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”\n\nInspection: Active drip from the bathroom ceiling light fixture.\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\ndry. No signiﬁcant damage to other rooms.\n\nEmergencies: None. No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.\n\nAssessment: Habitability defect, water intrusion (HC 12.4), not\nrepaired after written notice.\n\nPlan: Repair and deduct for the ceiling leak, or a demand letter\nto the landlord before filing in housing court.\n\nElectronically signed: Elena Marsh, Tenant Organizer",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "216e4ebefa74f7c2fba65b7d80b211e53540dbe26a1d404cae3a6c9529c7858f",
@@ -2961,7 +2919,7 @@
    },
    "claim_text": "Intake Note - 09/26/2026\n\nProblem: Water leaking through the bathroom ceiling for 8 weeks.\n\nHistory: Tenant reports a progressive ceil-\ning leak in the bathroom with mold spreading over the wall\nbehind the toilet. The leak began after a storm on 08/01/2026.\n\nNotice given: Sent 6 weeks of written notice to the landlord\n(3 letters) and called the management office twice a week, with\n“no response.”\n\nInspection: Active drip from the bathroom ceiling light fixture.\nBlack mold over 4 square feet of the wall (photo 4/5). Floor\ndry. No signiﬁcant damage to other rooms.\n\nEmergencies: None. No gas leak, no sewage backup, no exposed\nwiring, no loss of heat.\n\nAssessment: Habitability defect, water intrusion (HC 12.4), not\nrepaired after written notice.\n\nPlan: Repair and deduct for the ceiling leak, or a demand letter\nto the landlord before filing in housing court.\n\nElectronically signed: Elena Marsh, Tenant Organizer",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "7a62f22a65e52766e054eb10000e2bdb5015a391eafb165fea7b1a4d13eba289",
@@ -2973,7 +2931,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "f92e935c31efd9c697307698eed75684135ed4d6ae81b1a8cdad187bf79d3a09",
@@ -3003,9 +2961,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "90a5a2395f545c62b804e731af72a4acf28a2bb0e7763b381d7221d0df5c2854",
@@ -3017,7 +2973,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "483f333a13cb04ac39047bbc984f84fac32e593052c41654b68b8831207d7d37",
@@ -3047,9 +3003,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "667bfb769f056a35d0ae4470c433b8b517b60ad7c87007122a8f16e982b59340",
@@ -3073,9 +3027,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "35956102a1691a7a9b7f9a3a2b4d394edd99433fe93aa7476eb6f9793552e101",
@@ -3105,9 +3057,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "fb75c7c2212bbc92ecc2d7039a17c740ce31c1b989d45be197fae9374a43408c",
@@ -3119,7 +3069,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "bf63d7e7cec8dc8b1c7e6495bf5da60cd7c4bf8e5cebd9aabd7e5212871d9a2e",
@@ -3149,9 +3099,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "3c50aeac86a0ffbaaa84d8352a28097dea00bd9bc2560e37a4718fe3bbefb06f",
@@ -3175,9 +3123,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "0dc0888f88d2c629ff61b69160772f613563fc13ec2b3127a45227441ed236c7",
@@ -3207,9 +3153,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "bd4a711b879dc2b85363d5ce7b7a62273a20256cf13461c39228e9d99294a329",
@@ -3221,7 +3165,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "19bea5356fe111c9f58e01f8305ec13223e3d7fe1310eabb3af9fdf1cbc91a09",
@@ -3251,9 +3195,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "9ba01551d6d31e41bbcce5732b04e51b2c65bb1436a3b5ff6f1439373fe63430",
@@ -3277,9 +3219,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "b403985801456769ec37b9e0ceadb74ce2c51ed3f31233665117bd5eb8dc153c",
@@ -3309,9 +3249,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "fd885c94cd4fb111e6c66c6c6cea4c24a40ce9e88d5abe5314257fdd715ecf9a",
@@ -3323,7 +3261,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "fe7cb0326692aca25ad275793de7e7dd18778326525804ca2d739e6426ea8aec",
@@ -3353,9 +3291,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "2b426c06b7547a7ab031b3a03f43c767fd90074727662e3454851704a457e997",
@@ -3379,9 +3315,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "c55b639bbddc6a68b26cc379e63a116265a4b76b97bd1191b35c5d93ef5b5ba0",
@@ -3411,9 +3345,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "0f93d0b8d9ecdb2abd4742a1a348309c1007aa0c4f0c439c209d5e24a873c062",
@@ -3425,7 +3357,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "82855c09c4d903f5e9d6e7949db6111eb3d240e92170dee194dc0f5dfc783c36",
@@ -3455,9 +3387,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "6db77460e2ecb364deb3e1536850a1bb84ad7e82a4c63ca5f2c2cace97724a73",
@@ -3481,9 +3411,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "a8aac27e13a8c52a7988841a873fe621f54b1d08cb9648ef6f53677ab234a2f4",
@@ -3513,9 +3441,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "a825094f9077a2e209265aa10cb28a651ec1a625f3b5655ca55709f8b020dce8",
@@ -3527,7 +3453,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "eebaac893def9d1748bdf073e15f0bb753152033a41fbcfda8742b112e6e8198",
@@ -3557,9 +3483,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "fb337f214ca6a906c61e3d69fa5df9f9db7a607fbf597287d292d237aa825d64",
@@ -3583,9 +3507,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "a47e02547f960b649bc44fc7484a97e0a837ec4330870123c2d313f59d6ac9d9",
@@ -3615,9 +3537,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "19dd8ff377f757f0935dc164141d02ad6a036d60d4c98a32cb6540106efb39d1",
@@ -3629,7 +3549,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "26b812b7d3947b8a72b4006b03f87b663075a27ce3b68e9a3671dee5ade039c7",
@@ -3659,9 +3579,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "1154eed3425d07395c2d618f0acbf85e422823cd718aa7f839f04e6a14bf093d",
@@ -3685,9 +3603,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "0cd994108982ef3905517638b7370e5e912047f14bc23081035042e9c3725a03",
@@ -3717,9 +3633,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "38a2bca62db9d0f0aafa16bb125bb1f2decddabe19ef8d1237e6e477bc7e441d",
@@ -3731,7 +3645,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "ed0f357a3cabd493765ba88262b4d444d3f3dc157154f48c8c6dbc9ce8b91a82",
@@ -3761,9 +3675,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "b415d5fc4efd6ad124001fce35221885f65cc421379bcf605a789669f7f15982",
@@ -3787,9 +3699,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "9d19ce4b5a88a63187bdd1418eb12d4e2f5b2b53bdea2ff5ec78b347bb94c627",
@@ -3819,9 +3729,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "classifier": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "c582fa4454eb0f492379bfd6de9f3cedd0344151516a3ce46ee3495c8db8f7f3",
@@ -3833,7 +3741,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "8ada3f4b28064a10b083dd08b416f4537a7c3a1fd3a8742c4534471161e6354d",
@@ -3863,9 +3771,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "transcriber": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "5a109924ade0f5520930edb73e6aea53e7e74d44db0797d8317c03f3edc83822",
@@ -3889,9 +3795,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {
-    "assessor": "reducto"
-   }
+   "producer": "reducto"
   },
   {
    "id": "9913ea533ec8c59ba6109abe6eb6d2d6a39c1fdedfd1f5e77a8f368529a1c8a9",
@@ -3903,7 +3807,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "d6d848d2e7e9bf82393065df6d668b4eaedc550ea22e2340be6b6ae5f7f06482",
@@ -3914,7 +3818,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "d6d848d2e7e9bf82393065df6d668b4eaedc550ea22e2340be6b6ae5f7f06482",
@@ -3925,7 +3829,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "50d7fb960fe1e4d1b492aaed29671add5f0edca56eb06fc82744f5deefb4fc99",
@@ -3950,7 +3854,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "d9f6793025783064e3efd7b2bf1f21fa9a226aafd4df56d37c1890d40d9e6a72",
@@ -3997,7 +3901,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "1375b6f188acea7b50673ca97dde748e1a9aae2bef0996802000a741a821188c",
@@ -4010,7 +3914,7 @@
    },
    "claim_text": "Findings",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "21c7d763bdc7e9718081e61709adc6140ee30918156a92c51b45ffb92ea10b07",
@@ -4037,7 +3941,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "20392550d7b3eabca590379b9a909d0eac9e101fd5ffd585d6b47520e2e6f31b",
@@ -4062,7 +3966,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "aac72c36cc03085e4d189023e3df5cbc5018afe9bf28fc1a798180abeb46aaec",
@@ -4089,7 +3993,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "a45a2ae390a8cddf2a6945dcc5cf958b2600aa547fd28f475692dd37d1d60f0f",
@@ -4116,7 +4020,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "5c2ad3e1403dbea63e5f307d777514ff6ecada9726bed58e5d72c1c218135ff8",
@@ -4143,7 +4047,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "7f579ead015d3fc79b86bd4ef661275f0df31cbeecd7dbd3f19c52ca16e147d5",
@@ -4156,7 +4060,7 @@
    },
    "claim_text": "Criteria check",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "43823e54bcc929ea5dc30d00216216f755e0e528d4191b816824a30d6415742d",
@@ -4169,7 +4073,7 @@
    },
    "claim_text": "Criterion | Evidence",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "2561a08c2e75ee791e2e6546ca8eab1677acac0674b421be6e0c9d1a33d85d25",
@@ -4195,7 +4099,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "e18b39f2377650a8b9a9f12caadd2986a5fedb3170108856b292f5d3d25fee8d",
@@ -4222,7 +4126,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "f04c1e995fc04ea0ba20f239ea7db5965fe6ded9fc423280ae6fccc887893262",
@@ -4248,7 +4152,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "0665a925d823f5f1061a88f4fec31e8e0720e167e1413dea9cca1972c5b9d1f2",
@@ -4273,7 +4177,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "61af715af84af753f0b5d4613854c01f6a7178eeb8b65f13ec881cdbb4dcdc8c",
@@ -4299,7 +4203,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "61181aa431cfa69c90625547590e82469d5a4a9745acb169185ad21755b3fe69",
@@ -4326,7 +4230,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "ebe6527c3ab49dfa590a8bbe4e07e1ce9cae463e9df5e07467beb70ce5b3b1a1",
@@ -4364,7 +4268,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "694c980bfe1743bcc256b1b3ccbf57dadb63ae8ce6f55111f8a9bca182548cbd",
@@ -4389,7 +4293,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "9b83439a69448b872581a9d13511a1886f3d3bab72dbc182f64b06bd128c858e",
@@ -4425,7 +4329,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "5a285ea3e270df9160aa77265b52f8e0c770b293e03a20a616ae5ce7890beea2",
@@ -4438,7 +4342,7 @@
    },
    "claim_text": "Findings",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "033eb039200b09db5dfb257988df1679248e2251164e6b1acfa8a566e72ccc4f",
@@ -4465,7 +4369,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "333ee2f5364b325c0193ee9f495ae8bb2ffe1bc7bf9e1cfe3fccb3091e6d57cd",
@@ -4490,7 +4394,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "1083463b4dca21ecf25bfed12ccbd4e74d5f8518ffe93ee5ab35de7089fa0334",
@@ -4517,7 +4421,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "ad366b53783d65b75a59a39ca6423de7e713872f48f9266f94e55ef499922081",
@@ -4544,7 +4448,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "3b576c3949b54e364ab0fb3af03f2236be717681d6361b313519b020cd391367",
@@ -4571,7 +4475,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "20b103020b1ffeee64c5c821b32573e7c4c7fdbcc790b79b7d07a31e9f2792aa",
@@ -4584,7 +4488,7 @@
    },
    "claim_text": "Criteria check",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "f62227b57994223b7ccae3113d23c0aac8b19aaa5d97f097220e8dd1a7768887",
@@ -4597,7 +4501,7 @@
    },
    "claim_text": "Criterion | Evidence",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "fa086a3c000ff55badabb98b1cb42e6b4614abf4959977ce3c548393bc0a278f",
@@ -4623,7 +4527,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "a9402804312d8858415a00bea1c9f6c1e16640bd83fe387e0fad2a50664dd19b",
@@ -4650,7 +4554,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "7e21fc630e0823155770a5bc678ba5f609e97f22abd26b8980e485758d60fd86",
@@ -4676,7 +4580,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "9a20e70a79d77d3e90a2c221809a079d5785261d58a2afca1be01e037ac34c76",
@@ -4701,7 +4605,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "dab870b2f0126ab13dfde749ba7f3e9d3c0d7cce863c83a924bcc0e5c726f6b7",
@@ -4727,7 +4631,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "b2e4487ee96731bb433e4fc710bbd972b5032fed9d2445835930755221b59483",
@@ -4754,7 +4658,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "ccd3ebd99f54512c24e0a031156a53793798df6e716dc19fd782835a27b482be",
@@ -4792,7 +4696,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "4f69c826bcd8b4f230a1b3e8de0bfc28900ea8e6e22608377a9aaf654e0eae6c",
@@ -4805,7 +4709,7 @@
    },
    "claim_text": "Decision",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "fafbebdfa18ded62de59a5c47f0c5721315b23320e80042e1a304fcf5a89ed5d",
@@ -4855,7 +4759,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "3ac2a487458994b681734dc5d0d7cebef3befb76bbe4b7c7d70022f2012ad0f7",
@@ -4868,7 +4772,7 @@
    },
    "claim_text": "Reviewer note: repair and deduct is reasonable given the ongoing leak.",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "43d4c93f2b26f5c8439f5517f107a5d340b88b9a9e9fab1d83e069ea02f4e25e",
@@ -4881,7 +4785,7 @@
    },
    "claim_text": "Expense history: Jordan Avery",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "546a4633f4ffb9e4005f1949276626c557d9aef4ed4dca42f3ac6ebd933a19a2",
@@ -4917,7 +4821,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "9572bb4d6d748ded039a0c3384623f14737ee6deb5199aee319e6580d23ceb7d",
@@ -4953,7 +4857,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "245098c89284713fc27feefa16931b04d04578ed6348ae6a698b0613e67569c7",
@@ -4981,7 +4885,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "0b09e90718325ff8fb8de544c3f522e566db3487fcdf0f8889849efc5f86acc1",
@@ -5007,7 +4911,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "741387ddfad48e680b65fd6a784468acd1066f45cef861376f39ff15d56822ec",
@@ -5032,7 +4936,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "cb1086859641f132cf3edb96f303320e1c34a08f9b41fc9a0d867d1e246373e6",
@@ -5058,7 +4962,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "e24d9d1a07c9ae5cd218c1944ad1a657482b82e90398c5309062ed0375cede13",
@@ -5083,7 +4987,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "3d8dc4f4eefd651d336a0eb16ae71e7008b928b03778ea5636940fb9c97c9e35",
@@ -5095,7 +4999,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "69dccf8adac5424acec37b2511168ed7b9a00949d87da0dcb5e4a1e11ab00d67",
@@ -5107,7 +5011,7 @@
    },
    "claim_text": null,
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "1b3340c42c426dc50afa7bb33f9403aadbd0c2576b0a4ec65cd93993e9fa7249",
@@ -5133,7 +5037,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "59bf94f72b3cb175aa267894408a3af7045b341372407e49e29ef091734fc94c",
@@ -5159,7 +5063,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "4579da9710e7aa79796aedfbb5f428c8827d0abe0ac1e03db4b6ab80a7ac72e0",
@@ -5185,7 +5089,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "f0b99cb691320305d0156e475ca90ec999ed1dcc46c3c7f05941b74789e7a63f",
@@ -5211,7 +5115,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "e08eee912162d15098fcf54cc90ed80456fcbf60d41a26d60b2e4556829c0488",
@@ -5236,7 +5140,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "debb8e4751abbf166aed6c73d85df6a14f1f62f44a63cf6d01b7ab72109a63fd",
@@ -5262,7 +5166,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "5c4a16b58a232d784abcb6f45d7679ede1348a5525e290fda86c63b9116da977",
@@ -5288,7 +5192,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "0197deaebebf788496eef82fce135391f99515f42330143d5d23984898c7d984",
@@ -5314,7 +5218,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "39c486c1584848e61f8052f8b87c900d59c0e61c50983c88f4164f67057aceef",
@@ -5340,7 +5244,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "8e3928133852d2657003c66a6c3ad02788fdac54a570a17c5865bf421e0c6d1c",
@@ -5368,7 +5272,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "049750c12050b1b3aa9a315a463b958f757a8e3bf80a82e72947611523462ccb",
@@ -5398,7 +5302,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "8b2067444fe34f3c3591616206236e292232016b19e0989776720cbe7d844cfe",
@@ -5428,7 +5332,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "d230bd350c08e5cf7940e3071a2eee339085a40b4a57985ca1d9d99df729d75d",
@@ -5454,7 +5358,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "344af04495b198503658d7264082d9c3f12704f1c23f5161e69f836c187c7cba",
@@ -5480,7 +5384,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "0f2ca8f78f723556ef70907458cce0f776d0a12b5611405dde5f52f62baff8cc",
@@ -5506,7 +5410,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "c9e6f69ca7bd35ad31c5d3eacb32cf70ce2109bef7bbd1b44f09018ef09c5c62",
@@ -5532,7 +5436,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "fa34370032db2cd2b4309f393f8a4ed44bec70178a973877cbb73697e7a6c011",
@@ -5562,7 +5466,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "4749464864ca302f9053d1438f137af7624fa7e40239ff7ce254005620e850dc",
@@ -5575,7 +5479,7 @@
    },
    "claim_text": "TOTAL",
    "supports": [],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "0b28c94aae62d20ecf2f08e413fbe64e7b6a29916d686bc9c4505d72374e7dae",
@@ -5625,7 +5529,7 @@
      "unreachable": false
     }
    ],
-   "attrs": {}
+   "producer": null
   },
   {
    "id": "8b46ef4246ab486bca0efd66409b1bbcb479bc5c581b17a237451043ac184bfc",
@@ -5638,7 +5542,7 @@
    },
    "claim_text": "Sum of the amounts above",
    "supports": [],
-   "attrs": {}
+   "producer": null
   }
  ]
 }

@@ -4,7 +4,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { describeLocator } from "../api/locators";
 import type { Citation, Locator } from "../api/types";
-import { attrsLine, clip, FormatDot, KindChip } from "./chips";
+import { clip, FormatDot, KindChip } from "./chips";
 import { useNav } from "./NavContext";
 
 export type PopoverState = {
@@ -41,7 +41,7 @@ export function CitationPopover({ state, onClose }: { state: PopoverState; onClo
           <div className="pop-head">
             <KindChip kind={c.kind} />
             {inbound && <span>from {nav.name(c.owner_version)}</span>}
-            {Object.keys(c.attrs).length > 0 && <span className="pop-attrs">{attrsLine(c.attrs)}</span>}
+            {c.producer !== null && <span className="pop-attrs">by {c.producer}</span>}
           </div>
           {c.kind === "paraphrase" && <div className="pop-note">Paraphrase: semantic support is not evaluated.</div>}
           {inbound ? <CitingClaim citation={c} go={go} /> : <Supports citation={c} go={go} />}

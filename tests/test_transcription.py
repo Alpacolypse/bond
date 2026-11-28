@@ -21,7 +21,6 @@ from bond.importers.reducto import REDUCTO, import_reducto
 from bond.importers.text_layer import TEXT_LAYER
 from bond.models import SupportStatus, UnknownDocument, Version
 from bond.parsers import ParsedDoc
-from bond.policies import PRODUCERS, Policy
 from bond.transcription import Transcriber, TranscriptionError, record, transcribe, transcription_name
 from conftest import FIXTURES, written
 
@@ -57,7 +56,7 @@ def test_a_pdfs_text_layer_is_its_transcription_and_what_cites_it_traces_to_the_
     [page] = [n for n in trace.nodes if n.version == pdf]
     assert page.locator == PdfLocator(1, (0.0, 0.0, 1.0, 1.0))  # the whole of page 2
     [read] = [e.citation for e in trace.edges if e.citation.kind is CitationKind.TRANSCRIPTION]
-    assert read.attrs == {"transcriber": "pypdf"}
+    assert read.producer == "pypdf"
 
 
 def test_transcribing_again_changes_nothing_and_a_new_pdf_advances_its_transcription(bond: Bond):
@@ -129,7 +128,7 @@ class Reader:
             if line.strip():
                 cited.append(Citation(CitationKind.TRANSCRIPTION, TextLocator(at, at + len(line.rstrip("\n"))),
                                       [Ref(source.id, PdfLocator(page, (0.0, 0.0, 1.0, 1.0)))],
-                                      {"transcriber": self.producer}))
+                                      self.producer))
             at += len(line)
         return cited
 
@@ -138,7 +137,7 @@ def test_a_new_producer_is_one_transcription_in_any_output_format(bond: Bond):
     pdf = bond.ingest("fax", FAX, format=Format.PDF).version
     result = record(bond, "fax", Reader(), b"Cover sheet, to the intake unit.\nIntake note: ceiling leak.\n")
     assert bond.document("fax.acme-ocr").head == result.version
-    assert bond.verify(result.version, Policy(producers=PRODUCERS | {"acme-ocr"})) == []
+    assert bond.verify(result.version) == []  # nothing to register: any tool's id names a producer
     [hit] = Tools(bond).search("ceiling leak", document="fax.acme-ocr")
     assert hit.support is SupportStatus.SUPPORTED and hit.where.startswith("page 2")
     with pytest.raises(WriteError, match="page 2 does not exist"):  # the PDF has 2 pages, from 0

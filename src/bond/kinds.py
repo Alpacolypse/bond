@@ -1,15 +1,14 @@
 """Citation kinds. Each kind is an enum member plus a validator.
 
 A validator checks a citation as strongly as its kind honestly allows: always
-its structure (supports, locator types, attrs), and for QUOTE its content.
-Vendor values are never copied into attrs: a vendor's label or score is a value
-in its own document, cited with CLASSIFICATION or ASSESSMENT.
+its structure (supports, locator types, producer), and for QUOTE its content.
+Vendor values are never copied into a citation: a vendor's label or score is a
+value in its own document, cited with CLASSIFICATION or ASSESSMENT.
 A kind's meaning never changes once added; a changed meaning is a new kind.
 
-Attrs are stored with the citation, so they never hold free text: the only
-attrs are the producers of transcriptions, classifications and assessments,
-each named by an id. Which producers are known is a policy's business
-(Policy.producers). Stored records hold no content.
+A citation's producer is stored with it, so it is never free text: an id, the
+tool that produced a transcription, classification or assessment, which those
+kinds require and the rest refuse. Stored records hold no content.
 """
 
 from __future__ import annotations
@@ -45,7 +44,7 @@ class _Problem:
 @dataclass(frozen=True)
 class KindSpec:
     description: str
-    producer: str | None  # the one attr the kind takes, naming the tool that produced the claim; None if it takes none
+    takes_producer: bool  # the claim is a tool's output, so the citation names the tool (its producer)
     validate: Callable[[Citation, TextAt], list[_Problem]]
 
 
@@ -146,55 +145,47 @@ def _validate_assessment(c: Citation, text_at: TextAt) -> list[_Problem]:
 
 KINDS: dict[CitationKind, KindSpec] = {
     CitationKind.TRANSCRIPTION: KindSpec(
-        "claim is text read from a visual region of a page, e.g. of a PDF", "transcriber", _validate_region_reading,
+        "claim is text read from a visual region of a page, e.g. of a PDF", True, _validate_region_reading,
     ),
-    CitationKind.QUOTE: KindSpec("claim is the supporting text, verbatim", None, _validate_quote),
+    CitationKind.QUOTE: KindSpec("claim is the supporting text, verbatim", False, _validate_quote),
     CitationKind.PARAPHRASE: KindSpec(
-        "writer declares the text supports the claim; semantic support is not evaluated", None, _validate_paraphrase,
+        "writer declares the text supports the claim; semantic support is not evaluated", False, _validate_paraphrase,
     ),
     CitationKind.UNSOURCED: KindSpec(
-        "no supporting evidence is declared for the claim, e.g. a heading, id or vendor metadata", None,
+        "no supporting evidence is declared for the claim, e.g. a heading, id or vendor metadata", False,
         _validate_unsourced,
     ),
     CitationKind.SOURCE: KindSpec(
         "claim is a declared origin of evidence, without an assertion of authority: a whole file or a "
-        "reviewer's own rationale", None, _validate_source,
+        "reviewer's own rationale", False, _validate_source,
     ),
     CitationKind.CLASSIFICATION: KindSpec(
-        "claim is a label a producer assigned to a visual region of a page, e.g. a block type", "classifier",
+        "claim is a label a producer assigned to a visual region of a page, e.g. a block type", True,
         _validate_region_reading,
     ),
     CitationKind.ASSESSMENT: KindSpec(
         "claim is a producer's judgment of the text it rests on, e.g. a transcriber's confidence in the text it read",
-        "assessor", _validate_assessment,
+        True, _validate_assessment,
     ),
 }
 
 
 def validate_citation(c: Citation, index: int, text_at: TextAt) -> list[Issue]:
-    """Every problem with citation index's attrs, supports and claim, by the rules of its kind."""
+    """Every problem with citation index's producer, supports and claim, by the rules of its kind."""
     spec = KINDS[c.kind]
     return [Issue(p.code, p.message, citation_index=index, locator=c.claim, hint=p.hint)
-            for p in _check_attrs(c, spec) + spec.validate(c, text_at)]
+            for p in _check_producer(c, spec) + spec.validate(c, text_at)]
 
 
-def producer(c: Citation) -> str | None:
-    """The producer a citation names, if its kind names one and it does."""
-    attr = KINDS[c.kind].producer
-    return None if attr is None else c.attrs.get(attr)
-
-
-def _check_attrs(c: Citation, spec: KindSpec) -> list[_Problem]:
+def _check_producer(c: Citation, spec: KindSpec) -> list[_Problem]:
     hint = f"{c.kind.value}: {spec.description}"
-    expected = set() if spec.producer is None else {spec.producer}
-    problems = []
-    if missing := expected - c.attrs.keys():
-        problems.append(_invalid(f"{c.kind.value} requires attrs {sorted(missing)}", hint))
-    if extra := c.attrs.keys() - expected:
-        problems.append(_invalid(f"{c.kind.value} does not accept attrs {sorted(extra)}", hint))
-    if spec.producer is not None and (named := c.attrs.get(spec.producer)) is not None \
-            and not _PRODUCER_ID.fullmatch(named):
-        problems.append(_invalid(f"attrs.{spec.producer} must be a producer id, got {clip(named)!r}",
-                                 "a tool's id: a lowercase letter followed by up to 62 lowercase letters, digits or "
-                                 "hyphens, e.g. 'reducto'; attrs never hold free text"))
-    return problems
+    if not spec.takes_producer:
+        return [] if c.producer is None else [_invalid(f"{c.kind.value} takes no producer, got {clip(c.producer)!r}",
+                                                       hint)]
+    if c.producer is None:
+        return [_invalid(f"{c.kind.value} needs a producer: the tool that produced it, by id", hint)]
+    if not _PRODUCER_ID.fullmatch(c.producer):
+        return [_invalid(f"a producer is a tool's id, got {clip(c.producer)!r}",
+                         "a lowercase letter followed by up to 62 lowercase letters, digits or hyphens, e.g. "
+                         "'reducto'; a producer is never free text")]
+    return []

@@ -254,7 +254,7 @@ def summary_citations(bond: Bond, docs: Mapping[str, VersionId], expenses: Versi
     if expenses is None:
         return citations
     request = claim_locator(SUMMARY, REQUEST)
-    return [Citation(c.kind, c.claim, [*c.supports, Ref(expenses, CsvLocator(row=3))], c.attrs) if c.claim == request
+    return [Citation(c.kind, c.claim, [*c.supports, Ref(expenses, CsvLocator(row=3))], c.producer) if c.claim == request
             else c for c in citations]
 
 

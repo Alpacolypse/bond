@@ -148,7 +148,7 @@ class CitationView(TypedDict):
     claim: JsonObject
     claim_text: str | None
     supports: list[SupportView]
-    attrs: dict[str, str]
+    producer: str | None
 
 
 class UnitView(TypedDict):
@@ -168,7 +168,7 @@ class DeclaredCitation(TypedDict):
     kind: str
     claim: JsonObject
     supports: list[RefView]
-    attrs: dict[str, str]
+    producer: str | None
 
 
 class DeclarationsView(TypedDict):
@@ -381,7 +381,7 @@ def citations(bond: Bond, cited: list[StoredCitation]) -> list[CitationView]:
     return [
         {"id": c.id, "owner_version": c.owner_version, "kind": c.kind.value,
          "claim": shown(bond, Ref(c.owner_version, c.claim)), "claim_text": snippet(Ref(c.owner_version, c.claim)),
-         "supports": [support(s) for s in c.supports], "attrs": c.attrs}
+         "supports": [support(s) for s in c.supports], "producer": c.producer}
         for c in cited
     ]
 
@@ -517,7 +517,7 @@ def declarations(bond: Bond, ref: Ref) -> DeclarationsView:
     return {"ref": shown_ref(bond, ref), "undeclared": [shown_ref(bond, r) for r in p.undeclared],
             "citations": [{"id": c.id, "owner_version": c.owner_version, "kind": c.kind.value,
                            "claim": shown(bond, Ref(c.owner_version, c.claim)),
-                           "supports": [shown_ref(bond, r) for r in c.supports], "attrs": c.attrs}
+                           "supports": [shown_ref(bond, r) for r in c.supports], "producer": c.producer}
                           for c in p.citations]}
 
 

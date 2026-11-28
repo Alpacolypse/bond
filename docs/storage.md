@@ -47,7 +47,7 @@ Every value is JSON. `ws` is the workspace's id (`ws_` and 32 hex digits); a nam
 ```
 ("workspaces", sha256(name))         -> {id, name, created_at}
 (ws, "records", version)             -> {id, content_hash, format, created_at,
-                                         citations: [{id, kind, claim, attrs, supports: [[version, locator], …]}]}
+                                         citations: [{id, kind, claim, producer, supports: [[version, locator], …]}]}
 (ws, "names", sha256(name))          -> {id, name, created_at}           a document's id, claimed once
 (ws, "entries", document_id, seq)    -> {version, base, at, origin}
 (ws, "titles", document_id, seq)     -> {title, at, after}               after: the entry seq it followed
@@ -68,9 +68,9 @@ Bond is often deployed over documents with personal or confidential information,
 | `format`, `kind` | a format, a citation kind |
 | `created_at` | a timestamp |
 | `claim`, a support's locator | a locator: numbers only, and for JSON a positional path, never keys |
-| `attrs` | `{}`, or a producer by id (`{"transcriber": "reducto"}`): a lowercase letter, then lowercase letters, digits and hyphens |
+| `producer` | `null`, or the tool whose output a citation is, by id (`"reducto"`): a lowercase letter, then lowercase letters, digits and hyphens |
 
-This is enforced, not hoped for: the kinds' validators refuse any other attr, and `tests/test_private_data_stays_out_of_records.py` checks a workspace built from every fixture plus adversarial sources (names in JSON keys and values, headings, file names, titles, and an agent writing through the tools): every record field must have one of the shapes above, no word of any document may appear in any record, and every key must be ids, hashes, seqs and Bond's own words. The hashes can't be reversed, but a source so short that its candidates can be listed (a lone name or date) could be found by hashing each candidate; versions hash whole files, so this applies only to tiny sources.
+This is enforced, not hoped for: a producer that isn't an id is refused, and a citation holds nothing else, and `tests/test_private_data_stays_out_of_records.py` checks a workspace built from every fixture plus adversarial sources (names in JSON keys and values, headings, file names, titles, and an agent writing through the tools): every record field must have one of the shapes above, no word of any document may appear in any record, and every key must be ids, hashes, seqs and Bond's own words. The hashes can't be reversed, but a source so short that its candidates can be listed (a lone name or date) could be found by hashing each candidate; versions hash whole files, so this applies only to tiny sources.
 
 **What else can hold content:**
 

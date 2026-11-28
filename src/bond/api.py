@@ -625,7 +625,7 @@ class Bond:
         found: dict[VersionId, str | None] = {}
         for c in self.cited_by(Ref(version, VersionLocator())):
             if c.kind is CitationKind.TRANSCRIPTION:
-                found.setdefault(c.owner_version, c.attrs.get("transcriber"))
+                found.setdefault(c.owner_version, c.producer)
         transcriptions = []
         for v, producer in found.items():
             holding = self.index.holding(v)

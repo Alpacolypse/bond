@@ -62,7 +62,8 @@ export type Citation = {
   claim: Locator;
   claim_text: string | null;
   supports: Support[];
-  attrs: Record<string, unknown>;
+  /** The tool whose output the claim is (a transcriber, classifier or assessor), by id; null for the rest. */
+  producer: string | null;
 };
 
 export type GraphNode = Omit<VersionSummary, "workspace" | "format" | "content_hash" | "created_at"> & {

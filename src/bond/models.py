@@ -67,32 +67,34 @@ class Citation:
     kind: CitationKind
     claim: Locator  # part of the document being written
     supports: list[Support]  # what the claim rests on, in order
-    attrs: dict[str, str] = field(default_factory=dict)  # kind-specific producer ids, validated by the kind
+    # The tool that produced the claim, by id (e.g. "reducto"): required by the kinds that record a producer's
+    # output (transcription, classification, assessment), refused by the rest. Never free text.
+    producer: str | None = None
 
 
 @dataclass(frozen=True)
 class StoredCitation:
     """A citation as stored: what it was written as, plus its identity in the version that owns it."""
 
-    id: str  # the hash of its kind, claim, supports and attrs, as written
+    id: str  # the hash of its kind, claim, supports and producer, as written
     owner_version: VersionId
     kind: CitationKind
     claim: Locator
     supports: list[Ref]  # supports inside the owner point at owner_version
-    attrs: dict[str, str]
+    producer: str | None
 
     def as_written(self) -> Citation:
         """The citation as it was written and hashed: supports inside its owner are SelfRefs again."""
         return Citation(
             self.kind, self.claim,
             [SelfRef(s.locator) if s.version == self.owner_version else s for s in self.supports],
-            self.attrs,
+            self.producer,
         )
 
     def to_dict(self) -> JsonObject:
         return {
             "id": self.id, "owner_version": self.owner_version, "kind": self.kind.value,
-            "claim": self.claim.to_dict(), "supports": [s.to_dict() for s in self.supports], "attrs": self.attrs,
+            "claim": self.claim.to_dict(), "supports": [s.to_dict() for s in self.supports], "producer": self.producer,
         }
 
 
@@ -365,7 +367,6 @@ class IssueCode(Enum):
     # Policy: what the policy a version is checked against requires.
     UNCOVERED_CLAIM = "uncovered_claim"  # words no citation covers
     KIND_NOT_ALLOWED = "kind_not_allowed"  # a citation of a kind the policy doesn't allow
-    UNKNOWN_PRODUCER = "unknown_producer"  # a citation names a producer the policy doesn't know
     # Filing: only at write.
     INVALID_NAME = "invalid_name"  # a document's name or title is blank
     DOCUMENT_EXISTS = "document_exists"  # no base given, but the document already exists

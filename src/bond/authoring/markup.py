@@ -29,8 +29,8 @@ _CLOSE = re.compile(r"</bond:(cite|anchor)\s*>")
 _RESERVED = re.compile(r"</?bond:")
 _ATTR = re.compile(r"""([A-Za-z_][\w.-]*)=(?:"([^"<>]*)"|'([^'<>]*)')""")
 
-# Tag attributes that aren't the citation's attrs.
-OWN = ("id", "kind", "from")
+# A tag's attributes: its id, its kind, its supports, and the producer of a tool's output.
+OWN = ("id", "kind", "from", "producer")
 
 
 class Unrenderable(ValueError):
@@ -43,10 +43,11 @@ class Tag:
 
     kind: CitationKind
     sources: list[str]  # the tokens in `from`
-    attrs: dict[str, str]
+    attrs: dict[str, str]  # attributes besides its own: `on` in a table's cell, or a mistake (see stray)
     id: str | None
     span: tuple[int, int] | None  # [start, end) in the parsed content; None for a self-closing tag (the whole version)
     at: int  # its position in the marked-up text, for messages
+    producer: str | None = None  # the tool whose output the tagged text is, by id
 
 
 @dataclass
@@ -133,15 +134,13 @@ def attributes(fields: dict[str, str], quote: str = '"') -> str:
 
 
 def open_tag(c: Citation, tag_id: str | None, sources: Sequence[str], whole: bool = False, quote: str = '"') -> str:
-    """The opening <bond:cite> of a citation (self-closing if whole); raises Unrenderable for an attr a tag can't hold."""
+    """The opening <bond:cite> of a citation (self-closing if whole)."""
     fields = {"id": tag_id} if tag_id else {}
     fields["kind"] = c.kind.value
     if sources:
         fields["from"] = " ".join(sources)
-    for key, value in sorted(c.attrs.items()):
-        if key in OWN:
-            raise Unrenderable(f"a {c.kind.value} citation has an attr {key!r} that can't be a tag attribute")
-        fields[key] = value
+    if c.producer is not None:
+        fields["producer"] = c.producer
     return f"<{TAG} {attributes(fields, quote)}" + ("/>" if whole else ">")
 
 
@@ -323,7 +322,16 @@ def _tag(attrs: dict[str, str], at: int, issues: list[str], text: str) -> Tag:
         kind = CitationKind(kind_name)
     sources = attrs.pop("from", "").split()
     tag_id = attrs.pop("id", None)
-    return Tag(kind, sources, attrs, tag_id, None, at)
+    producer = attrs.pop("producer", None)
+    return Tag(kind, sources, attrs, tag_id, None, at, producer)
+
+
+def stray(tag: Tag, label: str) -> str | None:
+    """What is wrong with a tag's attributes besides its own (once the codec took any it uses), or None."""
+    if not tag.attrs:
+        return None
+    return (f"{label} has attribute(s) {', '.join(map(repr, sorted(tag.attrs)))}, which a tag doesn't take (it "
+            "takes id, kind, from and producer)")
 
 
 def _anchor_id(attrs: dict[str, str], self_closing: bool, at: int, issues: list[str], text: str) -> str | None:

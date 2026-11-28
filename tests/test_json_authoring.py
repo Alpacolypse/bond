@@ -54,7 +54,7 @@ def test_render_wraps_whole_values_and_tags_parts_of_strings():
         quote,
         Citation(CitationKind.PARAPHRASE, at(content, "/finding", 18, 33), [SelfRef(at(content, "/finding", 0, 4))]),
         Citation(CitationKind.ASSESSMENT, at(content, "/score"), [SelfRef(at(content, "/finding", 0, 17))],
-                 {"assessor": "reducto"}),
+                 "reducto"),
         Citation(CitationKind.UNSOURCED, at(content, "/tags"), []),
         Citation(CitationKind.PARAPHRASE, at(content, "/tags/1"), [SelfRef(at(content, "/score"))]),
     ]
@@ -62,7 +62,7 @@ def test_render_wraps_whole_values_and_tags_parts_of_strings():
     assert json.loads(draft) == {
         "finding": "<bond:cite id='c1' kind='quote' from='E1'><bond:anchor id='a1'>Leak</bond:anchor> for 8 "
                    "weeks.</bond:cite> <bond:cite kind='paraphrase' from='#a1'>Notice ignored.</bond:cite>",
-        "score": {"$bond": {"cite": {"id": "c2", "kind": "assessment", "from": "#c1", "assessor": "reducto"}}, "value": 3},
+        "score": {"$bond": {"cite": {"id": "c2", "kind": "assessment", "from": "#c1", "producer": "reducto"}}, "value": 3},
         "tags": {"$bond": {"cite": {"kind": "unsourced"}},
                  "value": ["a", {"$bond": {"cite": {"kind": "paraphrase", "from": "#c2"}}, "value": "b"}]},
     }

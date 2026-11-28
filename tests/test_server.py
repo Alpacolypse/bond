@@ -88,7 +88,7 @@ def test_citations(client, docs):
     cs = client.get(f"/api/versions/{docs['fax']}/citations").json()
     assert len({c["id"] for c in cs}) == len(cs) and all(len(c["id"]) == 64 for c in cs)
     t = next(c for c in cs if c["kind"] == "transcription")
-    assert t["owner_version"] == docs["fax"] and t["attrs"] == {"transcriber": "reducto"}
+    assert t["owner_version"] == docs["fax"] and t["producer"] == "reducto"
     assert t["claim"]["type"] == "json" and isinstance(t["claim_text"], str)
     [s] = t["supports"]
     assert s["version"] == docs["pdf"] and s["name"] == "fax_case_001" and s["format"] == "pdf"

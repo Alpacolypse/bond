@@ -15,7 +15,7 @@ class Entry:
     kind: CitationKind
     claim: Locator  # in the content being written
     sources: list[str]  # its supports as written: handles, or #id for a span this draft names
-    attrs: dict[str, str]  # producer ids, as the citation will carry them
+    producer: str | None  # the tool whose output the claim is, by id
     label: str  # how messages name it, e.g. '<bond:cite id="c2">'
     id: str | None = None  # what #id calls the span it claims
 

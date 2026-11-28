@@ -74,7 +74,7 @@ once, at its latest entry, so after a revert the reverted-to version is last and
       "unreachable": false       // true: no workspace this one links to holds the version, so it can't be opened
     }
   ],
-  "attrs": {"transcriber": "reducto"}
+  "producer": "reducto"            // the tool whose output the claim is, by id; null for most kinds
 }
 ```
 
@@ -231,7 +231,7 @@ sources. `q` is required and `limit` must be positive.
 Direct declarations for any valid selection (whole version if locator is omitted):
 
 ```json
-{"ref": Ref, "citations": [{"id": str, "owner_version": str, "kind": Kind, "claim": Locator, "supports": [Ref], "attrs": {}}], "undeclared": [Ref]}
+{"ref": Ref, "citations": [{"id": str, "owner_version": str, "kind": Kind, "claim": Locator, "supports": [Ref], "producer": null}], "undeclared": [Ref]}
 ```
 
 This is `Declarations` in search results too. Citations retain their full subject spans; gaps are clipped
