@@ -33,15 +33,15 @@ class Policy:
     gaps: words may be left uncovered (they stay gaps, never unsourced). kinds: the citation kinds allowed.
     producers: the tools a transcription, classification or assessment may name as its producer, by id; an
     importer of another vendor's output adds its own, e.g. Policy(producers=PRODUCERS | {"acme-ocr"}).
-    refuse_superseded: a citation resting on a version no document holds as its head any more is refused at
-    write, not only warned about. Checked against the workspace as the write finds it: a best-effort guard,
-    since a source can be superseded a moment after.
+
+    A policy judges a version alone, never where it is filed: so verify under the same policy gives the same
+    answer whenever it runs. Whether a citation's source has a newer version since is a warning at write
+    (cites_superseded), and a question for the application, not a rule here.
     """
 
     gaps: bool = False
     kinds: frozenset[CitationKind] = frozenset(CitationKind)
     producers: frozenset[str] = PRODUCERS
-    refuse_superseded: bool = False  # refuse, rather than warn about, a citation of a superseded version
 
     def issues(self, doc: ParsedDoc, citations: Sequence[tuple[int, Citation]]) -> list[Issue]:
         """The issues this policy finds with a version's parsed content and its citations whose locators are

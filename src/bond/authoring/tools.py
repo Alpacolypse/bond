@@ -33,7 +33,6 @@ from ..models import (
     IssueCode,
     Ref,
     SelfRef,
-    SpanStatus,
     Support,
     SupportReason,
     SupportStatus,
@@ -490,18 +489,10 @@ def _superseded_note(bond: Bond, citations: Sequence[Citation], issue: Issue) ->
     support = citations[issue.citation_index].supports[issue.support_index]
     if not isinstance(support, Ref):
         return issue.message
-    fresh = bond.freshness(support)
-    parts = []
-    for d in fresh.documents:
-        head = _handle(bond, Ref(d.head, VersionLocator()))
-        fate = d.span.status if d.span is not None else None
-        if fate in (SpanStatus.UNCHANGED, SpanStatus.MOVED) and d.span is not None and d.span.at is not None:
-            parts.append(f"{d.document!r} is at {head} now, where the same text is {_handle(bond, d.span.at)}")
-        elif fate is SpanStatus.GONE:
-            parts.append(f"{d.document!r} is at {head} now, which no longer has that text")
-        else:
-            parts.append(f"{d.document!r} is at {head} now")
-    return f"{_handle(bond, support)} cites an older version: " + "; ".join(parts)
+    newer = _newer(bond, support.version)
+    parts = [f"{document!r} is at {head} now" for document, head in newer.items()]
+    return (f"{_handle(bond, support)} cites an older version: " + "; ".join(parts)
+            + "; search the newer one for the same text, unless the older one is what you mean")
 
 
 def edit(
