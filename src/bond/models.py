@@ -280,65 +280,6 @@ class WriteResult:
     warnings: tuple[Issue, ...] = ()  # what the write didn't refuse but a writer should know (cites_superseded)
 
 
-class SpanStatus(StrEnum):
-    """What became of a span of a version in a document's head now."""
-
-    UNCHANGED = "unchanged"  # the head has the same text at the same place (or is the version itself)
-    MOVED = "moved"  # the head has the same text elsewhere
-    GONE = "gone"  # the head doesn't have the text
-    UNKNOWN = "unknown"  # can't be told: the span has no text (a region of a page), or the head can't be read
-
-
-@dataclass(frozen=True)
-class SpanFate:
-    """A span's text in a newer version: whether it is there, and where. A suggestion: Bond never moves a
-    citation."""
-
-    status: SpanStatus
-    at: Ref | None  # where it is in the head, when unchanged or moved
-
-    def to_dict(self) -> JsonObject:
-        return {"status": self.status.value, "at": None if self.at is None else self.at.to_dict()}
-
-
-@dataclass(frozen=True)
-class DocumentFreshness:
-    """A version as one document that held it sees it now."""
-
-    document: str
-    current: bool  # the version is the document's head
-    head: VersionId  # the document's head now
-    superseded_at: str | None  # when the document last moved off the version; None while it is the head
-    current_as_of: bool | None  # whether it was the head at the time asked about; None if none was asked
-    span: SpanFate | None  # what became of the span in the head; None when current, or for a whole version
-
-    def to_dict(self) -> JsonObject:
-        return {"document": self.document, "current": self.current, "head": self.head,
-                "superseded_at": self.superseded_at, "current_as_of": self.current_as_of,
-                "span": None if self.span is None else self.span.to_dict()}
-
-
-@dataclass(frozen=True)
-class Freshness:
-    """Whether a span's version is still current where it is filed: computed when asked, never stored.
-
-    Freshness is relative to a document: one version can be one document's head and superseded in another.
-    Documents are those of the workspace that holds the version, which may be one this workspace links to.
-    """
-
-    ref: Ref
-    documents: tuple[DocumentFreshness, ...]
-
-    @property
-    def superseded(self) -> bool:
-        """Filed somewhere, and no longer the head of any document that held it."""
-        return bool(self.documents) and not any(d.current for d in self.documents)
-
-    def to_dict(self) -> JsonObject:
-        return {"ref": self.ref.to_dict(), "documents": [d.to_dict() for d in self.documents],
-                "superseded": self.superseded}
-
-
 @dataclass(frozen=True)
 class TranscriptionOf:
     """A version that transcribes another: its producer, the documents it is filed in, and those it is the head of.
@@ -430,7 +371,7 @@ class IssueCode(Enum):
     DOCUMENT_EXISTS = "document_exists"  # no base given, but the document already exists
     UNKNOWN_DOCUMENT = "unknown_document"  # a base given, but no document has that name
     STALE_BASE = "stale_base"  # the document has moved past the base the writer started from
-    # Freshness: a warning at write, or a refusal under a policy that refuses it.
+    # A warning at write, never a refusal: a newer version of what a citation rests on exists.
     CITES_SUPERSEDED = "cites_superseded"  # a support's version is no longer the head of any document that held it
     # Stored data: only by verify.
     BLOB_MISSING = "blob_missing"  # a version's bytes are gone from the blob directory

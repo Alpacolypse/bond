@@ -23,25 +23,21 @@ from typing import Concatenate
 from . import kinds
 from .formats import from_suffix, parse, sniff, spec
 from .ids import citation_id, hash_bytes, version_id
-from .locators import JsonLocator, Locator, VersionLocator, contains, overlaps
+from .locators import Locator, VersionLocator, contains, overlaps
 from .models import (
     BondError,
     Citation,
     CitationKind,
     CorruptVersion,
     Declarations,
-    DocumentFreshness,
     DocumentRef,
     Format,
-    Freshness,
     HistoryEntry,
     Hit,
     Issue,
     IssueCode,
     Ref,
     SelfRef,
-    SpanFate,
-    SpanStatus,
     StoredCitation,
     Support,
     SupportReport,
@@ -56,7 +52,7 @@ from .models import (
     WriteError,
     WriteResult,
 )
-from .parsers import JsonDoc, Malformed, ParsedDoc
+from .parsers import Malformed, ParsedDoc
 from .plans import FilingChange, WritePlan
 from .policies import STRICT, Policy
 from .storage import Blobs, Conflict, NewVersion, filing_problem
@@ -408,8 +404,6 @@ class Bond:
         policy: Policy, title: str | None,
     ) -> list[Issue]:
         issues = _label_issues(document, title) + self._check(content, format, citations, policy, frozenset())
-        if policy.refuse_superseded:
-            issues += self._superseded(citations)
         version = version_id(hash_bytes(content), format, list(citations))
         if conflict := filing_problem(self.filing.document(document), document, base, version):
             issues.append(_conflict_issue(conflict))
@@ -640,83 +634,26 @@ class Bond:
         return transcriptions
 
     @_one_view
-    def freshness(self, ref: Ref, document: str | None = None, as_of: str | None = None) -> Freshness:
-        """Whether ref's version is still current in each document that holds it (or only in document), in the
-        workspace that holds it (this one, or one it links to), computed
-        now, never stored. For a version a document has moved past: its head, when it moved, and, for a span
-        narrower than the whole version, whether the span's text is in the head (where, if so). as_of, a time
-        as Bond records them, also asks whether the version was the document's head then. Raises ValueError if
-        ref's locator isn't valid in its version.
-
-        A source can be superseded a moment after any check, so this is a question to ask, not a guarantee.
-        Bond never moves a citation to a newer version: a span's fate is a suggestion of where to look.
-
-        Times are approximate. An entry's time is taken just before it is created, and writers' clocks differ, so
-        within one document the order of entries is exact (it is their seq), but across documents, and against
-        as_of, times can be off by as long as a write takes, or by clock skew: as_of near another write's time
-        can't say which came first.
-        """
-        self._check_ref(ref)
-        v = ref.version
-        owner = self._held(v)
-        holding = [d for d in owner.index.holding(v) if document is None or d.name == document]
-        found: list[DocumentFreshness] = []
-        for d in holding:
-            # The head, when v was last held and what followed, all from one read of the history, so a write
-            # meanwhile (a revert to v, say) can't make them disagree.
-            history = owner.filing.history(d.id)
-            held = [i for i, e in enumerate(history) if e.version == v]
-            if not held:
-                continue
-            head = history[-1].version
-            current = head == v
-            superseded_at = None if current else history[held[-1] + 1].at
-            current_as_of = None
-            if as_of is not None:
-                then = [e for e in history if e.at <= as_of]
-                current_as_of = bool(then) and then[-1].version == v
-            span = None if current or isinstance(ref.locator, VersionLocator) else self._span_fate(ref, head)
-            found.append(DocumentFreshness(d.name, current, head, superseded_at, current_as_of, span))
-        return Freshness(ref, tuple(found))
-
-    def _span_fate(self, ref: Ref, head: VersionId) -> SpanFate:
-        """What became of a span's text in head: there at the same place, elsewhere, or not at all.
-
-        The same place is the same locator, except in JSON, where a position names a member only within its
-        version: there it is the value at the same JSON Pointer. Elsewhere is the first place the text is found,
-        a candidate to look at, not the same field."""
-        old_version = self._version(ref.version)
-        old = self._doc(ref.version).text(ref.locator) if spec(old_version.format).has_text else None
-        head_version = self._version(head)
-        if not old or not old.strip() or not spec(head_version.format).has_text:
-            return SpanFate(SpanStatus.UNKNOWN, None)
-        doc = self._doc(head)
-        same: Locator | None = ref.locator
-        if isinstance(ref.locator, JsonLocator):
-            old_doc, new_doc = self._doc(ref.version), doc
-            same = None
-            if isinstance(old_doc, JsonDoc) and isinstance(new_doc, JsonDoc):
-                same = new_doc.locate(old_doc.pointer(ref.locator), ref.locator.span)
-        if same is not None and doc.check(same) is None and doc.text(same) == old:
-            return SpanFate(SpanStatus.UNCHANGED, Ref(head, same))
-        if matches := doc.search(old):
-            return SpanFate(SpanStatus.MOVED, Ref(head, matches[0].locator))
-        return SpanFate(SpanStatus.GONE, None)
-
-    @_one_view
     def _superseded(self, citations: Sequence[Citation]) -> list[Issue]:
-        """A CITES_SUPERSEDED issue for each support, in a version stored here and valid in it, that no document
-        holding it has as its head any more."""
+        """A CITES_SUPERSEDED warning for each support, in a version this workspace can read and valid in it, that
+        is filed and that no document holding it has as its head any more: there may be newer evidence to look at.
+
+        Only ever a warning. Citing an older version is often right (the text a decision was made on), and only
+        the writer knows which it meant; the citation stays exactly true either way, since versions never change.
+        """
         found: list[Issue] = []
         for i, c in enumerate(citations):
             for j, s in enumerate(c.supports):
-                if not isinstance(s, Ref) or self._owner(s.version) is None or self._locator_problem(s):
+                if not isinstance(s, Ref) or (owner := self._owner(s.version)) is None or self._locator_problem(s):
                     continue
-                fresh = self.freshness(s)
-                if fresh.superseded:
-                    found.append(Issue(IssueCode.CITES_SUPERSEDED, superseded_message(fresh), citation_index=i,
-                                       support_index=j, locator=c.claim,
-                                       hint="search the newer version and cite it, if what you cite still holds"))
+                holding = owner.index.holding(s.version)
+                if holding and all(d.head != s.version for d in holding):
+                    moved = "; ".join(f"{d.name!r} has moved past it to {d.head[:12]}…" for d in holding)
+                    found.append(Issue(
+                        IssueCode.CITES_SUPERSEDED,
+                        f"cites version {s.version[:12]}…, which no document holds as its head now: {moved}",
+                        citation_index=i, support_index=j, locator=c.claim,
+                        hint="search the newer version and cite it instead, unless the older one is what you mean"))
         return found
 
     # --- verify --------------------------------------------------------------
@@ -854,17 +791,6 @@ def _encoded(content: bytes | str, format: Format | None) -> tuple[bytes, Format
     """Content as stored, UTF-8 for text, and its format, sniffed if not given."""
     data = content.encode("utf-8") if isinstance(content, str) else content
     return data, format or sniff(data)
-
-
-def superseded_message(fresh: Freshness) -> str:
-    """What a CITES_SUPERSEDED issue says of a superseded version, by version id."""
-    parts = []
-    for d in fresh.documents:
-        fate = {None: "", SpanStatus.UNCHANGED: "; the cited text is unchanged there",
-                SpanStatus.MOVED: "; the cited text is there, elsewhere", SpanStatus.GONE: "; the cited text is gone there",
-                SpanStatus.UNKNOWN: ""}[None if d.span is None else d.span.status]
-        parts.append(f"{d.document!r} has moved past it to {d.head[:12]}…{fate}")
-    return f"cites version {fresh.ref.version[:12]}…, which no document holds as its head now: " + "; ".join(parts)
 
 
 def _walk(
