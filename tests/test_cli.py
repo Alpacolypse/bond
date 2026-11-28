@@ -21,10 +21,9 @@ def test_view_opens_a_local_workspace_without_creating_one(tmp_path, capsys):
         assert offered.names() == ["store"] and [d.name for d in offered.open("store").documents()] == ["fax"]
 
 
-def test_view_refuses_mixed_up_arguments(tmp_path):
-    for argv in (["view", "--workspace", str(tmp_path), "--postgres", "postgresql://x"],
-                 ["view", "--postgres", "postgresql://x"],
-                 ["view", "--postgres", "postgresql://x", "--blobs", "b", "--s3-bucket", "b"],
+def test_the_cli_serves_local_workspaces_only(tmp_path):
+    """A deployment on its own stores serves them from Python (bond.mcp.server, bond.http.server), not the CLI."""
+    for argv in (["view", "--postgres", "postgresql://x"], ["mcp", "--postgres", "postgresql://x"],
                  ["view", "--workspace", str(tmp_path), "--s3-bucket", "b"]):
         with pytest.raises(SystemExit) as e:
             main(argv)
@@ -40,7 +39,7 @@ def test_a_store_is_created_only_when_asked(tmp_path):
 
 
 @pytest.mark.skipif(not POSTGRES, reason="BOND_TEST_POSTGRES unset")
-def test_view_opens_postgres_with_local_blobs_without_creating_tables(tmp_path):
+def test_a_postgres_store_is_created_only_when_asked(tmp_path):
     from bond.storage.postgres import PostgresStore
 
     with postgres_pool() as pool:
@@ -92,11 +91,7 @@ def test_mcp_needs_existing_directories(tmp_path, capsys):
 
 def test_mcp_refuses_mixed_up_arguments(tmp_path, capsys):
     for argv, problem in (
-        (["mcp"], "one of the arguments --workspace --postgres --grants is required"),
-        (["mcp", "--postgres", "postgresql://x"], "--postgres needs exactly one of --blobs and --s3-bucket"),
-        (["mcp", "--postgres", "postgresql://x", "--blobs", "b", "--s3-bucket", "b"],
-         "--postgres needs exactly one of --blobs and --s3-bucket"),
-        (["mcp", "--workspace", str(tmp_path), "--blobs", "b"], "go with --postgres"),
+        (["mcp"], "one of the arguments --workspace --grants is required"),
     ):
         with pytest.raises(SystemExit) as e:
             parse(argv)

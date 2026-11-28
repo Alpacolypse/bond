@@ -64,13 +64,11 @@ Command rules match by prefix, so they stop the obvious calls, not a determined 
 A graph of a workspace's versions, with Markdown, JSON, table (CSV and TSV) and PDF viewers where cited content links to what it cites. `bond view` (with the `view` extra) serves it read-only on localhost and opens a browser:
 
 ```bash
-bond view                                                                                # every workspace in the Bond home
-bond view --workspace smith --workspace ./cases/case-001                                 # a name in the home, a directory
-bond view --postgres postgresql://… --name case-001 --s3-bucket evidence --s3-prefix bond/  # in Postgres, blobs in S3
-bond view --postgres postgresql://… --blobs ./blobs                                      # …the only one, blobs in a directory
+bond view                                                   # every workspace in the Bond home
+bond view --workspace smith --workspace ./cases/case-001    # a name in the home, a directory
 ```
 
-It opens workspaces as they are and never creates one: each `--workspace` given, or with none every workspace in the home; with Postgres, each `--name`. The picker beside Bond switches between them. For Postgres and S3 it uses your own `psycopg[binary,pool]` and `boto3`, configured as usual (credentials and region from the environment; `--s3-endpoint` for MinIO, R2 and the like).
+It opens workspaces as they are and never creates one: each `--workspace` given, or with none every workspace in the home. The picker beside Bond switches between them. Workspaces on other stores (Postgres, S3) are served from Python: `bond.http.server.create_app(Fixed({...}))` is the app `bond view` runs (see [Storage](storage.md)).
 
 It listens on 127.0.0.1 unless you pass `--host`. **It has no authentication**, so anyone who can reach it can read every offered workspace.
 
