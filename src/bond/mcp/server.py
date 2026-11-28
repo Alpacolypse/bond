@@ -31,7 +31,7 @@ from mcp_types import ToolAnnotations
 
 from .. import authoring
 from ..api import Bond
-from ..authoring import AGENT_POLICY, Chain, Draft, Edit, Listing, Outcome, Reading, SearchHit, Tools
+from ..authoring import AGENT_POLICY, Chain, Edit, Listing, Outcome, Reading, SearchHit, Tools
 from ..authoring.tools import SUPPORT_LIMIT
 from ..locators import VersionLocator
 from ..models import Format, Ref, SupportStatus
@@ -68,10 +68,11 @@ A span whose document has moved on to a newer version names it in "newer"; searc
 cite it instead, unless the older version is what you mean.
    trace(workspace, handle) gives the same support status with the reasons it falls short, and what the span \
 rests on, hop by hop, down to its sources, each with its own handle. Neither evaluates whether a claim is true.
-3. write(workspace, document, draft) creates a document. To change one, draft(workspace, document) gives its \
-draft (its citations as tags) and its base, then edit(workspace, document, edits, base) or write(workspace, \
-document, draft, base). Each successful write returns the next base, and the support status of what you \
-wrote, with warnings for anything it cites that has a newer version. If someone else changed the document since your base, call draft(workspace, document) again.
+3. write(workspace, document, draft) creates a document. To change one, read(workspace, document, \
+citations=true) gives it with its citations written in as tags, and its base; then edit(workspace, document, \
+edits, base) changes that text, or write(workspace, document, draft, base) replaces it. Each successful write \
+returns the next base, and the support status of what you wrote, with warnings for anything it cites that has a \
+newer version. If someone else changed the document since your base, read it again with citations=true.
 
 Markdown drafts cite with inline tags around the text they cover:
   <bond:cite kind="quote" from="HANDLE">text exactly as the handle's span has it</bond:cite>
@@ -217,14 +218,17 @@ def authoring_tools(served: Served) -> list[ServedTool]:
         return tools(workspace).documents(from_workspace)
 
     @tool(reading)
-    async def read(workspace: str, document: str, from_workspace: str | None = None) -> Reading:
-        """A document's current version exactly as it is, to read in full before citing it; with `from_workspace`,
-        a document of a workspace `workspace` links to.
+    async def read(workspace: str, document: str, from_workspace: str | None = None,
+                   citations: bool = False) -> Reading:
+        """A document's current version and its base (to pass to write or edit); with `from_workspace`, a
+        document of a workspace `workspace` links to.
 
-        Nothing in it is a handle: to cite part of it, search for that text. A source with no text of its own (a
-        PDF) names the documents that transcribe it instead.
+        By default exactly as it is, to read in full before citing it: nothing in it is a handle, so to cite part
+        of it, search for that text. With `citations`, its citations are written in as tags, with the evidence
+        their handles point at: the text edit() changes, so read this way before editing. A source with no text
+        of its own (a PDF) names the documents that transcribe it instead.
         """
-        return tools(workspace).read(document, from_workspace)
+        return tools(workspace).read(document, from_workspace, citations)
 
     @tool(reading)
     async def search(workspace: str, phrases: list[str], document: str | None = None, within: str | None = None,
@@ -254,11 +258,6 @@ def authoring_tools(served: Served) -> list[ServedTool]:
         """
         return tools(workspace).trace(handle, limit)
 
-    @tool(reading)
-    async def draft(workspace: str, document: str) -> Draft:
-        """A document as a draft to edit: its text with its citations written in as tags, the evidence its
-        handles point at, and the base to pass to write or edit."""
-        return tools(workspace).draft(document)
 
 
     @tool(writing)
@@ -269,7 +268,7 @@ def authoring_tools(served: Served) -> list[ServedTool]:
         """Write a whole draft, citations written in, as the document's next version in `workspace`.
 
         Leave `base` out only to create a new document, in `format` (markdown unless given); to change one,
-        pass the base from draft() or from your last write. The outcome's status says what happened: "written",
+        pass the base from read() or from your last write. The outcome's status says what happened: "written",
         with the base for the next change and the support status of what was written; "refused", with issues
         saying what to fix, and nothing written; or with dry_run, "checked" if nothing would stop the write.
         """
@@ -278,7 +277,7 @@ def authoring_tools(served: Served) -> list[ServedTool]:
 
     @tool(writing)
     async def edit(workspace: str, document: str, edits: list[Edit], base: str, dry_run: bool = False) -> Outcome:
-        """Find-and-replace edits on the draft draft() showed for `base`, applied in order, then written.
+        """Find-and-replace edits on the text read(citations=true) showed for `base`, applied in order, then written.
 
         Each edit's `old` must occur exactly once in the text (tags included), unless replace_all. Every
         edit must apply and the result must pass, or nothing is written.

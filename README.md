@@ -41,7 +41,7 @@ uv run bond add case-001 fixtures/policy_ip112.md fixtures/expenses_case_001.csv
 claude mcp add bond -- uv run --directory "$PWD" --extra mcp bond mcp --workspace case-001
 ```
 
-The agent gets the authoring tools (`documents`, `read`, `search`, `trace`, `draft`, `write` and `edit`) and instructions on how to cite. It can reach only the workspaces its server was given, and it can't add sources: only you can, with `bond add`. `bond mcp` speaks MCP over stdio, so any MCP client works the same way. Before you give an agent a shell, read [Running Bond locally](docs/local.md#only-people-add-sources).
+The agent gets the authoring tools (`documents`, `read`, `search`, `trace`, `write` and `edit`) and instructions on how to cite. It can reach only the workspaces its server was given, and it can't add sources: only you can, with `bond add`. `bond mcp` speaks MCP over stdio, so any MCP client works the same way. Before you give an agent a shell, read [Running Bond locally](docs/local.md#only-people-add-sources).
 
 ### Use it from Python
 

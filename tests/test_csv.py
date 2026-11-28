@@ -126,7 +126,7 @@ def test_search_finds_cells_and_says_where_they_are(bond, claims):
     assert hit.where == "row 3, column 10"
     assert hit.passage is not None and hit.passage.endswith(":r3:c10")
     with pytest.raises(ToolError, match="in a table draft every citation claims a cell"):
-        tools.draft("expenses_case_001")  # an ingested file is a source throughout: one claim on the whole version
+        tools.read("expenses_case_001", citations=True)  # an ingested file is a source throughout: one claim on the whole version
     assert tools.read("expenses_case_001").text == FIXTURE.read_bytes().decode("utf-8")  # exactly as it is
 
 

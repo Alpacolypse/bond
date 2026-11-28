@@ -126,7 +126,7 @@ def test_an_agent_writes_a_cited_table(bond, claims):
     assert content(bond, version) == "code,description\nR300,\"bathroom, ceiling\"\n"
     claims_cited = {s.locator for c in bond.citations(version) for s in c.supports}
     assert claims_cited == {cell(3, 4), hit_locator(bond, hit.handle)}
-    reading = tools.draft("rollup")
+    reading = tools.read("rollup", citations=True)
     again = written(tools.write("rollup", reading.text, reading.base))
     assert (head(bond, "rollup"), again.advanced) == (version, False)
 
@@ -163,18 +163,18 @@ def test_citations_move_with_the_cells_they_sit_in(bond, claims):
     citations += [Citation(CitationKind.QUOTE, cell(r, c), [Ref(claims, cell(r, 4 + c))]) for r in (1, 2, 3) for c in (0, 1)]
     bond.write_document("codes", CODES.encode(), citations, format=Format.CSV)
     tools = Tools(bond)
-    reading = tools.draft("codes")
+    reading = tools.read("codes", citations=True)
     header, rental, visit, repair = reading.text.splitlines(keepends=True)
     # Moving a row moves its citations: the repair row, now first, still quotes the expense log's repair line.
     written(tools.edit("codes", [Edit(rental + visit + repair, repair + rental + visit)], reading.base))
     by_claim = {c.claim: c.supports for c in bond.citations(head(bond, "codes"))}
     assert by_claim[cell(1, 0)] == [Ref(claims, cell(3, 4))] and by_claim[cell(3, 1)] == [Ref(claims, cell(2, 5))]
     # Deleting a row deletes its citations with it.
-    reading = tools.draft("codes")
+    reading = tools.read("codes", citations=True)
     written(tools.edit("codes", [Edit(reading.text.splitlines(keepends=True)[3], "")], reading.base))
     assert {c.claim.row for c in bond.citations(head(bond, "codes")) if isinstance(c.claim, CsvLocator)} == {0, 1, 2}
     # Inserting a column moves the cells after it: the agent adds its cell, cited, to every row.
-    reading = tools.draft("codes")
+    reading = tools.read("codes", citations=True)
     lines = reading.text.splitlines(keepends=True)
     edits = [Edit(lines[0], "\"<bond:cite kind='unsourced' on='column'/>line\"," + lines[0])]
     edits += [Edit(line, f"{n}," + line) for n, line in enumerate(lines[1:], 1)]
@@ -191,7 +191,7 @@ def test_every_seeded_table_written_with_citations_round_trips(tmp_path):
                   and not any(c.claim == VersionLocator() for c in bond.citations(d.head))]  # not sources
         assert [d.name for d in tables] == ["expense_rollup_case_001"]
         for doc in tables:
-            reading = tools.draft(doc.name)
+            reading = tools.read(doc.name, citations=True)
             out = written(tools.write(doc.name, reading.text, reading.base))
             assert (head(bond, doc.name), out.advanced) == (doc.head, False), doc.name
 
