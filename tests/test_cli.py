@@ -1,4 +1,4 @@
-"""bond view and bond mcp: which workspaces they open, and that viewing one never creates it; bond import."""
+"""bond view and bond mcp: which workspaces of the home they open, and that serving one never creates it."""
 
 from __future__ import annotations
 
@@ -11,13 +11,15 @@ from bond.storage.sqlite import SQLiteStore
 from conftest import POSTGRES, postgres_pool
 
 
-def test_view_opens_a_local_workspace_without_creating_one(tmp_path, capsys):
-    assert main(["view", "--workspace", str(tmp_path / "nothing"), "--no-browser"]) == 1
-    assert "no workspace at" in capsys.readouterr().err
-    assert not (tmp_path / "nothing").exists()
-    with Bond.local(tmp_path / "store") as bond:
+def test_view_opens_a_workspace_in_the_home_without_creating_one(tmp_path, capsys):
+    home = Home(tmp_path / "home")
+    assert main(["view", "--workspace", "store", "--home", str(home.root), "--no-browser"]) == 1
+    assert "no workspace named 'store'" in capsys.readouterr().err
+    assert home.names() == []
+    home.create("store")
+    with home.open("store") as bond:
         bond.ingest("fax", b"Fax.", format=Format.MARKDOWN)
-    with view_workspaces(parse(["view", "--workspace", str(tmp_path / "store")])) as offered:
+    with view_workspaces(parse(["view", "--workspace", "store", "--home", str(home.root)])) as offered:
         assert offered.names() == ["store"] and [d.name for d in offered.open("store").documents()] == ["fax"]
 
 
@@ -63,12 +65,14 @@ def test_a_local_workspace_is_named_after_its_directory(tmp_path):
         assert again.workspace == bond.workspace
 
 
-def test_mcp_serves_a_local_workspace_linked_to_what_it_may_cite(tmp_path):
-    with Bond.local(tmp_path / "policies") as policies:
+def test_mcp_serves_a_workspace_linked_to_what_it_may_cite(tmp_path):
+    home = Home(tmp_path / "home")
+    for name in ("policies", "case-001"):
+        home.create(name)
+    with home.open("policies") as policies:
         policies.ingest("policy", b"Six weeks.", format=Format.MARKDOWN)
-    (tmp_path / "case-001").mkdir()  # an empty directory becomes a new workspace for the agent
-    argv = ["mcp", "--workspace", str(tmp_path / "case-001"), "--link", str(tmp_path / "policies")]
-    with mcp_served(parse(argv)) as served:
+    at_home = ["--home", str(home.root)]
+    with mcp_served(parse(["mcp", "--workspace", "case-001", "--link", "policies", *at_home])) as served:
         [name] = served.workspaces.names()
         tools = served.tools(name)
         assert (name, tools.bond.workspace.name, tools.bond.documents()) == ("case-001", "case-001", [])
@@ -76,17 +80,18 @@ def test_mcp_serves_a_local_workspace_linked_to_what_it_may_cite(tmp_path):
         assert [d.document for d in tools.documents("policies")] == ["policy"]
         [hit] = tools.search("Six weeks")
         assert hit.workspace == "policies"
-    with mcp_served(parse(["mcp", "--workspace", str(tmp_path / "case-001")])) as served:
+    with mcp_served(parse(["mcp", "--workspace", "case-001", *at_home])) as served:
         assert served.tools("case-001").bond.links() == []
 
 
-def test_mcp_needs_existing_directories(tmp_path, capsys):
-    assert main(["mcp", "--workspace", str(tmp_path / "nothing")]) == 1
-    assert "bond mcp: no workspace at" in capsys.readouterr().err
-    assert not (tmp_path / "nothing").exists()
-    (tmp_path / "case").mkdir()
-    assert main(["mcp", "--workspace", str(tmp_path / "case"), "--link", str(tmp_path / "nowhere")]) == 1
-    assert "bond mcp: no workspace at" in capsys.readouterr().err
+def test_mcp_needs_workspaces_that_exist(tmp_path, capsys):
+    home = Home(tmp_path / "home")
+    assert main(["mcp", "--workspace", "nothing", "--home", str(home.root)]) == 1
+    assert "bond mcp: no workspace named 'nothing'" in capsys.readouterr().err
+    home.create("case")
+    assert main(["mcp", "--workspace", "case", "--link", "nowhere", "--home", str(home.root)]) == 1
+    assert "bond mcp: no workspace named 'nowhere'" in capsys.readouterr().err
+    assert home.names() == ["case"]
 
 
 def test_mcp_refuses_mixed_up_arguments(tmp_path, capsys):
@@ -102,18 +107,11 @@ def test_view_offers_the_workspaces_named_or_else_the_whole_home(tmp_path, capsy
     home = Home(tmp_path / "home")
     for name in ("case-001", "case-003", "policies"):
         home.create(name)
-    with Bond.local(tmp_path / "elsewhere"):
-        pass
     at_home = ["--home", str(home.root)]
     with view_workspaces(parse(["view", *at_home])) as offered:
         assert offered.names() == ["case-001", "case-003", "policies"]
-    with view_workspaces(parse(["view", *at_home, "--workspace", "case-003", "--workspace",
-                                str(tmp_path / "elsewhere")])) as offered:
-        assert offered.names() == ["case-003", "elsewhere"]
-    with pytest.raises(BondError, match="two workspaces given are named 'case-003'"):
-        with view_workspaces(parse(["view", *at_home, "--workspace", "case-003", "--workspace",
-                                    str(home.path("case-003")) + "/"])):
-            pass
+    with view_workspaces(parse(["view", *at_home, "--workspace", "case-003", "--workspace", "policies"])) as offered:
+        assert offered.names() == ["case-003", "policies"]
     assert main(["view", "--home", str(tmp_path / "empty"), "--no-browser"]) == 1
     assert "no workspaces in" in capsys.readouterr().err
     assert main(["view", *at_home, "--workspace", "case-002", "--no-browser"]) == 1

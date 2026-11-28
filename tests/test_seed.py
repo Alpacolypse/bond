@@ -6,7 +6,7 @@ from contextlib import ExitStack
 import pytest
 import seed
 
-from bond import ALLOW_GAPS, Bond, CitationKind, Format, PdfLocator, Ref, VersionLocator, details
+from bond import ALLOW_GAPS, CitationKind, Format, PdfLocator, Ref, VersionLocator, details
 from bond.local import Home
 from bond.locators import CsvLocator
 
@@ -21,8 +21,9 @@ def root(tmp_path_factory: pytest.TempPathFactory):
 @pytest.fixture(scope="module")
 def seeded(root):
     with ExitStack() as stack:
-        policies = stack.enter_context(Bond.local(root / "workspaces" / "policies", create=False))
-        cases = {name: stack.enter_context(Bond.local(root / "workspaces" / name, create=False, links=[policies]))
+        home = stack.enter_context(Home(root))
+        policies = stack.enter_context(home.open("policies"))
+        cases = {name: stack.enter_context(home.open(name, links=[policies]))
                  for name in seed.STORES if name != "policies"}
         yield {**cases, "policies": policies}
 

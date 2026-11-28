@@ -10,6 +10,6 @@ and bond.http leave to whoever opens the workspaces. A deployment on its own sto
 out, and implements Workspaces itself.
 """
 
-from .home import DECISIONS, ENV, Home, check_config, check_name, default_home, is_path
+from .home import DECISIONS, ENV, Home, check_config, check_name, default_home
 
-__all__ = ["DECISIONS", "ENV", "Home", "check_config", "check_name", "default_home", "is_path"]
+__all__ = ["DECISIONS", "ENV", "Home", "check_config", "check_name", "default_home"]

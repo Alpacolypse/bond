@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from bond import Bond, BondError
+from bond import BondError
 from bond.cli import main, mcp_workspaces, parse
-from bond.local import DECISIONS, ENV, Home, default_home, is_path
+from bond.local import DECISIONS, ENV, Home, default_home
 from conftest import FIXTURES
 
 
@@ -41,20 +41,28 @@ def test_bond_home_is_the_platform_app_data_unless_moved(tmp_path):
     assert default_home({}, "linux") == Path.home() / ".local" / "share" / "bond"
 
 
-def test_a_value_with_a_separator_is_a_directory_and_anything_else_a_name(home):
-    assert is_path("./smith") and is_path("/srv/bond/smith") and is_path("cases/smith")
-    assert not is_path("smith") and not is_path("Smith, J (2026)")
-    assert home.resolve("smith") == home.root / "workspaces" / "smith"
-    assert home.resolve("./smith") == Path("./smith")
-    for bad, why in (("", "blank"), (".", "start with '.'"), ("..", "start with '.'"), (".hidden", "start with '.'")):
-        with pytest.raises(BondError, match=why):
-            home.path(bad)
+def test_a_home_is_one_store_holding_every_workspace_by_name(home):
+    for name in ("smith", "cases/jones", "Smith, J (2026)", ".hidden"):  # a name is only a name: no directories
+        home.create(name)
+    assert home.names() == sorted(["smith", "cases/jones", "Smith, J (2026)", ".hidden"])
+    assert (home.root / "bond.db").is_file() and not (home.root / "workspaces").exists()
+    for bad in ("", "   "):
+        with pytest.raises(BondError, match="blank"):
+            home.create(bad)
+
+
+def test_workspaces_in_a_home_share_its_blobs(home, tmp_path):
+    for name in ("smith", "jones"):
+        home.create(name)
+        with home.open(name) as bond:
+            bond.ingest("policy.md", b"The same policy, cited by both.\n")
+    assert len([p for p in (home.root / "blobs").rglob("*") if p.is_file()]) == 1  # stored once
 
 
 def test_new_makes_a_workspace_named_as_given_and_never_twice(home, capsys):
     assert run(home, "new", "smith") == 0
     assert home.names() == ["smith"]
-    with Bond.local(home.path("smith"), create=False) as bond:
+    with home.open("smith") as bond:
         assert bond.workspace.name == "smith"
     assert run(home, "new", "smith") == 1
     assert "already a workspace named 'smith'" in capsys.readouterr().err
@@ -66,7 +74,7 @@ def test_add_copies_files_in_as_sources_named_after_them_with_where_they_came_fr
     assert run(home, "add", "smith", str(given["fax.md"]), str(given["notes.md"])) == 0
     assert "added" in capsys.readouterr().out
     given["fax.md"].write_text("Changed after it was added.", encoding="utf-8")  # the copy in Bond stays as added
-    with Bond.local(home.path("smith"), create=False) as bond:
+    with home.open("smith") as bond:
         assert [d.name for d in bond.documents()] == ["fax.md", "notes.md"]
         fax = bond.find("fax.md")
         assert fax is not None and bond.blob(fax.head) == b"# Fax\n\nCeiling leak for six weeks.\n"
@@ -85,7 +93,7 @@ def test_add_refuses_a_taken_name_unless_told_how_to_treat_it(home, tmp_path, ca
     assert run(home, "add", "smith", str(first), "--update") == 0
     assert run(home, "add", "smith", str(first), "--update") == 0  # the same bytes again: nothing new
     assert "nothing added" in capsys.readouterr().out
-    with Bond.local(home.path("smith"), create=False) as bond:
+    with home.open("smith") as bond:
         assert [d.name for d in bond.documents()] == ["fax.md", "fax-2.md"]
         assert len(bond.history("fax.md")) == 2
 
@@ -99,7 +107,7 @@ def test_add_checks_every_file_before_adding_any(home, tmp_path, capsys):
     assert "not a file" in capsys.readouterr().err
     assert run(home, "add", "smith", str(given["fax.md"]), str(given["fax.md"]), "--as", "x.md") == 1
     assert "--as names one file" in capsys.readouterr().err
-    with Bond.local(home.path("smith"), create=False) as bond:
+    with home.open("smith") as bond:
         assert bond.documents() == []
 
 
@@ -108,7 +116,7 @@ def test_add_needs_a_workspace_that_exists(home, tmp_path, capsys):
     assert run(home, "add", "jones", str(fax)) == 1
     err = capsys.readouterr().err
     assert "no workspace named 'jones'" in err and "create it with: bond new jones" in err
-    assert not home.path("jones").exists()
+    assert not home.exists("jones")
 
 
 def test_add_says_a_pdf_cant_be_cited_until_transcribed(home, tmp_path, capsys):
@@ -170,10 +178,10 @@ def test_mcp_never_creates_a_workspace_by_name(home, capsys):
 
 def test_mcp_opens_a_workspace_once_however_often_it_is_named(home, tmp_path):
     run(home, "new", "smith")
-    with mcp_workspaces(parse(["mcp", "--workspace", "smith", "--link", str(home.path("smith")), "--home", str(home.root)])) as served:
+    with mcp_workspaces(parse(["mcp", "--workspace", "smith", "--link", "smith", "--home", str(home.root)])) as served:
         assert served.open("smith").links() == []  # never linked to itself
     with pytest.raises(BondError, match="two workspaces given are named 'smith'"):
-        with mcp_workspaces(parse(["mcp", "--workspace", "smith", "--workspace", str(home.path("smith")) + "/", "--home", str(home.root)])):
+        with mcp_workspaces(parse(["mcp", "--workspace", "smith", "--workspace", "smith", "--home", str(home.root)])):
             pass
 
 
@@ -218,6 +226,6 @@ def test_bond_transcribe_reads_a_pdfs_text_layer_or_records_a_producers_output(h
     assert "name the producer with --with" in capsys.readouterr().err
     assert run(home, "transcribe", "smith", "fax_case_001.pdf.pypdf") == 1
     assert "which has text of its own" in capsys.readouterr().err
-    with Bond.local(home.path("smith"), create=False) as smith:
+    with home.open("smith") as smith:
         assert [d.name for d in smith.documents()] == [
             "fax_case_001.pdf", "fax_case_001.pdf.pypdf", "fax_case_001.pdf.reducto"]

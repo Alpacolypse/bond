@@ -80,8 +80,7 @@ class GrantedWorkspaces:
     def _bond(self, name: str) -> Bond:
         with self._lock:
             if name not in self._open:
-                self._open[name] = self._stack.enter_context(
-                    Bond.local(self.home.path(name), create=False, links=lambda: self._links(name)))
+                self._open[name] = self._stack.enter_context(self.home.open(name, links=lambda: self._links(name)))
             return self._open[name]
 
     def close(self) -> None:

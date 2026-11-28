@@ -1,13 +1,9 @@
-"""The Bond home: one person's local workspaces, one directory each, and their decisions about them.
+"""The Bond home: one person's local workspaces, and their decisions about them.
 
-A workspace in the home is `<home>/workspaces/<name>/`, a directory `Bond.local` opens, so deleting or exporting
-one is deleting or copying its directory. The home sits in the platform's application-data directory, outside
-the folders people keep their own files in (and outside synced ones, where a SQLite store can be corrupted);
-BOND_HOME moves it.
-
-People name workspaces two ways. A value with a path separator in it is a directory (`./cases/001`,
-`/srv/bond/smith`); anything else is the name of a workspace in the home (`smith`). So a name never holds a
-separator, and a name can't start with a dot, which keeps `.` and `..` meaning directories.
+A home is one store and one blob directory, `<home>/bond.db` and `<home>/blobs/`, holding every workspace by name,
+as a hosted deployment's database does: the same policy PDF cited by several cases is stored once. The home sits
+in the platform's application-data directory, outside the folders people keep their own files in (and outside
+synced ones, where a SQLite store can be corrupted); BOND_HOME moves it.
 
 The home also keeps two kinds of decision, rows in its home.db, made only by a person (`bond link`, `bond grant`,
 or a click in the app view) and never by an agent:
@@ -28,18 +24,22 @@ from __future__ import annotations
 import os
 import sqlite3
 import sys
+import threading
 from collections.abc import Mapping
 from contextlib import closing
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from ..api import Bond
+from ..api import Bond, Links
 from ..models import BondError
+from ..storage.local import LocalBlobs
+from ..storage.sqlite import SQLiteStore
+from ..storage.workspace import find_workspace, open_workspace, workspaces
 
 ENV = "BOND_HOME"
 DECISIONS = "home.db"
-CATALOG = "bond.db"  # the file Bond.local keeps a workspace's store in
+STORE = "bond.db"  # the store every workspace in the home is kept in
+BLOBS = "blobs"  # and their bytes
 
 _SCHEMA = (
     "CREATE TABLE IF NOT EXISTS links (workspace TEXT NOT NULL, source TEXT NOT NULL, at TEXT NOT NULL, "
@@ -60,19 +60,10 @@ def default_home(environ: Mapping[str, str] = os.environ, platform: str = sys.pl
     return Path(environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share") / "bond"
 
 
-def is_path(value: str) -> bool:
-    """Whether a workspace given on the command line is a directory (it has a separator) rather than a name."""
-    return "/" in value or os.sep in value or (os.altsep is not None and os.altsep in value)
-
-
 def check_name(name: str) -> str:
     """name, if it can name a workspace in the home; raises BondError saying why not."""
     if not name.strip():
         raise BondError("a workspace's name can't be blank")
-    if is_path(name):
-        raise BondError(f"{name!r} is a path, not a workspace name")
-    if name.startswith("."):
-        raise BondError(f"a workspace's name can't start with '.'; for a directory here, write ./{name.lstrip('./')}")
     if "\0" in name or len(name) > 200:
         raise BondError(f"{name[:40]!r}… can't name a workspace")
     return name
@@ -85,48 +76,75 @@ def check_config(name: str) -> str:
     return name
 
 
-@dataclass(frozen=True)
 class Home:
-    """A Bond home at root: its workspaces, by name, and the links and grants a person made between them."""
+    """A Bond home at root: its workspaces, by name, and the links and grants a person made between them.
 
-    root: Path
+    Its store is opened on first use and kept open until close (a Home is a context manager); workspaces opened from
+    it share that store and its blobs, and closing one leaves them open.
+    """
+
+    def __init__(self, root: str | os.PathLike[str]):
+        self.root = Path(root)
+        self._store: SQLiteStore | None = None
+        self._lock = threading.Lock()
 
     @classmethod
     def default(cls) -> Home:
         return cls(default_home())
 
+    def __enter__(self) -> Home:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()
+
+    def close(self) -> None:
+        with self._lock:
+            if self._store is not None:
+                self._store.close()
+                self._store = None
+
+    def _opened(self, create: bool) -> SQLiteStore | None:
+        """The home's store; None if it has none yet and create is False."""
+        with self._lock:
+            if self._store is None:
+                if not create and not (self.root / STORE).is_file():
+                    return None
+                self.root.mkdir(parents=True, exist_ok=True)
+                self._store = SQLiteStore(self.root / STORE)
+            return self._store
+
     # --- workspaces ------------------------------------------------------------
-
-    def path(self, name: str) -> Path:
-        """Where the workspace called name lives, whether or not it exists yet."""
-        return self.root / "workspaces" / check_name(name)
-
-    def exists(self, name: str) -> bool:
-        return (self.path(name) / CATALOG).is_file()
 
     def names(self) -> list[str]:
         """The workspaces in the home, by name, sorted."""
-        workspaces = self.root / "workspaces"
-        if not workspaces.is_dir():
-            return []
-        return sorted(p.name for p in workspaces.iterdir() if (p / CATALOG).is_file())
+        store = self._opened(create=False)
+        return [] if store is None else sorted(w.name for w in workspaces(store))
 
-    def resolve(self, value: str) -> Path:
-        """The directory a workspace given on the command line is in: a path as given, or a name in the home."""
-        return Path(value).expanduser() if is_path(value) else self.path(value)
+    def exists(self, name: str) -> bool:
+        store = self._opened(create=False)
+        return store is not None and find_workspace(store, check_name(name)) is not None
 
-    def require(self, name: str) -> Path:
-        """The directory of an existing workspace in the home; raises BondError, saying how to create it, if none."""
+    def require(self, name: str) -> None:
+        """Raises BondError, saying how to create it, unless there is a workspace called name."""
         if not self.exists(name):
             raise BondError(f"no workspace named {name!r} in {self.root}; create it with: bond new {name}")
-        return self.path(name)
 
-    def create(self, name: str) -> Path:
+    def create(self, name: str) -> None:
         """A new, empty workspace called name; raises BondError if there already is one."""
         if self.exists(name):
             raise BondError(f"there's already a workspace named {name!r} in {self.root}")
-        Bond.local(self.path(name)).close()
-        return self.path(name)
+        store = self._opened(create=True)
+        assert store is not None
+        open_workspace(store, name, create=True)
+
+    def open(self, name: str, links: Links = ()) -> Bond:
+        """The workspace called name, linked to links (see Bond.set_links); raises BondError if there is none.
+        Closing it leaves the home's store open."""
+        self.require(name)
+        store = self._opened(create=False)
+        assert store is not None
+        return Bond(store, LocalBlobs(self.root / BLOBS), name, create=False, links=links)
 
     # --- links -----------------------------------------------------------------
 
