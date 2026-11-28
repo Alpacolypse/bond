@@ -319,6 +319,7 @@ class Trace:
     unreachable: frozenset[VersionId] = frozenset()
     # Versions of nodes that documents here have moved past: version -> {document: its head now}.
     newer: dict[VersionId, dict[str, VersionId]] = field(default_factory=dict)
+    support: SupportReport | None = None  # whether root rests on declared sources: check_support of the same walk
 
     def edges_at(self, node: Ref) -> list[TraceEdge]:
         """The edges out of one node: none for an uncited node, one past max_depth, or an unreachable one."""

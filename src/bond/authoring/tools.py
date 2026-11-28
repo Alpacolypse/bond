@@ -326,11 +326,13 @@ def trace(bond: Bond, handle: str, limit: int = 30) -> Chain:
     ref = _resolve(bond, handle)
     if isinstance(ref, Problem):
         raise ToolError(ref.message)
-    report = bond.check_support(ref, limit=SUPPORT_LIMIT)
-    trace = bond.trace(ref, limit=limit)
+    trace = bond.trace(ref, limit=SUPPORT_LIMIT)  # one walk: the support check and the spans it followed
+    assert trace.support is not None
+    report = trace.support
+    shown = trace.nodes[:limit]
     return Chain(report.status, [Shortfall(i.reason, _ref_handle(bond, i.ref)) for i in report.issues],
-                 [_grounds(bond, trace, node) for node in trace.nodes], not trace.complete,
-                 sorted(trace.unreachable))
+                 [_grounds(bond, trace, node) for node in shown],
+                 not trace.complete or len(trace.nodes) > limit, sorted(trace.unreachable))
 
 
 def _grounds(bond: Bond, trace: Trace, node: Ref) -> Grounds:

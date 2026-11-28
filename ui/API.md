@@ -261,7 +261,7 @@ having no extracted text.
 
 All relevant declarations and all their dependencies must pass. Source declarations are terminal; unsourced
 or undeclared regions fail. Missing versions and exhausted budgets are unknown.
-`limit` counts distinct references, including the root; `max_depth=0` inspects direct declarations.
+`limit` counts distinct references, including the root; `max_depth` bounds the hops of citations followed, as `/api/trace` does (a reference that far away is reached, not stepped into, and unknown if cited).
 Shared ancestry uses shortest distances. Supporting spans are inspected as cited, without inferred alignment
 to narrower claim text. JSON display refs fall back to canonical positions for missing or invalid ancestors.
 

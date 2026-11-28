@@ -17,6 +17,7 @@ from .models import (
     SupportRegion,
     SupportReport,
     SupportStatus,
+    TraceEdge,
     VersionId,
 )
 from .parsers import ParsedDoc
@@ -106,8 +107,31 @@ class _Node:
     cycle: bool = False
 
 
+@dataclass(frozen=True)
+class Walk:
+    """One walk of a reference's provenance: the trace it followed and the support it found.
+
+    max_depth bounds the hops of citations followed, for the trace and its support alike: a node max_depth hops
+    from the root is reached but not stepped into, so if citations cover it, its support is unknown (depth_limit).
+    nodes are the references reached, nearest first, each once at its shortest distance (those past limit left
+    out); edges, a citation from each stepped node whose claim covers part of it; complete, whether neither
+    budget cut the walk short.
+    """
+
+    nodes: list[Ref]
+    edges: list[TraceEdge]
+    complete: bool
+    report: SupportReport
+
+
 def check_support(graph: Graph, root: Ref, max_depth: int | None, limit: int) -> SupportReport:
-    """Read each distinct reference at most once, breadth first; evaluate the graph without recursion.
+    """The support report of one walk from root (see walk)."""
+    return walk(graph, root, max_depth, limit).report
+
+
+def walk(graph: Graph, root: Ref, max_depth: int | None, limit: int) -> Walk:
+    """Read each distinct reference at most once, breadth first, recording the trace it follows; then evaluate the
+    graph without recursion.
 
     Paths retain one route to each issue, avoiding exponential expansion of shared ancestry.
     The limit counts references, including the root, rather than versions or citation edges.
@@ -122,6 +146,9 @@ def check_support(graph: Graph, root: Ref, max_depth: int | None, limit: int) ->
     admitted = 1
     issues: list[SupportIssue] = []
     owned: dict[VersionId, list[StoredCitation]] = {}
+    reached: list[Ref] = [root]  # the trace's nodes, nearest first
+    edges: list[TraceEdge] = []
+    complete = True
 
     def issue(ref: Ref, reason: SupportReason, via: Ref) -> None:
         path = paths[via]
@@ -146,6 +173,11 @@ def check_support(graph: Graph, root: Ref, max_depth: int | None, limit: int) ->
         if ref.version not in owned:
             owned[ref.version] = graph.citations(ref.version)
         citations = [c for c in owned[ref.version] if overlaps(c.claim, ref.locator)]
+        if citations and max_depth is not None and depth >= max_depth:  # reached, but not stepped into
+            node.fixed = S.UNKNOWN
+            issue(ref, R.DEPTH_LIMIT, ref)
+            complete = False
+            continue
         relevant: dict[str, StoredCitation] = {}
         for part in partition(doc, ref.locator, [c.claim for c in citations]):
             covering = [c for c in citations if contains(c.claim, part)]
@@ -153,6 +185,7 @@ def check_support(graph: Graph, root: Ref, max_depth: int | None, limit: int) ->
             if not covering:
                 issue(Ref(ref.version, part), R.UNDECLARED, ref)
             relevant.update((c.id, c) for c in covering)
+        edges.extend(TraceEdge(ref, c) for c in relevant.values())
         for c in relevant.values():
             if c.kind is CitationKind.SOURCE:
                 continue
@@ -168,13 +201,13 @@ def check_support(graph: Graph, root: Ref, max_depth: int | None, limit: int) ->
                     continue
                 paths[support] = paths[ref] + (support,)
                 nodes[support] = _Node()
-                reason = (R.DEPTH_LIMIT if max_depth is not None and depth >= max_depth
-                          else R.LIMIT if admitted >= limit else None)
-                if reason is not None:
+                if admitted >= limit:
                     nodes[support].fixed = S.UNKNOWN
-                    issue(support, reason, support)
+                    issue(support, R.LIMIT, support)
+                    complete = False
                 else:
                     admitted += 1
+                    reached.append(support)
                     pending.append((support, depth + 1))
 
     # Iterative DFS finds cycles and produces dependency-before-parent evaluation order.
@@ -245,4 +278,4 @@ def check_support(graph: Graph, root: Ref, max_depth: int | None, limit: int) ->
             parts.append(SupportRegion(Ref(ref.version, loc), status))
         regions[ref] = tuple(parts)
         results[ref] = aggregate([p.status for p in parts])
-    return SupportReport(root, results[root], regions[root], tuple(issues))
+    return Walk(reached, edges, complete, SupportReport(root, results[root], regions[root], tuple(issues)))
