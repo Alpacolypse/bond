@@ -23,7 +23,7 @@ from typing import Concatenate
 from . import kinds
 from .formats import from_suffix, parse, sniff, spec
 from .ids import citation_id, hash_bytes, version_id
-from .locators import Locator, VersionLocator, contains, overlaps
+from .locators import VersionLocator, contains, overlaps
 from .models import (
     BondError,
     Citation,
@@ -42,7 +42,6 @@ from .models import (
     Support,
     SupportReport,
     Trace,
-    TraceEdge,
     TranscriptionOf,
     UnknownDocument,
     UnknownVersion,
@@ -61,7 +60,7 @@ from .storage.index import MemoryIndex
 from .storage.records import Records
 from .storage.store import Store
 from .storage.workspace import open_workspace
-from .support import check_support, partition
+from .support import check_support, partition, walk
 
 # Parsed documents kept in memory by default. Versions are immutable, so any eviction is safe.
 DEFAULT_PARSED_CACHE_SIZE = 256
@@ -574,40 +573,29 @@ class Bond:
         return sorted(self._citations_of(version), key=lambda c: (doc.position(c.claim), c.id))
 
     @_one_view
-    def trace(self, ref: Ref, max_depth: int | None = None, limit: int | None = None) -> Trace:
-        """Follow provenance from ref down to its sources, as a DAG.
+    def trace(self, ref: Ref, max_depth: int | None = None, limit: int = 1000) -> Trace:
+        """Follow provenance from ref down to its sources, as a DAG, and say whether it is supported: one walk.
 
         A node (V, L) has an edge for every citation owned by V whose claim
-        overlaps L; the citation's supports are the next nodes, which may be in
+        covers part of L; the citation's supports are the next nodes, which may be in
         workspaces this one links to. A chain ends at a SOURCE or UNSOURCED edge
         (no supports), or at a node with no edges (uncited), or at a version no
         reachable workspace holds: those are listed as unreachable. Each distinct ref is one
         node, at its shortest distance from ref; max_depth bounds that distance,
-        and limit the number of nodes (the nearest are kept). Raises ValueError if
-        ref's locator isn't valid in its version.
+        and limit the number of nodes, the root included (the nearest are kept).
+        The trace's support is check_support's report of the same walk. Raises
+        ValueError if ref's locator isn't valid in its version.
         """
         self._check_ref(ref)
-        owners: dict[VersionId, Bond | None] = {}
-
-        def owner(v: VersionId) -> Bond | None:
-            if v not in owners:
-                owners[v] = self._owner(v)
-            return owners[v]
-
-        def down(node: Ref) -> list[tuple[StoredCitation, list[Ref]]]:
-            held = owner(node.version)
-            cited = [] if held is None else held._records.citations(node.version)
-            return [(c, c.supports) for c in _edges_at(cited, node.locator)]
-
-        nodes, edges, complete = _walk(ref, down, max_depth, limit)
-        versions = list(dict.fromkeys(n.version for n in nodes))
-        unreachable = frozenset(v for v in versions if owner(v) is None)
+        walked = walk(_Graph(self), ref, max_depth, limit)
+        nodes, edges, complete = walked.nodes, walked.edges, walked.complete
+        owners = {v: self._owner(v) for v in dict.fromkeys(n.version for n in nodes)}
+        unreachable = frozenset(v for v, owner in owners.items() if owner is None)
         newer: dict[VersionId, dict[str, VersionId]] = {}
-        for v in versions:
-            held = owner(v)
+        for v, held in owners.items():
             if held is not None and (moved := {d.name: d.head for d in held._index.holding(v) if d.head != v}):
                 newer[v] = moved
-        return Trace(ref, nodes, edges, complete, unreachable, newer)
+        return Trace(ref, nodes, edges, complete, unreachable, newer, walked.report)
 
     @_one_view
     def cited_by(self, ref: Ref) -> list[StoredCitation]:
@@ -799,49 +787,6 @@ def _encoded(content: bytes | str, format: Format | None) -> tuple[bytes, Format
     """Content as stored, UTF-8 for text, and its format, sniffed if not given."""
     data = content.encode("utf-8") if isinstance(content, str) else content
     return data, format or sniff(data)
-
-
-def _walk(
-    root: Ref,
-    step: Callable[[Ref], list[tuple[StoredCitation, list[Ref]]]],
-    max_depth: int | None,
-    limit: int | None,
-) -> tuple[list[Ref], list[TraceEdge], bool]:
-    """Nodes, edges and whether nothing was left out, walking breadth first from root, where step gives a node's
-    citations and the next nodes each leads to; so each node is reached at its shortest distance."""
-    if max_depth is not None and max_depth < 0:
-        raise ValueError("max_depth must be non-negative")
-    if limit is not None and limit < 1:
-        raise ValueError("limit must be at least 1")
-    complete = True
-    seen: set[Ref] = set()
-    nodes: list[Ref] = []
-    edges: list[TraceEdge] = []
-    level, depth = [root], 0
-    while level:
-        next_level: list[Ref] = []
-        for node in level:
-            if node in seen:
-                continue
-            if limit is not None and len(nodes) >= limit:
-                return nodes, edges, False
-            seen.add(node)
-            nodes.append(node)
-            if max_depth is not None and depth >= max_depth:
-                if step(node):
-                    complete = False
-                continue
-            for c, following in step(node):
-                edges.append(TraceEdge(node, c))
-                next_level += following
-        level = [r for r in next_level if r not in seen]
-        depth += 1
-    return nodes, edges, complete
-
-
-def _edges_at(citations: list[StoredCitation], locator: Locator) -> list[StoredCitation]:
-    """The citations, all owned by one version, that a trace node at locator has edges for."""
-    return [c for c in citations if overlaps(c.claim, locator)]
 
 
 def _conflict_issue(conflict: Conflict) -> Issue:

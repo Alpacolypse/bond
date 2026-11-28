@@ -117,7 +117,7 @@ def test_budget_unknown_keeps_established_regions_and_unreachable_is_not_unsuppo
             r = bond.check_support(ref, **kwargs)
             assert r.status is S.UNKNOWN
             assert reason in {i.reason for i in r.issues}
-        assert bond.check_support(ref, limit=2, max_depth=1).status is S.PARTIALLY_SUPPORTED
+        assert bond.check_support(ref, limit=2, max_depth=2).status is S.PARTIALLY_SUPPORTED
 
 
 def test_shared_ancestry_uses_one_budget_slot_and_one_inspection(bond):
@@ -134,7 +134,9 @@ def test_shared_dependency_uses_shortest_path_for_depth_budget(bond):
     base = source(bond)
     middle = derived(bond, "middle", [base])
     top = derived(bond, "top", [middle, base])
-    assert bond.check_support(top, max_depth=1, limit=3).status is S.SUPPORTED
+    # max_depth counts hops, as a trace does: base is one hop from top (and two through middle), so 2 reaches it.
+    assert bond.check_support(top, max_depth=2, limit=3).status is S.SUPPORTED
+    assert bond.check_support(top, max_depth=1, limit=3).status is S.UNKNOWN
 
 
 @pytest.mark.parametrize("fmt,data,loc", [

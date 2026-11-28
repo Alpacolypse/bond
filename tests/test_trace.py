@@ -257,3 +257,12 @@ def test_a_trace_limit_keeps_the_nearest_and_says_so(bond, case):
     assert not trace.complete and len(trace.nodes) == 2
     everything = bond.trace(Ref(case["fax"], VersionLocator()))
     assert everything.complete and trace.nodes == everything.nodes[:2]
+
+
+def test_a_trace_carries_the_support_check_of_the_same_walk(bond, case):
+    result = bond.write_document("summary", SUMMARY.encode(), build_citations(bond, case), format=Format.MARKDOWN)
+    ref = Ref(result.version, claim_locator(SUMMARY, "No significant damage to other rooms."))
+    for kwargs in ({}, {"max_depth": 0}, {"max_depth": 1}, {"limit": 2}):
+        assert bond.trace(ref, **kwargs).support == bond.check_support(ref, **kwargs)
+    bounded = bond.trace(ref, limit=2)
+    assert len(bounded.nodes) == 2 and not bounded.complete
