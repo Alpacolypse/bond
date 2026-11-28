@@ -20,17 +20,16 @@ agent over MCP (stdio): the authoring tools, for the workspaces named and the on
 
     bond view                                                               # every workspace in the home
     bond view --workspace smith --workspace ./cases/001                     # a name in the home, a directory
-    bond view --postgres postgresql://… --name case-001 --s3-bucket evidence  # one in Postgres, blobs in S3
     bond mcp --workspace smith --workspace jones                            # an agent's workspaces
     bond mcp --workspace ./cases/001 --link ./policies                      # a directory, and what it may cite
     bond mcp --grants desktop                                               # what a person granted desktop
 
 A workspace given with a / in it is a directory; anything else is a name in the Bond home (BOND_HOME, or
 --home). Opening a workspace to view never creates one; `bond mcp` creates a new local one in an existing
-directory, but a name must already be in the home. Postgres needs psycopg 3 and psycopg_pool, S3 needs boto3:
-installed by you, configured as they usually are (credentials, region and endpoint from the environment, or
---s3-endpoint). With --postgres, --name and --link name workspaces in the same database, with their blobs in the
-same place.
+directory, but a name must already be in the home.
+
+The command serves local workspaces. A deployment on its own stores (Postgres, S3) opens its workspaces in
+Python and serves them with bond.mcp.server.create_server or bond.http.server.create_app (see docs/storage.md).
 """
 
 from __future__ import annotations
@@ -54,7 +53,6 @@ from .http.viewer import GRAPH_LIMIT
 from .local import Home, is_path
 from .models import BondError, VersionId
 from .sources import NewSource, add_sources, readable
-from .storage import Blobs
 from .workspaces import Fixed, Workspaces
 
 if TYPE_CHECKING:
@@ -74,7 +72,7 @@ def parse(argv: Sequence[str] | None = None) -> argparse.Namespace:
     commands = parser.add_subparsers(dest="command", required=True)
     view = commands.add_parser("view", help="browse workspaces in the viewer", description=__doc__,
                                formatter_class=argparse.RawDescriptionHelpFormatter)
-    _store_arguments(view, required=False, names=True)
+    _workspace_arguments(view, required=False)
     view.add_argument("--host", default="127.0.0.1", help="address to listen on (default: 127.0.0.1)")
     view.add_argument("--port", type=int, default=8000)
     view.add_argument("--graph-limit", type=int, default=GRAPH_LIMIT,
@@ -83,12 +81,12 @@ def parse(argv: Sequence[str] | None = None) -> argparse.Namespace:
     view.add_argument("--no-browser", action="store_true", help="don't open a browser")
     mcp = commands.add_parser("mcp", help="serve workspaces' authoring tools to an agent over MCP (stdio)",
                               description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    _store_arguments(mcp, required=True, names=False).add_argument(
+    _workspace_arguments(mcp, required=True).add_argument(
         "--grants", metavar="NAME", help="serve the workspaces a person granted this configuration (in the view, or "
                                          "with bond grant), from the Bond home")
     mcp.add_argument("--link", action="append", default=[], metavar="WORKSPACE",
                      help="a workspace the served ones link to, so their documents may cite its own, besides "
-                          "their links in the home: a directory, or with --postgres a name (repeatable)")
+                          "their links in the home: a name in the home, or a directory (repeatable)")
     new = commands.add_parser("new", help="create a workspace in the Bond home")
     new.add_argument("workspace", help="its name")
     _home_argument(new)
@@ -129,28 +127,14 @@ def parse(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.command == "mcp" and args.grants and args.link:
         parser.error("--link goes with --workspace; in grant mode, workspaces cite what they link to in the home")
-    if args.command in ("view", "mcp"):
-        if args.postgres and (args.blobs is None) == (args.s3_bucket is None):
-            parser.error("--postgres needs exactly one of --blobs and --s3-bucket")
-        if not args.postgres and (args.blobs or args.s3_bucket or args.name):
-            parser.error("--name, --blobs and --s3-bucket go with --postgres; a local workspace holds its own blobs")
     return args
 
 
-def _store_arguments(command: argparse.ArgumentParser, required: bool, names: bool,
-                     ) -> argparse._MutuallyExclusiveGroup:
+def _workspace_arguments(command: argparse.ArgumentParser, required: bool) -> argparse._MutuallyExclusiveGroup:
     where = command.add_mutually_exclusive_group(required=required)
     where.add_argument("--workspace", action="append",
                        help="a workspace: its name in the Bond home, or a directory (a value with a / in it) "
                             "(repeatable)")
-    where.add_argument("--postgres", metavar="DSN", help="a Postgres store, e.g. postgresql://user@host/db")
-    command.add_argument("--name", action="append" if names else "store",
-                         help="with --postgres: a workspace's name (needed if it holds several)"
-                              + (" (repeatable)" if names else ""))
-    command.add_argument("--blobs", type=Path, help="with --postgres: a local blob directory")
-    command.add_argument("--s3-bucket", help="with --postgres: the S3 bucket holding the blobs")
-    command.add_argument("--s3-prefix", default="", help="the key prefix of the blobs in the bucket")
-    command.add_argument("--s3-endpoint", help="an S3-compatible endpoint URL (MinIO, R2, …)")
     _home_argument(command)
     return where
 
@@ -315,19 +299,16 @@ def run_view(args: argparse.Namespace) -> int:
 
 @contextmanager
 def view_workspaces(args: argparse.Namespace) -> Generator[Fixed]:
-    """The workspaces bond view offers, by name, opened as they are and closed after: each --workspace or --name
-    given, or with neither every workspace in the home, each with its links in the home. Nothing is created."""
+    """The workspaces bond view offers, by name, opened as they are and closed after: each --workspace given, or
+    with none every workspace in the home, each with its links in the home. Nothing is created."""
     with ExitStack() as stack:
-        if args.postgres:
-            stores = [stack.enter_context(open_postgres(args, name)) for name in args.name or [None]]
-        else:
-            home = home_of(args)
-            values = args.workspace or home.names()
-            if not values:
-                raise BondError(f"no workspaces in {home.root}; create one with bond new NAME, or name a directory "
-                                "with --workspace")
-            open_linked = home_opener(home, stack)
-            stores = [open_linked(value) for value in values]
+        home = home_of(args)
+        values = args.workspace or home.names()
+        if not values:
+            raise BondError(f"no workspaces in {home.root}; create one with bond new NAME, or name a directory "
+                            "with --workspace")
+        open_linked = home_opener(home, stack)
+        stores = [open_linked(value) for value in values]
         offered: dict[str, Bond] = {}
         for bond in stores:
             if bond.workspace.name in offered:
@@ -398,11 +379,6 @@ def mcp_workspaces(args: argparse.Namespace) -> Generator[Workspaces]:
             granted.close()
         return
     with ExitStack() as stack:
-        if args.postgres:
-            bond = stack.enter_context(open_postgres(args, args.name))
-            bond.set_links([stack.enter_context(open_postgres(args, name)) for name in args.link])
-            yield Fixed({bond.workspace.name: bond})
-            return
         open_linked = home_opener(home_of(args), stack)
         extra = [open_linked(value) for value in args.link]
         served: dict[str, Bond] = {}
@@ -452,31 +428,6 @@ def open_local(home: Home, value: str | os.PathLike[str], create: bool = False, 
         create = False
     with Bond.local(path, create=create, links=links) as bond:
         yield bond
-
-
-@contextmanager
-def open_postgres(args: argparse.Namespace, name: str | None) -> Generator[Bond]:
-    """A workspace in the Postgres store the arguments name (the only one, if name is None), with the blobs they
-    name, closed after. Nothing is created."""
-    from .storage.postgres import PostgresStore
-
-    pools = _require("psycopg_pool", "psycopg[binary,pool]")
-    with pools.ConnectionPool(args.postgres, min_size=1, max_size=8, open=True) as pool:
-        with Bond(PostgresStore(pool, create=False), open_blobs(args), name, create=False) as bond:
-            yield bond
-
-
-def open_blobs(args: argparse.Namespace) -> Blobs:
-    if args.blobs:
-        from .storage.local import LocalBlobs
-
-        if not args.blobs.is_dir():
-            raise BondError(f"no blob directory at {args.blobs}")
-        return LocalBlobs(args.blobs)
-    from .storage.s3 import S3Blobs
-
-    client = _require("boto3", "boto3").client("s3", endpoint_url=args.s3_endpoint)
-    return S3Blobs(client, args.s3_bucket, args.s3_prefix)
 
 
 def _require(module: str, package: str) -> ModuleType:

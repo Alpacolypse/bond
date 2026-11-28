@@ -24,6 +24,17 @@ pool = ConnectionPool(dsn)
 case = Bond(PostgresStore(pool), S3Blobs(boto3.client("s3"), "evidence", prefix="bond/"), "case-001")
 ```
 
+The `bond` command serves local workspaces only. To serve these to an agent or the viewer, hand them to the servers directly:
+
+```python
+from bond.http.server import create_app          # the viewer's API, as `bond view` runs it
+from bond.mcp.server import create_server        # the agent's tools, as `bond mcp` runs them
+from bond.workspaces import Fixed
+
+offered = Fixed({"case-001": case})
+create_server(offered).run("stdio")              # or serve create_app(offered) with uvicorn
+```
+
 `Bond(store, blobs, workspace)` opens the workspace named `workspace`, creating it unless `create=False`; with no name, the store's only workspace (a new one named `default` if it has none). `Bond.local(root)` is a `SQLiteStore` at `root / "bond.db"` and `LocalBlobs(root / "blobs")`, a directory holding one workspace named after it, closed with the `Bond`. Any other store and blobs stay the caller's to close. Blobs are named by hash, so workspaces can share a bucket (the same policy is stored once) or keep their own prefixes, as you choose.
 
 **Bringing your own store.** A `Store` is three methods: `create(key, value)` stores a value only if the key is absent and says whether it did, `get(key)` reads one, and `list(prefix, after=None)` lists keys in order. A store may also offer `last(prefix)` (the `LastKey` protocol), which finds a document's head in one read. That is all: no updates, deletes, transactions or indexes. Everything else is Bond's, so a store can't get a rule of filing wrong: `bond.storage.records` (versions), `bond.storage.filing` (documents: names, history entries, titles, and filing a version), `bond.storage.index` (reverse lookups) and `bond.storage.workspace` (opening one by name). A `Bond` keeps them private; `bond.details` has the lower-level reads built on them (history by document, citations without reading bytes, reverse lookups) for tools like the viewer. `tests/test_store.py` is the contract a store must pass.

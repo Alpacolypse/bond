@@ -85,7 +85,6 @@ Pages, rows and columns in handles count from 1.
 ```bash
 bond mcp --workspace smith --workspace jones                       # workspaces in the Bond home, with their links
 bond mcp --workspace ./cases/case-001 --link ./policies            # a directory, and a workspace it may cite
-bond mcp --postgres postgresql://… --name case-001 --s3-bucket evidence --link policies
 bond mcp --grants desktop                                          # the workspaces a person granted (grant mode)
 ```
 
@@ -93,7 +92,7 @@ bond mcp --grants desktop                                          # the workspa
 
 - `--workspace` repeats. A name opens a workspace in the Bond home, which must exist, linked to the workspaces it links to there, as they are at each call (see [Running Bond locally](local.md)); a directory is created as a workspace if it holds none.
 - `--link` links every workspace served to another as well.
-- With Postgres it serves one workspace, `--name`, and `--link` names other workspaces in the same database.
+- The command serves local workspaces. A deployment on its own stores (Postgres, S3) builds the server in Python: see [Building a server in Python](#building-a-server-in-python).
 - `--grants NAME` serves the workspaces a person granted that configuration; see [Grants](local.md#grants).
 
 The server keeps no current workspace, since it may restart or serve several chats, so every tool takes the workspace as its first argument:
