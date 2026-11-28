@@ -86,7 +86,7 @@ def test_an_agent_is_told_what_is_newer_and_warned_when_it_cites_older(bond):
     [hit] = tools.search("Six weeks", document="src")
     v2 = bond.ingest("src", b"Notes: Six weeks of written notice.", format=Format.MARKDOWN, base=v1).version
     [old] = tools.search("Six weeks", within=hit.handle)
-    assert list(old.newer) == ["src"] and old.newer["src"].startswith(v2[:8])
+    assert list(old.newer) == ["src"] and old.newer["src"] == v2[:12]
     out = written(tools.write("summary.md", f'<bond:cite kind="quote" from="{hit.handle}">Six weeks</bond:cite>\n'))
     [warning] = out.warnings
     assert warning.startswith(hit.handle) and "'src' is at " in warning and old.newer["src"] in warning

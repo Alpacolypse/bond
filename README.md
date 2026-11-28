@@ -9,7 +9,7 @@ Bond is a virtual file system that makes it easy for AI agents to write document
 For e.g, an agent writes Markdown with inline citations. The handles come from Bond's `search`:
 
 ```
-<bond:cite kind="quote" from="d246983a/result/chunks/1/blocks/4/content@12-63"><bond:anchor id="drip">Active drip</bond:anchor> from the bathroom ceiling light fixture</bond:cite>.
+<bond:cite kind="quote" from="d246983a71c5/result/chunks/1/blocks/4/content@12-63"><bond:anchor id="drip">Active drip</bond:anchor> from the bathroom ceiling light fixture</bond:cite>.
 
 <bond:cite kind="paraphrase" from="#drip">The leak is still active.</bond:cite>
 ```

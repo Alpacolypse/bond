@@ -75,7 +75,7 @@ def test_an_agent_writes_a_cited_document(bond, case):
     out = written(tools.write("findings", summary(tools)))
     version = head(bond, "findings")
     assert out.advanced
-    assert out.base == version[:8]  # the base for the next change
+    assert out.base == version[:12]  # the base for the next change
     # The heading is unsourced, so not all of it rests on declared sources.
     assert out.support is SupportStatus.PARTIALLY_SUPPORTED
     assert content(bond, version) == f"Findings\n\n- {FIRST}\n- {SECOND}\n"  # markup is never stored
@@ -106,7 +106,7 @@ def test_a_handle_names_its_span_outright(bond, case):
     tools = Tools(bond)
     handle = cite(tools, FIRST)
     # The version's id prefix, then the locator written out: here a range inside one value of the OCR output.
-    assert re.fullmatch(case["fax"][:8] + r"/result/chunks/\d+/blocks/\d+/content@\d+-\d+", handle)
+    assert re.fullmatch(case["fax"][:12] + r"/result/chunks/\d+/blocks/\d+/content@\d+-\d+", handle)
     # Nothing is remembered, so a handle written out by hand works as well as one a search returned.
     written(Tools(bond).write("x", f'<bond:cite kind="quote" from="{handle}">{FIRST}</bond:cite>'))
     # A handle naming no version, or a range outside its text, names nothing.
