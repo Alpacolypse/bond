@@ -21,7 +21,7 @@ from bond import (
 from bond.models import Issue, SupportStatus
 from bond.storage.local import LocalBlobs
 from case_001 import SUMMARY, build_citations
-from conftest import overwrite, rewrite_record, store_unchecked
+from conftest import overwrite, planned_issues, rewrite_record, store_unchecked
 
 FIRST = "Water leaking through the bathroom ceiling for 8 weeks."
 
@@ -39,7 +39,7 @@ def supported(bond, phrase, version):
 
 def check(bond, content: str, citations: list[Citation], policy: Policy = STRICT) -> list[Issue]:
     """The issues a write of a new document would have; nothing is stored."""
-    return bond.check_write("checked", content, citations, format=Format.MARKDOWN, policy=policy)
+    return planned_issues(bond, "checked", content, citations, format=Format.MARKDOWN, policy=policy)
 
 
 def blob_path(bond, version: VersionId):
@@ -61,7 +61,7 @@ def test_a_checked_write_finds_everything_and_stores_nothing(bond, case):
     before, documents = details.versions(bond), bond.documents()
     [gap] = check(bond, content, citations)
     assert gap.code is IssueCode.UNCOVERED_CLAIM and gap.version is None
-    assert bond.check_write("draft", content, citations, format=Format.MARKDOWN, policy=ALLOW_GAPS) == []
+    assert planned_issues(bond, "draft", content, citations, format=Format.MARKDOWN, policy=ALLOW_GAPS) == []
     assert details.versions(bond) == before and bond.documents() == documents  # nothing was stored
     assert bond.write_document("draft", content, citations, format=Format.MARKDOWN, policy=ALLOW_GAPS).advanced
 

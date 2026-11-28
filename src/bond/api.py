@@ -1,6 +1,6 @@
 """The core API of one workspace, in two layers.
 
-Evidence: ingest, write_document (and check_write), search, declarations, check_support, citations, trace, cited_by
+Evidence: ingest, write_document (or plan_write, then commit), search, declarations, check_support, citations, trace, cited_by
 and verify, plus blob and text to read what a version holds.
 Filing: document, documents and history. Writes go through both: each stores a version and files it in a document.
 Between workspaces: a workspace may link to others (a shared policy library, say), as its deployment decides.
@@ -57,7 +57,7 @@ from .models import (
     WriteResult,
 )
 from .parsers import JsonDoc, Malformed, ParsedDoc
-from .plans import FilingChange, WritePlan, checked
+from .plans import FilingChange, WritePlan
 from .policies import STRICT, Policy
 from .storage import Blobs, Conflict, NewVersion, filing_problem
 from .storage.filing import Filing
@@ -239,7 +239,7 @@ class Bond:
         whole = [Citation(CitationKind.SOURCE, VersionLocator(), [])]
         version = version_id(hash_bytes(data), fmt, whole)
         if self.records.version(version):  # stored already: only filing it is left, so skip parsing it again
-            return self._plan_filing(None, FilingChange(document, version, base, origin, title), STRICT)
+            return self._plan_filing(None, FilingChange(document, version, base, origin, title))
         return self._plan_written(data, fmt, document, whole, base, STRICT, title, origin)
 
     # --- reading versions -----------------------------------------------------
@@ -381,7 +381,8 @@ class Bond:
         it first. Writing the version document already points at is a no-op.
         title, if given, labels the document for people to read it by.
 
-        A caller that expects refusals, like an agent's tools, asks check_write first.
+        A caller that expects refusals, like an agent's tools, plans first: plan_write raises the same WriteError
+        and stores nothing, and commit does the write it planned.
         """
         return self.commit(self.plan_write(document, content, citations, format=format, base=base, policy=policy,
                                            title=title))
@@ -401,24 +402,6 @@ class Bond:
         issue. Stores nothing; commit(plan) does the write. See bond.plans."""
         data, fmt = _encoded(content, format)
         return self._plan_written(data, fmt, document, citations, base, policy, title, None)
-
-    def check_write(
-        self,
-        document: str,
-        content: bytes | str,
-        citations: Sequence[Citation],
-        *,
-        format: Format | None = None,
-        base: VersionId | None = None,
-        policy: Policy = STRICT,
-        title: str | None = None,
-    ) -> list[Issue]:
-        """Every issue write_document would refuse the same write for, filing included; nothing is stored.
-
-        Empty if the write would succeed now, though another write may yet move the document first.
-        """
-        data, fmt = _encoded(content, format)
-        return self._issues(data, fmt, document, citations, base, policy, title)
 
     def _issues(
         self, content: bytes, format: Format, document: str, citations: Sequence[Citation], base: VersionId | None,
@@ -441,10 +424,10 @@ class Bond:
         content_hash = hash_bytes(content)
         version = version_id(content_hash, format, list(citations))
         new = NewVersion(version, content_hash, format, content, list(citations))
-        return checked(WritePlan(self.workspace.id, new, FilingChange(document, version, base, origin, title), policy,
-                                 warnings=tuple(self._superseded(citations))))
+        return WritePlan(self.workspace.id, new, FilingChange(document, version, base, origin, title),
+                         tuple(self._superseded(citations)), _SEAL)
 
-    def _plan_filing(self, new: NewVersion | None, filing: FilingChange, policy: Policy) -> WritePlan:
+    def _plan_filing(self, new: NewVersion | None, filing: FilingChange) -> WritePlan:
         """A plan that files a version stored already, checked for its label and filing."""
         issues = _label_issues(filing.document, filing.title)
         conflict = filing_problem(self.filing.document(filing.document), filing.document, filing.base, filing.version)
@@ -452,13 +435,18 @@ class Bond:
             issues.append(_conflict_issue(conflict))
         if issues:
             raise WriteError(issues)
-        return checked(WritePlan(self.workspace.id, new, filing, policy))
+        return WritePlan(self.workspace.id, new, filing, _seal=_SEAL)
 
     def commit(self, plan: WritePlan) -> WriteResult:
         """Do a planned write: store its version (blob, then record), file it (its history entry, then its title),
         and say what changed. Raises WriteError(stale_base) if the document moved since the plan was made, having
-        stored no version. A plan that wasn't made by this process's checks (one loaded from JSON) is checked again
-        first, and refused with every issue as a write would be. Committing again is harmless."""
+        stored no version. Committing again is harmless.
+
+        Only a plan plan_write or plan_ingest made is committed: commit doesn't check it again, so it refuses one
+        made any other way (ValueError). A plan is kept only in memory: to commit later or elsewhere, keep what
+        was planned (document, content, citations, base) and plan it again there."""
+        if plan._seal is not _SEAL:
+            raise ValueError("this plan wasn't made by Bond's checks (plan_write or plan_ingest); plan it here")
         if plan.workspace != self.workspace.id:
             raise ValueError(f"this plan was made in another workspace ({plan.workspace}), not {self.workspace.id}")
         new = plan.new
@@ -467,8 +455,6 @@ class Bond:
         if new is not None and (hash_bytes(new.data) != new.content_hash
                                 or version_id(new.content_hash, new.format, list(new.citations)) != new.id):
             raise BondError(f"the plan's version {new.id[:12]}… doesn't hash to its id")
-        if not plan.checked:
-            self._recheck(plan)
         before = None
         if new is not None:
             self.blobs.put(new.content_hash, new.data)  # before any record names it
@@ -487,32 +473,6 @@ class Bond:
         replay; a plan made to relabel the head (its base its version) applies its title whatever came before."""
         head = self.filing.get(document)
         return head is not None and self.filing.titled_after(head.ref.id) < head.seq
-
-    def _recheck(self, plan: WritePlan) -> None:
-        """Check a plan from outside as the write it plans would be checked, and that it is whole: the version it
-        files is the one it holds, or stored here already. Its policy is taken as written: ids show what a plan
-        holds, not who may commit it, so a host loads only plans it staged itself."""
-        issues: list[Issue] = []
-        if (new := plan.new) is not None:
-            issues += self._check(new.data, new.format, new.citations, plan.policy, frozenset())
-            if plan.policy.refuse_superseded:
-                issues += self._superseded(new.citations)
-        elif self.records.version(plan.filing.version) is None:
-            raise BondError(f"the plan files version {plan.filing.version[:12]}…, which it doesn't hold and "
-                            "isn't stored here")
-        issues += _label_issues(plan.filing.document, plan.filing.title)
-        if issues:
-            raise WriteError(issues)
-
-    def stage(self, plan: WritePlan) -> str:
-        """Put a plan's bytes in this workspace's blobs, and return the plan as JSON, to keep and commit later."""
-        for content_hash, data in plan.blobs().items():
-            self.blobs.put(content_hash, data)
-        return plan.to_json()
-
-    def load_plan(self, text: str) -> WritePlan:
-        """A plan stage returned, with its bytes read from this workspace's blobs; commit checks it again."""
-        return WritePlan.from_json(text, self.blobs)
 
     def _check(
         self, content: bytes, format: Format, citations: Sequence[Citation], policy: Policy,
@@ -882,6 +842,9 @@ class _Graph:
     def citations(self, version: VersionId) -> list[StoredCitation]:
         return self.bond.citations(version)
 
+
+# What commit checks a plan was made by Bond's checks: only this module sets it (see bond.plans).
+_SEAL = object()
 
 # The workspaces a workspace links to: opened workspaces, or a function giving them now (see Bond.set_links).
 Links = Iterable[Bond] | Callable[[], Iterable[Bond]]

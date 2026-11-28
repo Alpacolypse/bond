@@ -23,7 +23,7 @@ from bond.authoring import AGENT_POLICY, Tools
 from bond.importers.text_layer import TEXT_LAYER
 from bond.policies import Policy
 from bond.transcription import transcribe
-from conftest import FIXTURES, written
+from conftest import FIXTURES, planned_issues, written
 
 NOTE = "Six weeks of written notice."
 
@@ -117,20 +117,8 @@ def test_citing_a_superseded_version_warns_and_a_policy_can_refuse_it(bond):
     with pytest.raises(WriteError) as e:
         bond.write_document("strict", "Six weeks", cite, format=Format.MARKDOWN, policy=Policy(refuse_superseded=True))
     assert e.value.codes == [IssueCode.CITES_SUPERSEDED]
-    assert IssueCode.CITES_SUPERSEDED in {i.code for i in bond.check_write(
+    assert IssueCode.CITES_SUPERSEDED in {i.code for i in planned_issues(bond, 
         "strict", "Six weeks", cite, format=Format.MARKDOWN, policy=Policy(refuse_superseded=True))}
-
-
-def test_a_loaded_plan_is_held_to_refuse_superseded(bond):
-    v1 = bond.ingest("src", NOTE.encode(), format=Format.MARKDOWN).version
-    [hit] = bond.search("Six weeks", documents=["src"])
-    cite = [Citation(CitationKind.QUOTE, TextLocator(0, 9), [hit.ref])]
-    plan = bond.plan_write("summary", "Six weeks", cite, format=Format.MARKDOWN, policy=Policy(refuse_superseded=True))
-    staged = bond.stage(plan)
-    bond.ingest("src", b"Revised.", format=Format.MARKDOWN, base=v1)
-    with pytest.raises(WriteError) as e:
-        bond.commit(bond.load_plan(staged))
-    assert e.value.codes == [IssueCode.CITES_SUPERSEDED]
 
 
 def test_an_agent_is_told_what_is_newer_and_warned_when_it_cites_older(bond):
