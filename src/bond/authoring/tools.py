@@ -391,7 +391,7 @@ def read(bond: Bond, document: str, citations: bool = False) -> Reading:
 
 
 def _head(bond: Bond, document: str) -> VersionId:
-    doc = bond.filing.document(document)
+    doc = bond.find(document)
     if doc is None:
         raise ToolError(f"no document is named {document!r}")
     return doc.head
@@ -435,7 +435,7 @@ def write(
     """
     base_version: VersionId | None = None
     if base is None:
-        if bond.filing.document(document) is not None:
+        if bond.find(document) is not None:
             return Refused([f"{document!r} already exists; pass the base read() returned for it, so your change is "
                             "based on it"])
         fmt = format or DEFAULT_FORMAT

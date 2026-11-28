@@ -174,7 +174,7 @@ def attach_view(
     @app_tool("view_head", READING)
     async def view_head(workspace: str, document: str) -> Head:
         """For Bond's view: the version a document now points at, to open the viewer at."""
-        found = opened(workspace).filing.document(document)
+        found = opened(workspace).find(document)
         if found is None:
             raise BondError(f"there's no document named {document!r} in {workspace!r}")
         return Head(found.head)

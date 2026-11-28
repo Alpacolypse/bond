@@ -9,8 +9,9 @@ from __future__ import annotations
 
 from .api import Bond
 from .locators import JsonLocator, Locator, Span, overlaps
-from .models import CitationKind, DocumentRef, Format, Ref, StoredCitation, Version, VersionId
+from .models import CitationKind, DocumentRef, Format, HistoryEntry, Ref, StoredCitation, Version, VersionId
 from .parsers import JsonDoc
+from .storage import CitationCounts, CitationEdge
 
 
 def version(bond: Bond, version: VersionId) -> Version:
@@ -21,7 +22,7 @@ def version(bond: Bond, version: VersionId) -> Version:
 
 def versions(bond: Bond) -> list[Version]:
     """Every version stored in the workspace itself, oldest first."""
-    return bond.index.versions()
+    return bond._index.versions()
 
 
 def owner(bond: Bond, version: VersionId) -> Bond | None:
@@ -38,7 +39,7 @@ def held_by(bond: Bond, version: VersionId) -> Bond:
 def filed_in(bond: Bond, version: VersionId) -> list[DocumentRef]:
     """The documents whose history holds a version, oldest first, in the workspace it is read from (see owner).
     Compare each one's head to see if it's current."""
-    return bond._held(version).index.holding(version)
+    return bond._held(version)._index.holding(version)
 
 
 def locator_problem(bond: Bond, ref: Ref) -> str | None:
@@ -110,3 +111,40 @@ def pointer(bond: Bond, ref: Ref) -> str:
 def covering_kinds(citations: list[StoredCitation], locator: Locator) -> frozenset[CitationKind]:
     """Kinds of the citations, all owned by one version, whose claims overlap a locator in it."""
     return frozenset(c.kind for c in citations if overlaps(c.claim, locator))
+
+
+# --- whole-workspace reads, for the viewer --------------------------------------------------------
+
+
+def history(bond: Bond, document: DocumentRef) -> list[HistoryEntry]:
+    """The history of a document of bond's workspace, by the document itself (its id), oldest first."""
+    return bond._filing.history(document.id)
+
+
+def stored_citations(bond: Bond, version: VersionId) -> list[StoredCitation]:
+    """The citations a version was written with, wherever bond reads it from, in id order and without reading its
+    bytes; none if it is unreachable. Bond.citations gives them in reading order."""
+    owner = bond._owner(version)
+    return [] if owner is None else owner._records.citations(version)
+
+
+def citing(bond: Bond, version: VersionId) -> list[StoredCitation]:
+    """Citations in bond's workspace with at least one support in version, whatever span it is."""
+    return bond._index.supported_by(version)
+
+
+def cited_elsewhere(bond: Bond) -> list[VersionId]:
+    """Versions citations in bond's workspace rest on that aren't stored in it: in workspaces it links to, or
+    unreachable (see owner)."""
+    return bond._index.outside()
+
+
+def citation_counts(bond: Bond) -> dict[VersionId, CitationCounts]:
+    """Per version of bond's workspace with citations: how many, how many rest on itself, and whether a
+    whole-version SOURCE covers it."""
+    return bond._index.counts()
+
+
+def citation_edges(bond: Bond) -> list[CitationEdge]:
+    """Supports between distinct versions, counted by citing version, cited version and kind."""
+    return bond._index.edges()

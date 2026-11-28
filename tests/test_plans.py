@@ -28,7 +28,7 @@ WHOLE = [Citation(CitationKind.SOURCE, VersionLocator(), [])]
 def test_planning_stores_nothing_and_commit_writes(bond):
     plan = bond.plan_write("note", TEXT, WHOLE, format=Format.MARKDOWN)
     assert plan.version is not None
-    assert bond.documents() == [] and bond.records.version(plan.version) is None
+    assert bond.documents() == [] and bond._records.version(plan.version) is None
     result = bond.commit(plan)
     assert result.advanced and result.version == plan.version and bond.document("note").head == plan.version
 
@@ -54,7 +54,7 @@ def test_a_plan_whose_document_moved_is_refused_and_files_nothing(bond):
     with pytest.raises(WriteError) as e:
         bond.commit(late)
     assert e.value.codes == [IssueCode.STALE_BASE]
-    assert late.version is not None and bond.records.version(late.version) is None
+    assert late.version is not None and bond._records.version(late.version) is None
 
 
 def test_a_plan_commits_from_another_bond_of_its_workspace(bond):
@@ -107,13 +107,13 @@ def test_a_plan_may_cite_a_linked_workspace(bond):
     bond.set_links([policies])
     quoted = [Citation(CitationKind.QUOTE, TextLocator(0, len(text)), [Ref(policy, TextLocator(0, len(text)))])]
     assert bond.commit(bond.plan_write("summary", text, quoted, format=Format.MARKDOWN)).advanced
-    assert bond.records.version(policy) is None  # cited where it is, not copied
+    assert bond._records.version(policy) is None  # cited where it is, not copied
 
 
 def test_committing_a_plan_again_keeps_a_title_given_since(bond):
     plan = bond.plan_write("note", TEXT, WHOLE, format=Format.MARKDOWN, title="A")
     bond.commit(plan)
-    bond.filing.retitle("note", "B")
+    bond.retitle("note", "B")
     assert not bond.commit(plan).advanced
     assert bond.document("note").title == "B"
 
@@ -126,6 +126,6 @@ def test_committing_a_plan_again_titles_it_if_its_title_never_landed(bond):
 
 def test_relabelling_the_head_applies_its_title(bond):
     v = bond.write_document("note", TEXT, WHOLE, format=Format.MARKDOWN, title="A").version
-    bond.filing.retitle("note", "B")
+    bond.retitle("note", "B")
     bond.write_document("note", TEXT, WHOLE, format=Format.MARKDOWN, base=v, title="C")
     assert bond.document("note").title == "C"

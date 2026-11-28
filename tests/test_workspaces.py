@@ -97,7 +97,7 @@ def test_without_a_link_nothing_of_another_workspace_can_be_cited(spaces, polici
     _, case, _ = spaces
     with pytest.raises(WriteError) as e:
         quote_the_criterion(case, criteria_summary(policies))
-    assert IssueCode.UNKNOWN_VERSION in e.value.codes and case.filing.document("determination") is None
+    assert IssueCode.UNKNOWN_VERSION in e.value.codes and case.find("determination") is None
 
 
 def test_links_reach_what_linked_workspaces_link_to_and_loops_are_followed_once(spaces, policies):

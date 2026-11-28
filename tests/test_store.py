@@ -109,8 +109,8 @@ def test_a_claimed_name_with_no_entries_is_not_a_document_and_is_reused():
     # A writer that crashed after claiming a name, before writing the document's first entry.
     store = MemoryStore()
     ws = Bond(store, MemoryBlobs())
-    claim = ws.filing.claim("note")
-    assert ws.filing.document("note") is None and ws.filing.documents() == []
+    claim = ws._filing.claim("note")
+    assert ws.find("note") is None and ws._filing.documents() == []
     v = new_version("One.")
     result = file_in(ws, v, "note", None)
     assert isinstance(result, Filed) and result.document.id == claim.id
@@ -120,10 +120,10 @@ def test_a_crash_before_the_entry_leaves_an_unfiled_version_that_a_retry_files()
     store = MemoryStore()
     ws = Bond(store, MemoryBlobs())
     v = new_version("One.")
-    ws.records.put(v)  # the record went in, then the writer stopped
-    assert ws.filing.document("note") is None and ws.index.holding(v.id) == []
+    ws._records.put(v)  # the record went in, then the writer stopped
+    assert ws.find("note") is None and ws._index.holding(v.id) == []
     assert isinstance(file_in(ws, v, "note", None), Filed)  # the retry
-    assert [d.name for d in ws.index.holding(v.id)] == ["note"]
+    assert [d.name for d in ws._index.holding(v.id)] == ["note"]
 
 
 def test_an_entry_taken_by_the_same_version_is_a_write_that_already_happened():
@@ -133,8 +133,8 @@ def test_an_entry_taken_by_the_same_version_is_a_write_that_already_happened():
     doc = file_in(ws, v1, "note", None)
     assert isinstance(doc, Filed)
     # Another writer filed v2 from v1 between this writer's read and its append.
-    assert ws.filing.append(doc.document.id, HistoryEntry(2, v2.id, v1.id, now()))
-    ws.records.put(v2)
+    assert ws._filing.append(doc.document.id, HistoryEntry(2, v2.id, v1.id, now()))
+    ws._records.put(v2)
     again = file_in(ws, v2, "note", v1.id)
     assert isinstance(again, Filed) and not again.advanced
     late = new_version("Late.")
@@ -149,8 +149,8 @@ def test_titles_are_a_log_and_the_latest_wins():
     doc = file_in(ws, v, "note", None)
     assert isinstance(doc, Filed)
     for title in ("First", None, "Third"):
-        ws.filing.retitle("note", title)
-    found = ws.filing.document("note")
+        ws.retitle("note", title)
+    found = ws.find("note")
     assert found is not None and found.title == "Third"
     titles: list[Key] = list(store.list((ws.workspace.id, "titles", doc.document.id)))
     assert [k[-1] for k in titles] == [1, 2, 3]  # every title is kept
@@ -163,7 +163,7 @@ def test_racing_retitles_all_land():
     doc = file_in(ws, v, "note", None)
     assert isinstance(doc, Filed)
     def work(t: int) -> None:
-        ws.filing.retitle("note", f"Title {t}")
+        ws.retitle("note", f"Title {t}")
 
     run_threads(THREADS, work)
     assert len(list(store.list((ws.workspace.id, "titles", doc.document.id)))) == THREADS
@@ -174,10 +174,10 @@ def test_another_bond_on_the_same_store_sees_writes_at_its_next_query():
     a, b = Bond(store, MemoryBlobs(), "case"), Bond(store, MemoryBlobs(), "case")
     src = new_version("Evidence.")
     assert isinstance(file_in(a, src, "src", None), Filed)
-    assert [v.id for v in b.index.versions()] == [src.id]  # b's index catches up
+    assert [v.id for v in b._index.versions()] == [src.id]  # b's index catches up
     v = new_version("More.")
     assert isinstance(file_in(a, v, "src", src.id), Filed)
-    assert [d.head for d in b.index.holding(src.id)] == [v.id]
+    assert [d.head for d in b._index.holding(src.id)] == [v.id]
     assert b.workspace == a.workspace
 
 
@@ -189,8 +189,8 @@ def test_documents_and_versions_list_oldest_first():
         v = new_version(f"Version {i}.")
         versions.append(v.id)
         assert isinstance(file_in(ws, v, name, None), Filed)
-    assert [d.name for d in ws.filing.documents()] == names
-    assert [v.id for v in ws.index.versions()] == versions
+    assert [d.name for d in ws._filing.documents()] == names
+    assert [v.id for v in ws._index.versions()] == versions
 
 
 class CountingStore(MemoryStore):
@@ -235,4 +235,4 @@ def test_a_version_id_that_isnt_one_is_unknown_not_a_key_error(bond):
 
     with pytest.raises(UnknownVersion):
         bond.verify(VersionId("Not/an-ID"))
-    assert bond.records.version(VersionId("Not/an-ID")) is None
+    assert bond._records.version(VersionId("Not/an-ID")) is None

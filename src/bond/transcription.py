@@ -29,6 +29,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
+from . import details
 from .api import Bond
 from .formats import parse, spec
 from .models import BondError, Citation, Format, Version, VersionId, WriteResult
@@ -104,7 +105,7 @@ def record(
     except ValueError as e:
         raise TranscriptionError(str(e)) from None
     name = transcription_name(document, transcription.producer)
-    existing = bond.filing.document(name)
+    existing = bond.find(name)
     return bond.write_document(name, output, citations, format=transcription.output,
                                base=existing.head if existing else None)
 
@@ -131,9 +132,7 @@ def source_of(bond: Bond, document: str) -> Version:
 
 
 def _transcribable(bond: Bond, document: str, version: VersionId) -> Version:
-    source = bond.records.version(version)
-    if source is None:
-        raise TranscriptionError(f"{document!r} holds no version here")
+    source = details.version(bond, version)
     if spec(source.format).has_text:
         raise TranscriptionError(f"{document!r} is {source.format.value}, which has text of its own: it is read, "
                                  "searched and cited as it is, never transcribed")

@@ -48,7 +48,8 @@ Bond tells you when there is newer evidence, and never decides for you. A citati
 
 | Function | Does |
 |---|---|
-| `document(name)`, `documents()` | A document (`id`, `name`, `head`, `title`), or all of them. `document` raises `UnknownDocument` for a name that isn't filed; `bond.filing.document(name)` returns `None` instead, to ask whether there is one. |
+| `document(name)`, `find(name)`, `documents()` | A document (`id`, `name`, `head`, `title`), or all of them. `document` raises `UnknownDocument` for a name that isn't filed; `find` returns `None` instead, to ask whether there is one. |
+| `retitle(name, title)` | Give a document a title for people to read it by (`None` for none). A title changes no version or provenance; the latest wins. |
 | `history(name)` | The versions a document pointed at, oldest first, each with the `base` it was written from. A revert is a new entry. |
 
 A write files its version in a document by name, which must not be blank (`invalid_name`, as for a blank title). Leave `base` out to create the document; to write its next version, pass its head as `base`.

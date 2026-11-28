@@ -62,7 +62,7 @@ def filed(result: Filed | Conflict) -> Filed:
 
 def file_in(bond: Bond, new: NewVersion, document: str, base: VersionId | None, **entry: Any) -> Filed | Conflict:
     """File new in document from base, storing its record first, as a commit does."""
-    return bond.filing.file(new.id, document, base, before=lambda: bond.records.put(new), **entry)
+    return bond._filing.file(new.id, document, base, before=lambda: bond._records.put(new), **entry)
 
 
 def store(bond: Bond, new: NewVersion, document: str, base: VersionId | None = None) -> VersionId:
@@ -72,8 +72,8 @@ def store(bond: Bond, new: NewVersion, document: str, base: VersionId | None = N
 
 def heads(bond: Bond) -> list[Version]:
     """The versions that are some document's head, oldest first."""
-    heads = {d.head for d in bond.filing.documents()}
-    return [v for v in bond.index.versions() if v.id in heads]
+    heads = {d.head for d in bond._filing.documents()}
+    return [v for v in bond._index.versions() if v.id in heads]
 
 
 def run_threads(n: int, work: Callable[[int], None]) -> None:
@@ -100,20 +100,20 @@ def ws(request: pytest.FixtureRequest, tmp_path: Path) -> Iterator[Bond]:
 
 
 def test_a_new_workspace_is_empty(ws):
-    assert ws.index.versions() == [] and ws.filing.documents() == [] and heads(ws) == []
-    assert ws.records.version(VersionId("0" * 64)) is None and ws.filing.document("note") is None
+    assert ws._index.versions() == [] and ws._filing.documents() == [] and heads(ws) == []
+    assert ws._records.version(VersionId("0" * 64)) is None and ws.find("note") is None
 
 
 def test_filing_creates_and_advances_a_document(ws):
     v1 = new_version("One.")
     first = filed(file_in(ws, v1, "note", None))
     doc = first.document
-    assert first.advanced and doc.name == "note" and doc.head == v1.id and ws.filing.document("note") == doc
+    assert first.advanced and doc.name == "note" and doc.head == v1.id and ws.find("note") == doc
     v2 = new_version("Two.")
     second = filed(file_in(ws, v2, "note", v1.id))
     assert second.advanced and second.document.id == doc.id and second.document.head == v2.id
-    assert [(e.seq, e.version, e.base) for e in ws.filing.history(doc.id)] == [(1, v1.id, None), (2, v2.id, v1.id)]
-    assert [v.id for v in ws.index.versions()] == [v1.id, v2.id]
+    assert [(e.seq, e.version, e.base) for e in ws._filing.history(doc.id)] == [(1, v1.id, None), (2, v2.id, v1.id)]
+    assert [v.id for v in ws._index.versions()] == [v1.id, v2.id]
     assert [v.id for v in heads(ws)] == [v2.id]
 
 
@@ -121,7 +121,7 @@ def test_filing_the_head_again_is_a_no_op(ws):
     v1 = new_version("One.")
     store(ws, v1, "note")
     again = filed(file_in(ws, v1, "note", None))
-    assert not again.advanced and again.document.head == v1.id and len(ws.filing.history(again.document.id)) == 1
+    assert not again.advanced and again.document.head == v1.id and len(ws._filing.history(again.document.id)) == 1
 
 
 @pytest.mark.parametrize(("document", "base", "code"), [
@@ -136,15 +136,15 @@ def test_a_filing_conflict_stores_nothing(ws, document, base, code):
     late = new_version("Late.")
     conflict = file_in(ws, late, document, None if base is None else {"v0": v0.id, "v1": v1.id}[base])
     assert isinstance(conflict, Conflict) and conflict.code is code
-    assert ws.records.version(late.id) is None and ws.records.citations(late.id) == []
+    assert ws._records.version(late.id) is None and ws._records.citations(late.id) == []
 
 
 def test_one_version_in_many_documents_is_stored_once(ws):
     v = new_version("Fax text.")
     store(ws, v, "case_002/fax")
     store(ws, v, "case_007/fax")
-    assert len(ws.index.versions()) == 1 and len(ws.records.citations(v.id)) == 1
-    assert [d.name for d in ws.index.holding(v.id)] == ["case_002/fax", "case_007/fax"]
+    assert len(ws._index.versions()) == 1 and len(ws._records.citations(v.id)) == 1
+    assert [d.name for d in ws._index.holding(v.id)] == ["case_002/fax", "case_007/fax"]
 
 
 def test_citations_round_trip_with_supports_inside_and_outside(ws):
@@ -158,27 +158,27 @@ def test_citations_round_trip_with_supports_inside_and_outside(ws):
     ]
     note = new_version(text, cited)
     store(ws, note, "note")
-    by_claim = {c.claim: c for c in ws.records.citations(note.id)}
+    by_claim = {c.claim: c for c in ws._records.citations(note.id)}
     assert by_claim[first].supports == [Ref(src.id, TextLocator(0, 30))]
     assert by_claim[second].supports == [Ref(note.id, first)]  # SELF is stored under the version's own id
     # and read back as written
-    assert sorted(citation_id(c.as_written()) for c in ws.records.citations(note.id)) == sorted(map(citation_id, cited))
-    assert [c.owner_version for c in ws.index.supported_by(src.id)] == [note.id]
-    assert ws.index.counts()[note.id].citations == 2
-    assert ws.index.counts()[note.id].self_supported == 1
-    assert ws.index.counts()[src.id].whole_source
-    assert ws.index.edges() == [CitationEdge(note.id, src.id, CitationKind.PARAPHRASE, 1)]
+    assert sorted(citation_id(c.as_written()) for c in ws._records.citations(note.id)) == sorted(map(citation_id, cited))
+    assert [c.owner_version for c in ws._index.supported_by(src.id)] == [note.id]
+    assert ws._index.counts()[note.id].citations == 2
+    assert ws._index.counts()[note.id].self_supported == 1
+    assert ws._index.counts()[src.id].whole_source
+    assert ws._index.edges() == [CitationEdge(note.id, src.id, CitationKind.PARAPHRASE, 1)]
 
 
 def test_retitle(ws):
     store(ws, new_version("A."), "a")
-    a = ws.filing.document("a")
+    a = ws.find("a")
     assert a is not None and a.title is None
-    titled = ws.filing.retitle("a", "Note A")
+    titled = ws.retitle("a", "Note A")
     assert (titled.id, titled.title) == (a.id, "Note A")
-    assert ws.filing.retitle("a", None).title is None
+    assert ws.retitle("a", None).title is None
     with pytest.raises(UnknownDocument):
-        ws.filing.retitle("missing", "anything")
+        ws.retitle("missing", "anything")
 
 
 # --- workspaces ------------------------------------------------------------------------
@@ -209,28 +209,28 @@ def test_nothing_in_one_workspace_is_visible_from_another(two):
     store(a, secret, "determination")
     store(a, new_version("Only in A."), "a-only")
 
-    assert [v.id for v in b.index.versions()] == [policy.id] == [v.id for v in heads(b)]
-    assert b.records.version(secret.id) is None and b.records.citations(secret.id) == []
-    assert b.index.supported_by(policy.id) == []  # who cites the shared policy is case data
-    assert [c.owner_version for c in a.index.supported_by(policy.id)] == [secret.id]
-    assert b.index.edges() == [] and set(b.index.counts()) == {policy.id}
-    assert [d.name for d in b.filing.documents()] == ["policy"] and b.filing.document("a-only") is None
-    a_policy, b_policy = a.filing.document("policy"), b.filing.document("policy")
+    assert [v.id for v in b._index.versions()] == [policy.id] == [v.id for v in heads(b)]
+    assert b._records.version(secret.id) is None and b._records.citations(secret.id) == []
+    assert b._index.supported_by(policy.id) == []  # who cites the shared policy is case data
+    assert [c.owner_version for c in a._index.supported_by(policy.id)] == [secret.id]
+    assert b._index.edges() == [] and set(b._index.counts()) == {policy.id}
+    assert [d.name for d in b._filing.documents()] == ["policy"] and b.find("a-only") is None
+    a_policy, b_policy = a.find("policy"), b.find("policy")
     assert a_policy is not None and b_policy is not None and a_policy.id != b_policy.id
-    assert b.index.holding(secret.id) == [] and b.filing.history(a_policy.id) == []
-    assert b.index.outside() == [] == a.index.outside()
+    assert b._index.holding(secret.id) == [] and b._filing.history(a_policy.id) == []
+    assert b._index.outside() == [] == a._index.outside()
 
 
 def test_titles_change_in_one_workspace_only(two):
     a, b = two
     store(a, new_version("A."), "note")
     store(b, new_version("B."), "note")
-    b.filing.retitle("note", "B's note")
-    a_note = a.filing.document("note")
+    b.retitle("note", "B's note")
+    a_note = a.find("note")
     assert a_note is not None and a_note.title is None
-    b.filing.retitle("note", None)
+    b.retitle("note", None)
     with pytest.raises(UnknownDocument):
-        a.filing.retitle("b-only", "anything")
+        a.retitle("b-only", "anything")
 
 
 def test_a_workspace_opened_without_a_name_needs_to_be_the_only_one(tmp_path):
@@ -247,10 +247,10 @@ def test_a_workspace_opened_without_a_name_needs_to_be_the_only_one(tmp_path):
 
 def test_a_version_can_be_stored_without_a_document(ws):
     v = new_version("Evidence a summary rests on.")
-    ws.records.put(v)
-    ws.records.put(v)  # stored once
-    assert [x.id for x in ws.index.versions()] == [v.id] and heads(ws) == []
-    assert ws.index.holding(v.id) == [] and len(ws.records.citations(v.id)) == 1
+    ws._records.put(v)
+    ws._records.put(v)  # stored once
+    assert [x.id for x in ws._index.versions()] == [v.id] and heads(ws) == []
+    assert ws._index.holding(v.id) == [] and len(ws._records.citations(v.id)) == 1
 
 
 def test_supports_may_name_versions_outside_the_workspace(ws):
@@ -258,18 +258,18 @@ def test_supports_may_name_versions_outside_the_workspace(ws):
     elsewhere = new_version("Evidence that stayed behind.")
     cited = [Citation(CitationKind.PARAPHRASE, TextLocator(0, 7), [Ref(elsewhere.id, TextLocator(0, 8))])]
     summary = new_version("Summary", cited)
-    ws.records.put(summary)
-    assert ws.index.outside() == [elsewhere.id]
-    assert [s.version for c in ws.records.citations(summary.id) for s in c.supports] == [elsewhere.id]
-    ws.records.put(elsewhere)
-    assert ws.index.outside() == []
+    ws._records.put(summary)
+    assert ws._index.outside() == [elsewhere.id]
+    assert [s.version for c in ws._records.citations(summary.id) for s in c.supports] == [elsewhere.id]
+    ws._records.put(elsewhere)
+    assert ws._index.outside() == []
 
 
 def test_history_records_where_an_ingested_file_came_from(ws):
     v1, v2 = new_version("Faxed page one."), new_version("Faxed page two.")
     doc = filed(file_in(ws, v1, "fax", None, origin="Cases/001/fax.pdf")).document
     filed(file_in(ws, v2, "fax", v1.id))
-    assert [e.origin for e in ws.filing.history(doc.id)] == ["Cases/001/fax.pdf", None]
+    assert [e.origin for e in ws._filing.history(doc.id)] == ["Cases/001/fax.pdf", None]
 
 
 def test_threads_share_one_workspace(ws):
@@ -280,9 +280,9 @@ def test_threads_share_one_workspace(ws):
             store(ws, new_version(f"Thread {t}, document {i}."), f"t{t}/{i}")
 
     run_threads(THREADS, work)
-    docs = ws.filing.documents()
-    assert len(docs) == len(ws.index.versions()) == THREADS * per_thread
-    assert all(len(ws.filing.history(d.id)) == 1 for d in docs)
+    docs = ws._filing.documents()
+    assert len(docs) == len(ws._index.versions()) == THREADS * per_thread
+    assert all(len(ws._filing.history(d.id)) == 1 for d in docs)
 
 
 def test_writers_racing_on_one_head_form_one_unbroken_history(ws):
@@ -294,7 +294,7 @@ def test_writers_racing_on_one_head_form_one_unbroken_history(ws):
     per_thread = 10
 
     def head() -> DocumentRef:
-        doc = ws.filing.document("race")
+        doc = ws.find("race")
         assert doc is not None
         return doc
 
@@ -305,11 +305,11 @@ def test_writers_racing_on_one_head_form_one_unbroken_history(ws):
                 assert result.code is IssueCode.STALE_BASE  # another writer moved it: read the head again
 
     run_threads(THREADS, work)
-    history = ws.filing.history(head().id)
+    history = ws._filing.history(head().id)
     assert [e.seq for e in history] == list(range(1, THREADS * per_thread + 2))
     assert all(e.base == prev.version for prev, e in zip(history, history[1:], strict=False))
     assert len({e.version for e in history}) == len(history)
-    assert len(ws.index.versions()) == len(history)  # a refused write stored nothing
+    assert len(ws._index.versions()) == len(history)  # a refused write stored nothing
 
 
 def test_writers_storing_the_same_version_at_once_store_it_once(ws):
@@ -319,8 +319,8 @@ def test_writers_storing_the_same_version_at_once_store_it_once(ws):
         store(ws, src, f"case_{t}/fax")
 
     run_threads(THREADS, work)
-    assert len(ws.index.versions()) == 1 and len(ws.records.citations(src.id)) == 1
-    assert len(ws.index.holding(src.id)) == THREADS
+    assert len(ws._index.versions()) == 1 and len(ws._records.citations(src.id)) == 1
+    assert len(ws._index.holding(src.id)) == THREADS
 
 
 def test_writers_creating_one_document_at_once(ws):
@@ -330,11 +330,11 @@ def test_writers_creating_one_document_at_once(ws):
         assert isinstance(result, Filed) or result.code is IssueCode.DOCUMENT_EXISTS
 
     run_threads(THREADS, work)
-    [doc] = ws.filing.documents()
-    [entry] = ws.filing.history(doc.id)
+    [doc] = ws._filing.documents()
+    [entry] = ws._filing.history(doc.id)
     # A writer that lost the race may have stored its version before losing (on a Store, a record goes in before
     # the entry that names it): it is unfiled, held by no document, never the head.
-    assert all(ws.index.holding(v.id) == [] for v in ws.index.versions() if v.id != entry.version)
+    assert all(ws._index.holding(v.id) == [] for v in ws._index.versions() if v.id != entry.version)
 
 
 def test_a_store_reopens_with_what_it_stored(tmp_path):
@@ -342,7 +342,7 @@ def test_a_store_reopens_with_what_it_stored(tmp_path):
     with SQLiteStore(tmp_path / "bond.db") as first:
         store(Bond(first, MemoryBlobs()), v, "p")
     again = SQLiteStore(tmp_path / "bond.db")
-    doc = Bond(again, MemoryBlobs()).filing.document("p")
+    doc = Bond(again, MemoryBlobs()).find("p")
     assert doc is not None and doc.head == v.id
     again.close()
     with pytest.raises(BondError, match="closed"):
@@ -370,7 +370,7 @@ def test_a_postgres_store_lives_alongside_other_tables():
         stores: list[PostgresStore] = []
         run_threads(4, lambda _: stores.append(PostgresStore(pool)))
         store(Bond(stores[0], MemoryBlobs()), new_version("One."), "note")
-        assert Bond(stores[1], MemoryBlobs()).filing.document("note") is not None
+        assert Bond(stores[1], MemoryBlobs()).find("note") is not None
         with pool.connection() as conn:
             conn.execute("UPDATE bond_schema SET version = 1")
         with pytest.raises(BondError, match="Bond schema 1, but this Bond needs"):

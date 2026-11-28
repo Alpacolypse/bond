@@ -68,7 +68,7 @@ def test_add_copies_files_in_as_sources_named_after_them_with_where_they_came_fr
     given["fax.md"].write_text("Changed after it was added.", encoding="utf-8")  # the copy in Bond stays as added
     with Bond.local(home.path("smith"), create=False) as bond:
         assert [d.name for d in bond.documents()] == ["fax.md", "notes.md"]
-        fax = bond.filing.document("fax.md")
+        fax = bond.find("fax.md")
         assert fax is not None and bond.blob(fax.head) == b"# Fax\n\nCeiling leak for six weeks.\n"
         [entry] = bond.history("fax.md")
         assert entry.origin == str(given["fax.md"].resolve())
