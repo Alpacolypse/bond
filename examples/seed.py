@@ -39,6 +39,7 @@ from bond import (
 from bond.importers.reducto import import_reducto
 from bond.jsonvalue import JsonObject
 from bond.local import DECISIONS, Home
+from bond.local.home import BLOBS, STORE
 from bond.locators import format_pointer
 from bond.models import WriteResult
 from bond.parsers import JsonDoc, Malformed
@@ -303,7 +304,7 @@ def print_summary(bond: Bond, root: Path, docs: dict[str, VersionId]) -> None:
     gaps = sum(len(bond.declarations(Ref(version.id, VersionLocator())).undeclared)
                for version in versions if version.format is not Format.PDF)
     documents = sorted(bond.documents(), key=lambda d: d.name)
-    print(f"seeded {root}: {len(versions)} versions in {len(documents)} documents, "
+    print(f"seeded {bond.workspace.name} in {root}: {len(versions)} versions in {len(documents)} documents, "
           f"{sum(kinds.values())} citations, {gaps} gap(s)\n")
     for d in documents:
         n = len(bond.history(d.name))
@@ -320,26 +321,28 @@ def prepare(root: Path, force: bool) -> None:
     if root.exists() and any(root.iterdir()):
         if not force:
             raise SystemExit(f"{root} is not empty; pass --force to replace it")
-        home = Home(root)
-        if {p.name for p in root.iterdir()} - {"workspaces", DECISIONS} or set(home.names()) - set(STORES) or any(
-                p.name not in STORES for p in (root / "workspaces").iterdir()):
+        with Home(root) as home:
+            names = set(home.names())
+        if {p.name for p in root.iterdir()} - {STORE, f"{STORE}-wal", f"{STORE}-shm", BLOBS, DECISIONS} \
+                or names - set(STORES):
             raise SystemExit(f"{root} is not a demo Bond home; refusing to delete it")
         shutil.rmtree(root)
 
 
 def build(root: Path) -> None:
     """A Bond home at root: a workspace per case, and a policies workspace each case links to and cites."""
-    home = Home(root)
-    with Bond.local(home.path("policies")) as policies:
-        policy = policies.ingest("policy_ip112", FIXTURES / "policy_ip112.md")
-        retitle(policies)
-        for case in ("001", "003"):
-            path = home.path(f"case-{case}")
-            with Bond.local(path) as bond:
-                docs = seed(bond, case, policies)
-                print_summary(bond, path, docs)
-            home.link(f"case-{case}", "policies")
-        print_summary(policies, home.path("policies"), {"policy_112": policy.version})
+    with Home(root) as home:
+        home.create("policies")
+        with home.open("policies") as policies:
+            policy = policies.ingest("policy_ip112", FIXTURES / "policy_ip112.md")
+            retitle(policies)
+            for case in ("001", "003"):
+                home.create(f"case-{case}")
+                with home.open(f"case-{case}") as bond:
+                    docs = seed(bond, case, policies)
+                    print_summary(bond, root, docs)
+                home.link(f"case-{case}", "policies")
+            print_summary(policies, root, {"policy_112": policy.version})
 
 
 def main(argv: list[str] | None = None) -> int:

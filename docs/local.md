@@ -4,7 +4,7 @@
 
 ## The Bond home
 
-Workspaces live in a **Bond home**, one directory each (`workspaces/<name>/`, which `Bond.local` opens):
+Workspaces live in a **Bond home**: one store (`bond.db`) and one blob directory (`blobs/`) holding every workspace by name, as a hosted deployment's database does, so a policy several cases cite is stored once:
 
 | Platform | Default home |
 |---|---|
@@ -12,9 +12,7 @@ Workspaces live in a **Bond home**, one directory each (`workspaces/<name>/`, wh
 | Windows | `%LOCALAPPDATA%\Bond` |
 | Linux | `$XDG_DATA_HOME/bond` (or `~/.local/share/bond`) |
 
-`BOND_HOME`, or `--home`, moves it. Keep it outside the folders people keep their files in, and outside synced ones (iCloud Drive, OneDrive, Dropbox), where a SQLite store can be corrupted. Deleting or exporting a workspace is deleting or copying its directory. Links and grants are rows in the home's `home.db`.
-
-Wherever a command takes a workspace, a value with a `/` in it is a directory (`./cases/001`), and anything else is a name in the home (`smith`).
+`BOND_HOME`, or `--home`, moves it. Keep it outside the folders people keep their files in, and outside synced ones (iCloud Drive, OneDrive, Dropbox), where a SQLite store can be corrupted. Links and grants are rows in the home's `home.db`. Wherever a command takes a workspace, it is a name in the home (`smith`); a program that wants a workspace in a directory of its own opens it with `Bond.local(path)`.
 
 ## Commands
 
@@ -26,7 +24,7 @@ Wherever a command takes a workspace, a value with a `/` in it is a directory (`
 | `bond link WORKSPACE --to OTHER [--remove]` | Let `WORKSPACE`'s documents cite `OTHER`'s where they are (a case citing a policy library), and what `OTHER` links to in turn. A link gives read access only: an agent in `WORKSPACE` can read, search and cite `OTHER`, never write there. A link that would loop (`OTHER` already reaches `WORKSPACE`) is refused. Removing one leaves what already cites `OTHER` unreachable from `WORKSPACE`, until it is linked again. See [Workspaces and links](python-api.md#workspaces-and-links). |
 | `bond grant WORKSPACE --to NAME [--remove]` | Let the agent of the server configuration `NAME` (`bond mcp --grants NAME`) work in `WORKSPACE`, or stop it: for hosts with no view to grant from. |
 | `bond workspaces` | List the workspaces in the home, with what each links to and who it's granted to. |
-| `bond mcp --workspace A [--workspace B ...]` | Serve the agent those workspaces, each linked to what it links to in the home. A name must already be in the home; a directory with no workspace becomes a new one. See [Over MCP](agents.md#over-mcp). |
+| `bond mcp --workspace A [--workspace B ...]` | Serve the agent those workspaces, each linked to what it links to in the home. Each must already be in the home (`bond new`). See [Over MCP](agents.md#over-mcp). |
 | `bond mcp --grants NAME` | Serve the workspaces a person granted the configuration `NAME` (grant mode, below). |
 | `bond view` | Browse workspaces in the viewer (below). |
 
@@ -65,7 +63,7 @@ A graph of a workspace's versions, with Markdown, JSON, table (CSV and TSV) and 
 
 ```bash
 bond view                                                   # every workspace in the Bond home
-bond view --workspace smith --workspace ./cases/case-001    # a name in the home, a directory
+bond view --workspace smith --workspace jones               # some of them
 ```
 
 It opens workspaces as they are and never creates one: each `--workspace` given, or with none every workspace in the home. The picker beside Bond switches between them. Workspaces on other stores (Postgres, S3) are served from Python: `bond.http.server.create_app(Fixed({...}))` is the app `bond view` runs (see [Storage](storage.md)).

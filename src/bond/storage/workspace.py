@@ -22,8 +22,7 @@ def open_workspace(store: Store, name: str | None, create: bool) -> Workspace:
     if name is not None and not name.strip():
         raise ValueError("a workspace's name must be a non-empty string")
     if name is None:
-        found = sorted((_workspace(store, key) for key in store.list(("workspaces",))),
-                       key=lambda w: (w.created_at, w.id))
+        found = workspaces(store)
         if len(found) > 1:
             names = ", ".join(repr(w.name) for w in found)
             raise BondError(f"this store holds {len(found)} workspaces ({names}); open one by name")
@@ -37,6 +36,17 @@ def open_workspace(store: Store, name: str | None, create: bool) -> Workspace:
         # Another writer creating the same workspace at once creates nothing here; both then read its key.
         store.create(key, encode({"id": "ws_" + uuid.uuid4().hex, "name": name, "created_at": now()}))
     return _workspace(store, key)
+
+
+def workspaces(store: Store) -> list[Workspace]:
+    """Every workspace in store, oldest first."""
+    return sorted((_workspace(store, key) for key in store.list(("workspaces",))), key=lambda w: (w.created_at, w.id))
+
+
+def find_workspace(store: Store, name: str) -> Workspace | None:
+    """The workspace named name in store; None if there is none."""
+    key: Key = ("workspaces", name_hash(name))
+    return None if store.get(key) is None else _workspace(store, key)
 
 
 def _workspace(store: Store, key: Key) -> Workspace:

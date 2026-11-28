@@ -14,7 +14,7 @@ from mcp.client import advertise
 from mcp.server.apps import APP_MIME_TYPE, EXTENSION_ID
 from mcp_types import TextContent
 
-from bond import Bond, Format
+from bond import Format
 from bond.local import DECISIONS, Home
 from bond.local.grants import GrantedWorkspaces
 from bond.local.grants import create_server as grant_server
@@ -178,7 +178,9 @@ def test_a_person_adds_sources_from_the_view(bond):
 
 
 def workspace(home: Home, name: str, text: str | None = None) -> None:
-    with Bond.local(home.path(name)) as bond:
+    if not home.exists(name):
+        home.create(name)
+    with home.open(name) as bond:
         if text is not None:
             bond.ingest("notes.md", text.encode(), format=Format.MARKDOWN)
 
@@ -278,5 +280,5 @@ def test_a_model_that_sees_the_app_only_tools_still_cant_act_as_the_person(tmp_p
         grants.close()
     assert all("only the person using Bond's view can do this" in r for r in refusals), refusals
     assert grants.names() == ["smith"] and home.names() == ["smith"]  # granted by the view only; nothing created
-    with Bond.local(home.path("smith"), create=False) as smith:
+    with home.open("smith") as smith:
         assert smith.documents() == []
