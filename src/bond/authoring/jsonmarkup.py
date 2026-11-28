@@ -28,7 +28,7 @@ from ..models import Citation, CitationKind, Ref
 from ..parsers import Malformed, load_json
 from . import markup
 from .drafts import Compiled, Entry
-from .markup import CLOSE_ANCHOR, CLOSE_TAG, OWN, Element, Unrenderable
+from .markup import CLOSE_ANCHOR, CLOSE_TAG, Element, Unrenderable
 
 BOND = "$bond"
 VALUE = "value"
@@ -107,11 +107,8 @@ def render(content: str, citations: Sequence[Citation], evidence: Callable[[Ref]
         obj["kind"] = c.kind.value
         if c.supports:
             obj["from"] = " ".join(sources(i))
-        for key, v in sorted(c.attrs.items()):
-            if key in OWN:
-                raise Unrenderable(f"a {c.kind.value} citation has an attr {key!r}, which a citation object can't "
-                                   "hold")
-            obj[key] = v
+        if c.producer is not None:
+            obj["producer"] = c.producer
         return obj
 
     def string(path: Path, s: str) -> str:
@@ -241,7 +238,9 @@ def compile(draft: str) -> Compiled:
                 issues.append(f'{label} is self-closing; to cite a whole value, wrap it: {{"{BOND}": {{"{CITE}": '
                               f'{{…}}}}, "{VALUE}": …}}')
                 continue
-            entries.append(Entry(tag.kind, JsonLocator(at, tag.span), list(tag.sources), dict(tag.attrs), label,
+            if (problem := markup.stray(tag, label)) is not None:
+                issues.append(problem)
+            entries.append(Entry(tag.kind, JsonLocator(at, tag.span), list(tag.sources), tag.producer, label,
                                  tag.id))
             if tag.id is not None:
                 ids.append(tag.id)
@@ -267,6 +266,7 @@ def _entry(path: Path, at: Position, obj: JsonValue, issues: list[str]) -> Entry
         return None
     fields = dict(obj)
     kind_name, sources, tag_id = fields.pop("kind", None), fields.pop("from", ""), fields.pop("id", None)
+    producer = fields.pop("producer", None)
     label = f"{CITE} at {where}" if tag_id is None else f'{CITE} "{tag_id}" at {where}'
     found = len(issues)
     if kind_name is None:
@@ -277,10 +277,12 @@ def _entry(path: Path, at: Position, obj: JsonValue, issues: list[str]) -> Entry
         issues.append(f'{label}: "from" must be a string of handles and #ids, separated by spaces')
     if tag_id is not None and (not isinstance(tag_id, str) or not tag_id):
         issues.append(f'{label}: "id" must be a non-empty string')
-    attrs = {key: v for key, v in fields.items() if isinstance(v, str)}
-    if bad := sorted(fields.keys() - attrs.keys()):
-        issues.append(f"{label}: {', '.join(map(repr, bad))} must be a producer's id, a string")
+    if producer is not None and not isinstance(producer, str):
+        issues.append(f'{label}: "producer" must be a tool\'s id, a string')
+    if fields:
+        issues.append(f"{label} has key(s) {', '.join(map(repr, sorted(fields)))}, which a citation object doesn't "
+                      'take (it takes "kind", "from", "id" and "producer")')
     if len(issues) > found or not isinstance(kind_name, str) or not isinstance(sources, str) \
-            or not (tag_id is None or isinstance(tag_id, str)):
+            or not (tag_id is None or isinstance(tag_id, str)) or not (producer is None or isinstance(producer, str)):
         return None
-    return Entry(_KINDS[kind_name], JsonLocator(at), sources.split(), attrs, label, tag_id)
+    return Entry(_KINDS[kind_name], JsonLocator(at), sources.split(), producer, label, tag_id)

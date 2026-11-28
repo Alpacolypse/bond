@@ -33,7 +33,6 @@ from .api import Bond
 from .formats import parse, spec
 from .models import BondError, Citation, Format, Version, VersionId, WriteResult
 from .parsers import Malformed, ParsedDoc
-from .policies import PRODUCERS, Policy
 
 
 class TranscriptionError(BondError):
@@ -91,9 +90,8 @@ def record(
 
     The output is stored byte-for-byte in the producer's output format and filed as transcription_name(document,
     producer), advancing it from its head when it exists, so recording again after a new version of the source, or a
-    new run, writes its next version (and the same output for the same source changes nothing). The write allows the
-    producer's id in its citations; verify a transcription with Policy(producers=PRODUCERS | {producer}) unless
-    PRODUCERS holds it. Raises UnknownDocument; TranscriptionError if the source has text of its own, isn't a format
+    new run, writes its next version (and the same output for the same source changes nothing). Its citations name
+    the producer by its id. Raises UnknownDocument; TranscriptionError if the source has text of its own, isn't a format
     the producer reads, or the output isn't the producer's; or WriteError (a region the source doesn't have, say).
     """
     read = source_of(bond, document) if source is None else held_source(bond, document, source)
@@ -108,8 +106,7 @@ def record(
     name = transcription_name(document, transcription.producer)
     existing = bond.filing.document(name)
     return bond.write_document(name, output, citations, format=transcription.output,
-                               base=existing.head if existing else None,
-                               policy=Policy(producers=PRODUCERS | {transcription.producer}))
+                               base=existing.head if existing else None)
 
 
 def transcribe(bond: Bond, document: str, transcriber: Transcriber) -> WriteResult:

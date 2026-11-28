@@ -462,7 +462,7 @@ def test_render_names_only_tags_something_refers_to():
     content = "Leak for 8 weeks. Notice ignored. Sure."
     quote = Citation(CitationKind.QUOTE, TextLocator(0, 17), [Ref(VersionId("v" * 64), TextLocator(0, 4))])
     citations = [
-        Citation(CitationKind.ASSESSMENT, TextLocator(34, 39), [SelfRef(TextLocator(0, 17))], {"assessor": "reducto"}),
+        Citation(CitationKind.ASSESSMENT, TextLocator(34, 39), [SelfRef(TextLocator(0, 17))], "reducto"),
         Citation(CitationKind.PARAPHRASE, TextLocator(18, 33), [SelfRef(TextLocator(0, 17))]),
         quote,
     ]
@@ -470,7 +470,7 @@ def test_render_names_only_tags_something_refers_to():
     # Tags are numbered in the order they appear; the paraphrase and the assessment both rest on the quote.
     assert text == ('<bond:cite id="c1" kind="quote" from="E1">Leak for 8 weeks.</bond:cite> '
                     '<bond:cite kind="paraphrase" from="#c1">Notice ignored.</bond:cite> '
-                    '<bond:cite kind="assessment" from="#c1" assessor="reducto">Sure.</bond:cite>')
+                    '<bond:cite kind="assessment" from="#c1" producer="reducto">Sure.</bond:cite>')
     parsed = parse(text)
     assert parsed.content == content and [t.sources for t in parsed.tags] == [["E1"], ["#c1"], ["#c1"]]
 
@@ -478,7 +478,7 @@ def test_render_names_only_tags_something_refers_to():
 def test_an_assessment_rests_on_text_in_the_document(bond, case):
     tools = Tools(bond, ALLOW_GAPS)  # assessments aren't an agent's to write; the round trip is under test
     draft = (f'<bond:cite id="q" kind="quote" from="{cite(tools, FIRST)}">{FIRST}</bond:cite> '
-             '<bond:cite kind="assessment" from="#q" assessor="reducto">Sure.</bond:cite>\n')
+             '<bond:cite kind="assessment" from="#q" producer="reducto">Sure.</bond:cite>\n')
     written(tools.write("graded", draft))
     version = head(bond, "graded")
     quote, assessment = bond.citations(version)
@@ -505,8 +505,8 @@ def test_trace_follows_a_span_down_to_the_page_with_handles_to_cite_along_the_wa
     assert note.handle == mine.handle and note.documents == ["findings"] and note.text == SECOND
     assert [(r.kind, r.handles) for r in note.rests_on] == [(CitationKind.QUOTE, [ocr.handle])]
     assert ocr.handle == cite(tools, SECOND)  # the evidence beneath, citable directly
-    assert [(r.kind, r.attrs, r.handles) for r in ocr.rests_on] == [
-        (CitationKind.TRANSCRIPTION, {"transcriber": "reducto"}, [page.handle])]
+    assert [(r.kind, r.producer, r.handles) for r in ocr.rests_on] == [
+        (CitationKind.TRANSCRIPTION, "reducto", [page.handle])]
     assert page.text is None and page.where == "page 2"
     assert [(r.kind, r.handles) for r in page.rests_on] == [(CitationKind.SOURCE, [])]
     assert note.undeclared == [] and bond.verify(head(bond, "findings")) == []

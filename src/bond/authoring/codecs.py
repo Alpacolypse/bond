@@ -44,11 +44,12 @@ class TaggedText:
         names: dict[str, Locator] = {a: TextLocator(*span) for a, span in parsed.anchors.items()}
         names.update({t.id: TextLocator(*t.span) for t in parsed.tags if t.id is not None and t.span is not None})
         entries = [
-            Entry(t.kind, VersionLocator() if t.span is None else TextLocator(*t.span), list(t.sources), dict(t.attrs),
+            Entry(t.kind, VersionLocator() if t.span is None else TextLocator(*t.span), list(t.sources), t.producer,
                   markup.label(t), t.id)
             for t in parsed.tags
         ]
-        return Compiled(parsed.content, entries, names, list(parsed.issues))
+        strays = [m for t in parsed.tags if (m := markup.stray(t, markup.label(t))) is not None]
+        return Compiled(parsed.content, entries, names, list(parsed.issues) + strays)
 
     def where(self, content: str, locator: Locator) -> str:
         return ""

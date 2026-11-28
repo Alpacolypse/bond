@@ -39,7 +39,7 @@ class Records:
     def put(self, new: NewVersion) -> bool:
         """Store a version's record unless it is stored already; True if this call stored it."""
         citations: list[JsonValue] = [
-            {"id": cid, "kind": c.kind.value, "claim": c.claim.to_dict(), "attrs": dict(c.attrs),
+            {"id": cid, "kind": c.kind.value, "claim": c.claim.to_dict(), "producer": c.producer,
              "supports": [[new.id if version == SELF else version, locator] for version, locator in supports(c)]}
             for cid, c in canonical(new.citations)
         ]
@@ -92,9 +92,11 @@ def _record(key: VersionId, obj: Mapping[str, JsonValue]) -> Record:
                     refs.append(Ref(VersionId(v), locator_from_dict(locator)))
                 case _:
                     raise BondError(f"the store holds {pair!r} where a support belongs; it is corrupt")
-        attrs = {k: v for k, v in mapping(c.get("attrs"), "attrs").items() if isinstance(v, str)}
+        producer = c.get("producer")
+        if producer is not None and not isinstance(producer, str):
+            raise BondError(f"the store holds {producer!r} where a producer's id belongs; it is corrupt")
         citations.append(StoredCitation(
             id=text(c, "id"), owner_version=version.id, kind=CitationKind(text(c, "kind")),
-            claim=locator_from_dict(mapping(c.get("claim"), "a locator")), supports=refs, attrs=attrs,
+            claim=locator_from_dict(mapping(c.get("claim"), "a locator")), supports=refs, producer=producer,
         ))
     return Record(version, citations, VersionId(text(obj, "id")))

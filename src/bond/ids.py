@@ -18,7 +18,7 @@ from .models import SELF, Citation, Format, Ref, Support, VersionId
 
 # Prefixed to the hashed forms of a version and of a citation, so neither hash can be mistaken for another.
 _VERSION_TAG = "bond.version.v2\n"
-_CITATION_TAG = "bond.citation.v1\n"
+_CITATION_TAG = "bond.citation.v2\n"
 
 
 def hash_bytes(data: bytes) -> str:
@@ -26,13 +26,13 @@ def hash_bytes(data: bytes) -> str:
 
 
 def citation_id(c: Citation) -> str:
-    """A citation's id: sha256 over its kind, claim, attrs and supports, as written.
+    """A citation's id: sha256 over its kind, claim, producer and supports, as written.
 
     Its supports are a set: their order doesn't change the id. A support inside the version being written
     is hashed with version "self"; one in another version by that version's id, so a citation's id commits
     to everything it rests on.
     """
-    hashed: JsonObject = {"kind": c.kind.value, "claim": c.claim.to_dict(), "attrs": c.attrs,
+    hashed: JsonObject = {"kind": c.kind.value, "claim": c.claim.to_dict(), "producer": c.producer,
                           "supports": [[version, locator] for version, locator in supports(c)]}
     return hashlib.sha256((_CITATION_TAG + dumps(hashed)).encode()).hexdigest()
 

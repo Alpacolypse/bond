@@ -1,4 +1,4 @@
-import type { Citation, Format, Kind } from "../api/types";
+import type { Format, Kind } from "../api/types";
 import { formatColor, SOURCING_COLOR, SOURCING_LABEL, SOURCINGS } from "../theme";
 import { kindSourcing } from "./marks";
 
@@ -28,13 +28,6 @@ export function SourcingLegend() {
       ))}
     </span>
   );
-}
-
-/** A citation's kind-specific attrs on one line: registered producer identifiers. */
-export function attrsLine(attrs: Citation["attrs"]): string {
-  return Object.entries(attrs)
-    .map(([k, v]) => `${k}: ${typeof v === "string" ? v : JSON.stringify(v)}`)
-    .join(" · ");
 }
 
 /** `text` collapsed onto one line and cut to at most `n` characters. */

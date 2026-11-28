@@ -202,7 +202,7 @@ def test_a_lost_blob_beneath_hides_nothing_about_what_rests_on_it(bond, case):
 
 
 def bond_citations(bond, version: VersionId) -> list[Citation]:
-    return [Citation(c.kind, c.claim, list(c.supports), c.attrs) for c in bond.citations(version)]
+    return [Citation(c.kind, c.claim, list(c.supports), c.producer) for c in bond.citations(version)]
 
 
 def test_a_whole_record_swapped_under_another_key_is_caught(bond):

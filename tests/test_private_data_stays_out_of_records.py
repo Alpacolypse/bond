@@ -21,7 +21,6 @@ from bond.authoring import AGENT_POLICY, Tools
 from bond.importers.text_layer import TEXT_LAYER
 from bond.jsonvalue import JsonValue
 from bond.locators import locator_from_dict
-from bond.policies import PRODUCERS
 from bond.storage.store import Key
 from bond.transcription import transcribe
 from conftest import refused, written
@@ -29,7 +28,7 @@ from conftest import refused, written
 HASH = re.compile(r"[0-9a-f]{64}")
 WORKSPACE_ID = re.compile(r"ws_[0-9a-f]{32}")  # Bond's id for a workspace, never its name
 DOCUMENT_ID = re.compile(r"doc_[0-9a-f]{32}")
-PRODUCER_ATTRS = {"transcriber", "classifier", "assessor"}
+PRODUCERS = {"pypdf", "reducto"}  # the producers this workspace's transcriptions name
 
 # Words from the documents that must never reach a record. Each has a letter outside 0-9a-f, so no hash can hold
 # it by chance. The synthetic clients and reviewers of the fixtures and the seed, and an adversarial source's.
@@ -93,20 +92,20 @@ def assert_closed_locator(d: Mapping[str, JsonValue]) -> None:
         assert all(isinstance(n, (int, float)) and not isinstance(n, bool) for n in values), (key, value)
 
 
-def test_words_offered_as_attrs_are_refused(store):
+def test_words_offered_as_tag_attributes_are_refused(store):
     tools = Tools(store, AGENT_POLICY)
     for draft in ['<bond:cite kind="unsourced" reason="Zelphine Quarrow\'s birth date">Born</bond:cite>\n',
                   '<bond:cite kind="unsourced" author="Dr. Lena Okoro">Noted</bond:cite>\n']:
         [issue] = refused(tools.write("attempts/attr.md", draft))
-        assert "unsourced does not accept attrs" in issue
+        assert "which a tag doesn't take" in issue
     pdf = next(v.id for v in details.versions(store) if v.format is Format.PDF)
     text = json.dumps({"text": "Jordan Avery"}).encode()
-    with pytest.raises(WriteError, match="attrs.transcriber must be a producer id"):
+    with pytest.raises(WriteError, match="a producer is a tool's id"):
         store.write_document(
             "attempts/ocr.json",
             text,
             [Citation(CitationKind.TRANSCRIPTION, JsonLocator((0,)), [Ref(pdf, PdfLocator(0, (0.1, 0.1, 0.5, 0.2)))],
-                      {"transcriber": "Zelphine Quarrow"})],
+                      "Zelphine Quarrow")],
             format=Format.JSON,
         )
 
@@ -139,10 +138,10 @@ def test_every_record_value_is_a_hash_an_enum_a_number_or_a_registered_id(store)
         assert HASH.fullmatch(r["id"]) and HASH.fullmatch(r["content_hash"]) and r["format"] in formats
         datetime.fromisoformat(r["created_at"])
         for c in r["citations"]:
-            assert set(c) == {"id", "kind", "claim", "attrs", "supports"}, "a field this check doesn't cover"
+            assert set(c) == {"id", "kind", "claim", "producer", "supports"}, "a field this check doesn't cover"
             assert HASH.fullmatch(c["id"]) and c["kind"] in kinds
             assert_closed_locator(c["claim"])
-            assert set(c["attrs"]) <= PRODUCER_ATTRS and all(v in PRODUCERS for v in c["attrs"].values())
+            assert c["producer"] is None or c["producer"] in PRODUCERS
             for version, locator in c["supports"]:
                 assert HASH.fullmatch(version)
                 assert_closed_locator(locator)

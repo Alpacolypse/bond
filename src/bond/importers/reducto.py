@@ -31,7 +31,7 @@ from ..models import Citation, CitationKind, Format, Ref, SelfRef, Version, Vers
 from ..parsers import JsonDoc, Malformed, ParsedDoc
 from ..transcription import TranscriptionError, record
 
-TRANSCRIBER = "reducto"  # a producer every policy knows by default (policies.PRODUCERS)
+TRANSCRIBER = "reducto"  # the producer its citations name
 
 Path = tuple[int, ...]  # a value's position in the parse, as its JsonLocator holds it
 
@@ -114,17 +114,17 @@ def _block(path: Path, block: Mapping[str, JsonValue], region: Ref) -> list[Cita
     transcribed = isinstance(content, str) and bool(content.strip())
     if transcribed:
         out.append(Citation(CitationKind.TRANSCRIPTION, JsonLocator(_member(path, block, "content")), [region],
-                            {"transcriber": TRANSCRIBER}))
+                            TRANSCRIBER))
     if "type" in block:
         out.append(Citation(CitationKind.CLASSIFICATION, JsonLocator(_member(path, block, "type")), [region],
-                            {"classifier": TRANSCRIBER}))
+                            TRANSCRIBER))
     if "confidence" in block:
         confidence = JsonLocator(_member(path, block, "confidence"))
         if not transcribed:
             out.append(Citation(CitationKind.UNSOURCED, confidence, []))  # confidence in no text
         else:
             out.append(Citation(CitationKind.ASSESSMENT, confidence,
-                                [SelfRef(JsonLocator(_member(path, block, "content")))], {"assessor": TRANSCRIBER}))
+                                [SelfRef(JsonLocator(_member(path, block, "content")))], TRANSCRIBER))
     return out
 
 

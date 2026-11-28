@@ -267,7 +267,7 @@ def test_a_linked_unsourced_draft_stays_unsupported(bond, tmp_path):
     assert why["status"] == "unsupported" and why["issues"] == [{"reason": "unsourced", "handle": hit["handle"]}]
     assert not why["truncated"] and why["unreachable"] == []
     assert why["spans"][0]["undeclared"] == [] and why["spans"][0]["rests_on"] == [
-        {"kind": "unsourced", "attrs": {}, "handles": []}]
+        {"kind": "unsourced", "producer": None, "handles": []}]
 
 
 def test_mcp_trace_reports_unreachable_dependencies(bond, tmp_path):

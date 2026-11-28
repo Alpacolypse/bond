@@ -10,7 +10,7 @@ export function makeCitation(overrides: Partial<Citation> = {}): Citation {
     claim: { type: "version" },
     claim_text: null,
     supports: [],
-    attrs: {},
+    producer: null,
     ...overrides,
   };
 }

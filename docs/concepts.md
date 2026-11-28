@@ -18,17 +18,17 @@ The word *claim* in a citation names its subject span; Bond does not detect fact
 
 | Kind | Meaning | Checked |
 |---|---|---|
-| `transcription` | Text read from a region of a page (of a PDF, today's only format with no text of its own) | One region support; `attrs.transcriber` required, a producer id |
+| `transcription` | Text read from a region of a page (of a PDF, today's only format with no text of its own) | One region support; a `producer` required, the transcriber's id |
 | `quote` | The supporting text, verbatim | One text/JSON support, and the text must match (forgiving whitespace, curly quotes, line-break hyphens and ligatures) |
 | `paraphrase` | The supporting text in other words | One or more text/JSON supports; faithfulness is left to a judging layer |
 | `unsourced` | No supporting evidence declared, e.g. a heading, id, or vendor metadata | No supports; use an explicit text/value locator rather than a whole-version locator |
 | `source` | A declared origin of evidence, over a whole ingested file or part of a document | No supports; authority is not evaluated |
-| `classification` | A label a producer assigned to a region of a page | One region support; `attrs.classifier` required, a producer id |
-| `assessment` | A producer's judgment of the text it rests on, e.g. a transcriber's confidence in the text it read | One or more text/JSON supports; `attrs.assessor` required, a producer id |
+| `classification` | A label a producer assigned to a region of a page | One region support; a `producer` required, the classifier's id |
+| `assessment` | A producer's judgment of the text it rests on, e.g. a transcriber's confidence in the text it read | One or more text/JSON supports; a `producer` required, the assessor's id |
 
 Each kind is checked as strongly as it honestly can be, and a kind's meaning never changes: a changed meaning would be a new kind. Evidence from a source with no text of its own (a PDF) enters a document only through `transcription` and `classification`, so every chain above a transcription stays traceable through readable text down to a page region.
 
-Vendor values are cited where they sit, never copied into `attrs` or converted onto Bond's own scale. Attrs never hold free text: the only ones are the producers of transcriptions, classifications and assessments, each named by an id (a lowercase letter, then lowercase letters, digits and hyphens). Which producers are known is the policy's business (see [Policies](#policies)).
+Vendor values are cited where they sit, never copied into a citation or converted onto Bond's own scale. A citation holds no free text: besides its kind, claim and supports, it has only a `producer`, the tool whose output it is, which transcriptions, classifications and assessments require and every other kind refuses. A producer is an id (a lowercase letter, then lowercase letters, digits and hyphens), and any such id will do: there is nothing to register.
 
 `unsourced` is always explicit: Bond never infers it from missing citations. In a trace it is an edge with no supports. An undeclared gap remains a gap. `source` declares an origin at any size: an ingested file, or a region such as a reviewer's own rationale. Neither declaration establishes factual correctness. The core enforces that every word is accounted for, not who may account for it how: the agent layer refuses `source`, so agents must cite or mark text `unsourced`.
 
@@ -59,14 +59,13 @@ Each format has exactly one canonical locator, which is what citations store and
 
 **Integrity** is always checked and no policy can waive it: content is well-formed (UTF-8; valid JSON with no duplicate keys), every locator is valid in its version and every supporting version exists, each citation passes its kind's validator, and supports within the document never loop (`circular_support`).
 
-**A policy** decides the rest, and it is plain data: `Policy(gaps=False, kinds=frozenset(CitationKind), producers=PRODUCERS)`.
+**A policy** decides the rest, and it is plain data: `Policy(gaps=False, kinds=frozenset(CitationKind))`.
 
 | Policy | Requires |
 |---|---|
 | `STRICT` (the default) | Every word is accounted for. All text is claim text: in Markdown, paragraphs, list items, headings, table rows (headers included), code and HTML blocks, front matter and any other line; in JSON, every non-null leaf. Only syntax and punctuation need no citation. Citing one phrase of a paragraph doesn't cover the rest of it. |
 | `ALLOW_GAPS` | Nothing more: uncovered spans are stored as gaps, for drafts and migrations, listed exactly by `declarations(...).undeclared` and never turned into `unsourced`. |
 | `Policy(kinds=...)` | Only citations of these kinds, e.g. `bond.authoring.AGENT_POLICY`, which allows `quote`, `paraphrase` and `unsourced`. |
-| `Policy(producers=...)` | Only these producers named in `attrs` (`unknown_producer` otherwise). `bond.policies.PRODUCERS`, the default, holds `pypdf` and `reducto`, the producers Bond reads; a deployment recording another vendor's output passes `Policy(producers=PRODUCERS \| {"acme-ocr"})` when it writes and when it verifies. |
 
 A policy judges a version alone, never where it is filed: whether a cited version has been superseded since is a warning at write and a question for the application (`Hit.newer`, `Trace.newer`), never a rule. The policy is passed with each call and never stored: a version is a record of facts, and whether it meets a policy is a judgment different consumers can make differently. Bond checks that content is well-formed and its provenance structurally valid, not that it matches a schema: a caller that needs JSON of a given shape validates it before writing.
 
@@ -74,7 +73,7 @@ A version is its bytes, format and citations together: the same bytes with diffe
 
 ## Identity and verify
 
-A citation's id is the sha256 of the canonical JSON of its kind, claim, supports (as a set) and attrs. A version's id is the sha256 of the canonical JSON of its bytes' hash, its format and the sorted ids of its citations, so neither depends on the order citations are listed in, and a version's citations can never change. Supports into the version itself are hashed as `"self"` and stored under the new id.
+A citation's id is the sha256 of the canonical JSON of its kind, claim, supports (as a set) and producer. A version's id is the sha256 of the canonical JSON of its bytes' hash, its format and the sorted ids of its citations, so neither depends on the order citations are listed in, and a version's citations can never change. Supports into the version itself are hashed as `"self"` and stored under the new id.
 
 An id hashes the ids it cites, so ids form a Merkle DAG: one expected id (recorded with an artifact, say) anchors identity checks throughout its available provenance chain. `verify` recomputes the blob hashes and ids from a version down, and runs the write checks again on each version as it was written, under the policy supplied to verification now. Hashes show nothing changed since it was stored; the checks show it met the rules, whatever code path stored it. The historical writing policy is not stored. Document names, histories and timestamps are filing, not provenance, and aren't covered: the same evidence hashes the same wherever it is filed.
 

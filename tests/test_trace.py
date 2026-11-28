@@ -177,7 +177,7 @@ def test_every_text_block_of_the_ocr_output_cites_a_region(bond, case):
     cited = {details.pointer(bond, Ref(case["fax"], c.claim)): c for c in citations if c.kind is CitationKind.TRANSCRIPTION}
     assert set(cited) == set(blocks)
     for pointer, c in cited.items():
-        assert c.attrs == {"transcriber": "reducto"}
+        assert c.producer == "reducto"
         [support] = c.supports
         assert support.version == case["pdf"] and isinstance(support.locator, PdfLocator)
         bbox = blocks[pointer]["bbox"]
@@ -193,11 +193,11 @@ def test_each_vendor_field_of_the_ocr_output_is_cited_as_what_it_is(bond, case):
     # type labels the same region the content was read from.
     label = by_kind[CitationKind.CLASSIFICATION][f"{block}/type"]
     assert label.supports == by_kind[CitationKind.TRANSCRIPTION][f"{block}/content"].supports
-    assert label.attrs == {"classifier": "reducto"}
+    assert label.producer == "reducto"
     unsourced = by_kind[CitationKind.UNSOURCED]
     assert {"/job_id", "/usage", "/result/type", "/result/chunks/0/content", f"{block}/bbox"} <= set(unsourced)
     assert not any("/blocks/" in p and p.endswith(("/content", "/type", "/confidence")) for p in unsourced)
-    assert all(c.supports == [] and c.attrs == {} for c in unsourced.values())
+    assert all(c.supports == [] and c.producer is None for c in unsourced.values())
     assert bond.declarations(Ref(case["fax"], VersionLocator())).undeclared == ()
     # An unsourced leaf traces to an edge with no supports: it rests on nothing.
     [edge] = bond.trace(details.locate_pointer(bond, case["fax"], "/result/chunks/0/blocks/0/bbox/top")).edges

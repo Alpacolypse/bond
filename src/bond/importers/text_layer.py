@@ -29,7 +29,7 @@ from ..models import Citation, CitationKind, Format, Ref, Version
 from ..parsers import JsonDoc, ParsedDoc
 from ..transcription import TranscriptionError
 
-PRODUCER = "pypdf"  # a producer every policy knows by default (policies.PRODUCERS)
+PRODUCER = "pypdf"  # the producer its citations name
 WHOLE_PAGE = (0.0, 0.0, 1.0, 1.0)
 
 
@@ -79,7 +79,7 @@ class TextLayer:
                     cited.append(Citation(CitationKind.UNSOURCED, JsonLocator(at + (n,)), []))
                 elif text.strip():  # an empty page has no text to read
                     cited.append(Citation(CitationKind.TRANSCRIPTION, JsonLocator(at + (n,)),
-                                          [Ref(pdf, PdfLocator(number - 1, WHOLE_PAGE))], {"transcriber": PRODUCER}))
+                                          [Ref(pdf, PdfLocator(number - 1, WHOLE_PAGE))], PRODUCER))
         return cited
 
 
